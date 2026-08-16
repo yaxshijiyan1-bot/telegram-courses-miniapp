@@ -245,7 +245,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
                   {/* Lessons List */}
                   {isOpen && (
-                    <div className="px-3 pb-3 pt-1 border-t border-brand-border/40 space-y-2">
+                    <div className="px-3 pb-3 pt-1 border-t border-white/5 space-y-2">
                       {module.lessons.map((lesson, lIdx) => (
                         <div
                           key={lesson.id}
@@ -257,28 +257,28 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                           }}
                           className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all ${
                             lesson.is_preview || course.is_enrolled
-                              ? 'bg-brand-mint/40 hover:bg-brand-mint text-brand-dark cursor-pointer'
-                              : 'bg-brand-surface text-brand-secondary opacity-75'
+                              ? 'bg-[#181820] hover:bg-white/10 text-white cursor-pointer border border-[#B4F523]/20'
+                              : 'bg-[#131318] text-zinc-500 opacity-60'
                           }`}
                         >
                           <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                            <span className="text-[10px] font-mono font-bold text-brand-muted flex-shrink-0">
+                            <span className="text-[10px] font-mono font-bold text-[#B4F523] flex-shrink-0">
                               {String(lIdx + 1).padStart(2, '0')}
                             </span>
-                            <span className="font-medium line-clamp-1">{lesson.title}</span>
+                            <span className="font-semibold text-white line-clamp-1">{lesson.title}</span>
                           </div>
 
                           <div className="flex items-center space-x-2 flex-shrink-0">
-                            <span className="text-[10px] text-brand-muted">{lesson.duration}</span>
+                            <span className="text-[10px] text-zinc-400">{lesson.duration}</span>
                             {lesson.is_preview ? (
-                              <span className="text-[10px] font-bold text-brand-emerald bg-white px-2 py-0.5 rounded-md border border-brand-emerald/30 shadow-sm flex items-center space-x-1">
-                                <Play className="w-2.5 h-2.5 fill-brand-emerald" />
-                                <span>Preview</span>
+                              <span className="text-[10px] font-bold text-black bg-[#B4F523] px-2 py-0.5 rounded-md shadow-sm flex items-center space-x-1">
+                                <Play className="w-2.5 h-2.5 fill-black" />
+                                <span>Ochiq</span>
                               </span>
                             ) : course.is_enrolled ? (
-                              <Play className="w-3.5 h-3.5 text-brand-emerald fill-brand-emerald" />
+                              <Play className="w-3.5 h-3.5 text-[#B4F523] fill-[#B4F523]" />
                             ) : (
-                              <Lock className="w-3.5 h-3.5 text-brand-muted" />
+                              <Lock className="w-3.5 h-3.5 text-zinc-500" />
                             )}
                           </div>
                         </div>
@@ -293,56 +293,56 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
         {/* Instructor Card */}
         <div className="space-y-3 pt-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-secondary">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
             Kurs Muallifi
           </h2>
-          <div className="bg-white rounded-2xl p-4 border border-brand-border shadow-soft flex items-start space-x-3.5">
+          <div className="bg-[#131318] rounded-3xl p-4 border border-white/5 shadow-soft flex items-start space-x-3.5">
             <img
-              src={course.instructor_avatar}
+              src={course.instructor_avatar || (course.instructor_name?.includes('Zuhra') ? '/images/zuhra_olimova.jpg' : '/images/yaxshi_bola.jpg')}
               alt={course.instructor_name}
-              className="w-14 h-14 rounded-2xl object-cover border border-brand-border flex-shrink-0"
+              className="w-14 h-14 rounded-2xl object-cover border-2 border-[#B4F523] flex-shrink-0 shadow-neonSm"
             />
             <div>
-              <h4 className="text-sm font-bold text-brand-dark">{course.instructor_name}</h4>
-              <span className="text-[11px] font-semibold text-brand-emerald block mt-0.5">
+              <h4 className="text-sm font-bold text-white">{course.instructor_name}</h4>
+              <span className="text-[11px] font-semibold text-[#B4F523] block mt-0.5">
                 {course.instructor_title}
               </span>
-              <p className="text-xs text-brand-secondary mt-1 leading-relaxed">
-                {course.instructor_bio}
+              <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
+                {course.instructor_bio || "Amaliy tajribaga ega yetakchi mutaxassis va platforma asoschisi."}
               </p>
             </div>
           </div>
         </div>
 
         {/* What You Get Features */}
-        <div className="bg-gradient-to-br from-brand-forest to-brand-dark text-white rounded-2xl p-4 shadow-elevated space-y-3 mt-4">
+        <div className="bg-[#131318] text-white rounded-3xl p-4 border border-white/5 shadow-soft space-y-3 mt-4">
           <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-brand-gold" />
-            <h3 className="text-sm font-bold text-brand-cream">Kursda nimalar mavjud?</h3>
+            <Sparkles className="w-4 h-4 text-[#B4F523]" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Kursda nimalar mavjud?</h3>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs text-white/90">
-            <div className="flex items-center space-x-2 bg-white/10 p-2 rounded-xl">
-              <CheckCircle2 className="w-4 h-4 text-brand-emerald" />
-              <span>Full HD Video darslar</span>
+          <div className="grid grid-cols-2 gap-2 text-xs text-zinc-200">
+            <div className="flex items-center space-x-2 bg-[#181820] p-2.5 rounded-xl border border-white/5">
+              <CheckCircle2 className="w-4 h-4 text-[#B4F523]" />
+              <span className="font-medium">Full HD Video darslar</span>
             </div>
-            <div className="flex items-center space-x-2 bg-white/10 p-2 rounded-xl">
-              <FileText className="w-4 h-4 text-brand-gold" />
-              <span>PDF Materiallar</span>
+            <div className="flex items-center space-x-2 bg-[#181820] p-2.5 rounded-xl border border-white/5">
+              <FileText className="w-4 h-4 text-[#B4F523]" />
+              <span className="font-medium">PDF Materiallar</span>
             </div>
-            <div className="flex items-center space-x-2 bg-white/10 p-2 rounded-xl">
-              <Award className="w-4 h-4 text-brand-emerald" />
-              <span>Rasmiy Sertifikat</span>
+            <div className="flex items-center space-x-2 bg-[#181820] p-2.5 rounded-xl border border-white/5">
+              <Award className="w-4 h-4 text-[#B4F523]" />
+              <span className="font-medium">Rasmiy Sertifikat</span>
             </div>
-            <div className="flex items-center space-x-2 bg-white/10 p-2 rounded-xl">
-              <ShieldCheck className="w-4 h-4 text-brand-gold" />
-              <span>Umrbod kirish</span>
+            <div className="flex items-center space-x-2 bg-[#181820] p-2.5 rounded-xl border border-white/5">
+              <ShieldCheck className="w-4 h-4 text-[#B4F523]" />
+              <span className="font-medium">1 Yillik Kirish</span>
             </div>
           </div>
         </div>
 
-        {/* FAQ Accordion */}
+        {/* FAQ Accordion - High Contrast Dark Cards */}
         <div className="space-y-3 pt-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-secondary">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
             Ko'p beriladigan savollar
           </h2>
           <div className="space-y-2">
@@ -351,24 +351,24 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               return (
                 <div
                   key={idx}
-                  className="bg-white rounded-2xl border border-brand-border/80 overflow-hidden shadow-sm"
+                  className="bg-[#131318] rounded-2xl border border-white/5 overflow-hidden shadow-soft transition-all"
                 >
                   <button
                     onClick={() => {
                       haptic.impact('light');
                       setOpenFaqIndex(isOpen ? null : idx);
                     }}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-brand-surface"
+                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
                   >
-                    <span className="text-xs font-bold text-brand-dark pr-2">{faq.q}</span>
+                    <span className="text-xs font-bold text-white pr-2 leading-snug">{faq.q}</span>
                     {isOpen ? (
-                      <ChevronUp className="w-4 h-4 text-brand-secondary flex-shrink-0" />
+                      <ChevronUp className="w-4 h-4 text-[#B4F523] flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-brand-secondary flex-shrink-0" />
+                      <ChevronDown className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                     )}
                   </button>
                   {isOpen && (
-                    <div className="px-3.5 pb-3.5 pt-0 text-xs text-brand-secondary leading-relaxed border-t border-brand-border/40 mt-1">
+                    <div className="px-3.5 pb-3.5 pt-2 text-xs text-zinc-300 leading-relaxed border-t border-white/5">
                       {faq.a}
                     </div>
                   )}
@@ -379,14 +379,14 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         </div>
       </div>
 
-      {/* Sticky Bottom Purchase Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-brand-border p-3.5 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+      {/* Sticky Bottom Purchase Action Bar - Dark OLED Luxury */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0E0E12]/95 backdrop-blur-2xl border-t border-white/10 p-3.5 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.8)]">
         <div className="max-w-md mx-auto flex items-center justify-between space-x-4">
           <div>
-            <span className="text-[10px] font-semibold text-brand-secondary uppercase block">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
               Jami to'lov:
             </span>
-            <span className="text-base font-bold font-serif text-brand-dark">
+            <span className="text-base font-black text-[#B4F523]">
               {formatPrice(course.price)}
             </span>
           </div>
@@ -395,7 +395,6 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             onClick={() => {
               haptic.impact('medium');
               if (course.is_enrolled) {
-                // To'g'ridan-to'g'ri darsga o'tish
                 if (course.modules?.[0]?.lessons?.[0]) {
                   onPlayLesson(course, course.modules[0].lessons[0]);
                 }
@@ -403,10 +402,10 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                 onPurchase(course);
               }
             }}
-            className="flex-1 py-3.5 bg-brand-emerald text-white font-bold rounded-2xl shadow-elevated hover:bg-brand-deep active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm tracking-wide"
+            className="flex-1 py-3.5 bg-[#B4F523] text-black font-black rounded-2xl shadow-neon hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm tracking-wide"
           >
             <span>{course.is_enrolled ? 'Darslarni davom ettirish' : 'Kursni sotib olish'}</span>
-            <Sparkles className="w-4 h-4 text-brand-gold" />
+            <Sparkles className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
       </div>

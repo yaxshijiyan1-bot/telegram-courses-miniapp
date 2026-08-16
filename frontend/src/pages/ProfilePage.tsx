@@ -48,15 +48,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                        user?.telegram_id === 8544023815 || 
                        user?.telegram_id === 8112688757;
 
-  // Haftalik kunlar (Rasmdagi kabi streak)
+  // Haftalik kunlar (Streak)
   const weekDays = [
-    { day: 'Mon', date: 19, active: true },
-    { day: 'Tue', date: 20, active: true },
-    { day: 'Wen', date: 21, active: true },
-    { day: 'Thu', date: 22, current: true, active: true },
-    { day: 'Fri', date: 23, active: false },
-    { day: 'Sat', date: 24, active: false },
-    { day: 'Sun', date: 25, active: false },
+    { day: 'Du', date: 19, active: true },
+    { day: 'Se', date: 20, active: true },
+    { day: 'Chor', date: 21, active: true },
+    { day: 'Pay', date: 22, current: true, active: true },
+    { day: 'Jum', date: 23, active: false },
+    { day: 'Shan', date: 24, active: false },
+    { day: 'Yak', date: 25, active: false },
   ];
 
   return (
@@ -98,7 +98,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
           <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span className="text-xs font-black">8 Lvl</span>
+            <span className="text-xs font-black">8-daraja</span>
           </div>
           <span className="text-[10px] text-zinc-400 block font-medium">Daraja</span>
         </div>
