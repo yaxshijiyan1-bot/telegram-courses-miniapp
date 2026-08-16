@@ -1,14 +1,30 @@
 import os
+import asyncio
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api import auth, courses, checkout, student, admin
+from bot_service import start_telegram_bot_polling
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Telegram bot pollingni fon jarayoni sifatida ishga tushirish
+    bot_task = asyncio.create_task(start_telegram_bot_polling())
+    yield
+    # Shutdown: Botni to'xtatish
+    bot_task.cancel()
+    try:
+        await bot_task
+    except asyncio.CancelledError:
+        pass
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Telegram Mini App — Premium Kurslar Platformasi uchun Backend API"
+    description="Telegram Mini App — Premium Kurslar Platformasi uchun Backend API",
+    lifespan=lifespan
 )
 
 # CORS sozlamalari (Vercel frontend va Telegram Mini App uchun)
