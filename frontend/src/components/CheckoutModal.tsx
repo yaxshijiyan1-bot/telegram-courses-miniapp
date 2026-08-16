@@ -109,7 +109,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       if (!response.ok) {
         // Xatolikni yashirmaymiz — foydalanuvchiga ko'rsatamiz
         setIsProcessing(false);
-        setErrorMsg(resData.detail || 'Chek yuborishda xatolik yuz berdi. Internetni tekshirib, qayta urinib ko\'ring.');
+        if (response.status === 401) {
+          api.clearCredentials();
+          setErrorMsg('Sessiya muddati tugagan. Iltimos, Mini Appni yopib, qaytadan oching va Telegram orqali kiring.');
+        } else {
+          setErrorMsg(resData.detail || 'Chek yuborishda xatolik yuz berdi. Internetni tekshirib, qayta urinib ko\'ring.');
+        }
         haptic.notification('error');
         return;
       }

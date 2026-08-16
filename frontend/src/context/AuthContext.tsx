@@ -32,13 +32,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { webApp, user: tgUser } = useTelegram();
 
   useEffect(() => {
-    // LocalStorage tekshirish
+    let cancelled = false;
     const savedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
 
     if (savedUser && token) {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsed = JSON.parse(savedUser);
+        // Tokenni serverda tekshiramiz: eski/yaroqsiz bo'lsa sessiyani tozalab, login'ga qaytaramiz
+        api.verifyToken().then(status => {
+          if (cancelled) return;
+          if (status === 'valid') {
+            setUser(parsed);
+          } else if (status === 'invalid') {
+            api.clearCredentials();
+          } else {
+            // Offline — lokalkira saqlab qolamiz
+            setUser(parsed);
+          }
+        });
       } catch {
         localStorage.removeItem('user');
         localStorage.removeItem('token');

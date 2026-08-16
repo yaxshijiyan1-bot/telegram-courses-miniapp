@@ -451,6 +451,24 @@ class ApiService {
     return null;
   }
 
+  // ===== SESSION TEKSHIRUVI =====
+
+  async verifyToken(): Promise<'valid' | 'invalid' | 'offline'> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, { headers: this.getHeaders() });
+      if (res.ok) return 'valid';
+      if (res.status === 401 || res.status === 403) return 'invalid';
+      return 'offline';
+    } catch {
+      return 'offline';
+    }
+  }
+
+  clearCredentials() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+
   // ===== ADMIN API =====
 
   private async adminFetch(path: string, options: RequestInit = {}): Promise<any> {
@@ -464,6 +482,11 @@ class ApiService {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (res.status === 401) {
+        // Token yaroqsiz/eski — sessiyani tozalaymiz
+        this.clearCredentials();
+        throw new Error('Sessiya muddati tugagan. Iltimos, chiqib, qaytadan kiring.');
+      }
       throw new Error(data.detail || `Xato: ${res.status}`);
     }
     return data;
