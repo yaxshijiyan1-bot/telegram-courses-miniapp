@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import {
-  User as UserIcon,
   Award,
   Bell,
   Shield,
-  HelpCircle,
   LogOut,
   ChevronRight,
   Sparkles,
   Download,
   CheckCircle2,
   X,
-  ShieldAlert,
-  MessageCircle
+  MessageCircle,
+  Trophy,
+  Users,
+  Flame,
+  Calendar,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
@@ -45,290 +48,354 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                        user?.telegram_id === 8544023815 || 
                        user?.telegram_id === 8112688757;
 
-  return (
-    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 animate-in fade-in duration-200">
-      {/* Profile Info Header */}
-      <div className="bg-white rounded-hero p-5 border border-brand-border/80 shadow-soft text-center space-y-3 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-mint/40 rounded-full blur-2xl pointer-events-none" />
+  // Haftalik kunlar (Rasmdagi kabi streak)
+  const weekDays = [
+    { day: 'Mon', date: 19, active: true },
+    { day: 'Tue', date: 20, active: true },
+    { day: 'Wen', date: 21, active: true },
+    { day: 'Thu', date: 22, current: true, active: true },
+    { day: 'Fri', date: 23, active: false },
+    { day: 'Sat', date: 24, active: false },
+    { day: 'Sun', date: 25, active: false },
+  ];
 
-        <div className="relative inline-block">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-emerald to-brand-forest text-white flex items-center justify-center text-2xl font-bold font-serif mx-auto shadow-elevated border-2 border-brand-gold/40">
-            {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+  return (
+    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 text-white animate-in fade-in duration-200">
+      
+      {/* 1. TOP USER IDENTITY (Rasmdagi kabi doiraviy neon avatar va ism) */}
+      <div className="flex flex-col items-center text-center space-y-2 pt-2">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full p-1 border-2 border-dashed border-[#B4F523] flex items-center justify-center">
+            <img
+              src="/images/yaxshi_bola.jpg"
+              alt="Avatar"
+              className="w-full h-full rounded-full object-cover shadow-elevated"
+            />
           </div>
-          <span className="absolute bottom-0 right-0 w-5 h-5 bg-brand-emerald border-2 border-white rounded-full flex items-center justify-center">
-            <CheckCircle2 className="w-3 h-3 text-white" />
-          </span>
+          <span className="absolute bottom-1 right-1 w-4 h-4 bg-[#B4F523] border-2 border-[#09090C] rounded-full" />
         </div>
 
         <div>
-          <h2 className="text-base font-bold text-brand-dark">{user?.name || 'Yaxshi Bola'}</h2>
-          <p className="text-xs text-brand-secondary mt-0.5">@{user?.username || 'yomonboia'}</p>
-          <div className="inline-flex items-center space-x-1 mt-2 bg-brand-mint px-2.5 py-0.5 rounded-full text-[10px] font-bold text-brand-emerald uppercase tracking-wider">
-            <Sparkles className="w-3 h-3 text-brand-gold" />
-            <span>{isSuperadmin ? '👑 Superadmin' : 'Premium Student'}</span>
+          <h2 className="text-lg font-bold tracking-tight text-white">
+            {user?.name || 'Yaxshi Bola'}
+          </h2>
+          <p className="text-xs text-zinc-400">@{user?.username || 'yomonboia'}</p>
+        </div>
+      </div>
+
+      {/* 2. 3 TA METRIKA (Rasmdagi 70% Win/Lose, 8 Level, 76 Days kabi) */}
+      <div className="grid grid-cols-3 gap-2 pt-1">
+        {/* Progress % */}
+        <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
+          <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
+            <Flame className="w-3.5 h-3.5 fill-[#B4F523]" />
+            <span className="text-xs font-black">78%</span>
+          </div>
+          <span className="text-[10px] text-zinc-400 block font-medium">Natija</span>
+        </div>
+
+        {/* Level */}
+        <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
+          <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span className="text-xs font-black">8 Lvl</span>
+          </div>
+          <span className="text-[10px] text-zinc-400 block font-medium">Daraja</span>
+        </div>
+
+        {/* Days */}
+        <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
+          <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
+            <Calendar className="w-3.5 h-3.5" />
+            <span className="text-xs font-black">35 Kun</span>
+          </div>
+          <span className="text-[10px] text-zinc-400 block font-medium">Davomiylik</span>
+        </div>
+      </div>
+
+      {/* 3. HAFTALIK KALENDAR STREAK (Rasmdagi Mon 19, Thu 22 kartochkalari) */}
+      <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+            Haftalik Faollik
+          </span>
+          <span className="text-[10px] font-bold text-[#B4F523]">
+            4/7 kun bajarildi
+          </span>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1.5 pt-1">
+          {weekDays.map((item, i) => (
+            <div
+              key={i}
+              className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl text-center transition-all ${
+                item.current
+                  ? 'bg-[#1B1B22] border-1.5 border-[#B4F523] shadow-neonSm'
+                  : 'bg-[#181820]/60 border border-white/5'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full mb-1 ${item.active ? 'bg-[#B4F523]' : 'bg-zinc-600'}`} />
+              <span className="text-[10px] text-zinc-400 font-medium">{item.day}</span>
+              <span className={`text-xs font-bold mt-0.5 ${item.current ? 'text-[#B4F523]' : 'text-white'}`}>
+                {item.date}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. 2 TA IXCHAM BLOK (Friends & Keep it up Trophy) */}
+      <div className="grid grid-cols-2 gap-2.5">
+        {/* Friends / Kursdoshlar */}
+        <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 flex flex-col justify-between space-y-3">
+          <div className="flex -space-x-2 overflow-hidden pt-1">
+            <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#131318] object-cover" src="/images/yaxshi_bola.jpg" alt="" />
+            <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#131318] object-cover" src="/images/zuhra_olimova.jpg" alt="" />
+            <div className="inline-flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-[#131318] bg-zinc-800 text-[10px] font-bold text-[#B4F523]">
+              +12
+            </div>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-white">Kursdoshlar</h4>
+            <span className="text-[10px] text-[#B4F523] font-semibold flex items-center space-x-1 mt-0.5">
+              <span className="w-1.5 h-1.5 bg-[#B4F523] rounded-full animate-ping" />
+              <span>14 nafar onlayn</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Keep it up! 3D Trophy */}
+        <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 flex flex-col justify-between relative overflow-hidden">
+          <div className="space-y-1 relative z-10">
+            <h4 className="text-xs font-bold text-white">Yutuqlar</h4>
+            <p className="text-[10px] text-zinc-400">35 kun ketma-ket darsda!</p>
+            {/* 5 ta progress nuqtalari */}
+            <div className="flex items-center space-x-1 pt-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+            </div>
+          </div>
+
+          <div className="w-12 h-12 rounded-2xl bg-[#1B1B22] text-[#B4F523] flex items-center justify-center self-end shadow-soft mt-1">
+            <Trophy className="w-6 h-6" />
           </div>
         </div>
       </div>
 
-      {/* Menu Navigation List */}
-      <div className="bg-white rounded-card border border-brand-border/80 shadow-soft overflow-hidden divide-y divide-brand-border/60">
-        {/* Admin Dashboard Entry (Ikkala teng huquqli admin uchun) */}
+      {/* 5. KATTA GORIZONTAL KARTOCKA (Rasmdagi Complete new tasks kabi) */}
+      <button
+        onClick={() => {
+          haptic.impact('light');
+          onNavigateToCourses();
+        }}
+        className="w-full p-4 bg-gradient-to-r from-[#181820] to-[#131318] rounded-3xl border border-white/10 flex items-center justify-between text-left hover:border-[#B4F523]/40 active:scale-[0.98] transition-all shadow-soft group"
+      >
+        <div className="flex items-center space-x-3 min-w-0">
+          <div className="w-12 h-12 rounded-2xl bg-[#B4F523]/15 border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center flex-shrink-0 shadow-neonSm group-hover:scale-105 transition-transform">
+            <Layers className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-xs font-bold text-white group-hover:text-[#B4F523] transition-colors">
+              Yangi amaliy darslarni boshlash
+            </h4>
+            <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
+              Vazifalarni topshiring va +250 XP bonus oling
+            </p>
+          </div>
+        </div>
+        <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-[#B4F523] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+      </button>
+
+      {/* 6. ADMIN DASHBOARD & SOZLAMALAR RO'YXATI */}
+      <div className="bg-[#131318] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-soft">
+        {/* Superadmin Panel */}
         {isSuperadmin && (
           <button
             onClick={() => {
               haptic.impact('medium');
               setActiveModal('admin');
             }}
-            className="w-full p-4 flex items-center justify-between bg-brand-mint/20 hover:bg-brand-mint/40 text-left transition-colors"
+            className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-xl bg-brand-emerald text-white flex items-center justify-center shadow-sm">
-                <ShieldAlert className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-[#B4F523]/15 text-[#B4F523] flex items-center justify-center">
+                <Shield className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-brand-emerald">Superadmin Dashboard</h4>
-                <p className="text-[10px] text-brand-secondary">Cheklar, tushumlar, kurslar & CRM</p>
+                <span className="text-xs font-bold text-white block">👑 Superadmin Panel</span>
+                <span className="text-[10px] text-[#B4F523]">Kurslar, Cheklar & Baza</span>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-brand-emerald" />
+            <ChevronRight className="w-4 h-4 text-zinc-500" />
           </button>
         )}
 
+        {/* Sertifikatlar */}
         <button
           onClick={() => {
             haptic.impact('light');
             setActiveModal('certificates');
           }}
-          className="w-full p-4 flex items-center justify-between hover:bg-brand-surface text-left transition-colors"
+          className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
               <Award className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-brand-dark">Sertifikatlarim</h4>
-              <p className="text-[10px] text-brand-secondary">Bitirgan kurslar sertifikatlari</p>
+              <span className="text-xs font-bold text-white block">Mening Sertifikatlarim</span>
+              <span className="text-[10px] text-zinc-400">{certificates.length} ta rasmiy sertifikat</span>
             </div>
           </div>
-          <div className="flex items-center space-x-1.5 text-xs text-brand-emerald font-bold">
-            <span>{certificates.length} ta</span>
-            <ChevronRight className="w-4 h-4 text-brand-muted" />
-          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-500" />
         </button>
 
+        {/* Bildirishnomalar */}
         <button
           onClick={() => {
             haptic.impact('light');
             setActiveModal('notifications');
           }}
-          className="w-full p-4 flex items-center justify-between hover:bg-brand-surface text-left transition-colors"
+          className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-brand-mint text-brand-emerald flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
               <Bell className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-brand-dark">Bildirishnomalar</h4>
-              <p className="text-[10px] text-brand-secondary">Tizim xabarlari va yangiliklar</p>
+              <span className="text-xs font-bold text-white block">Xabarnomalar</span>
+              <span className="text-[10px] text-zinc-400">{notifications.length} ta xabar</span>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-brand-muted" />
+          <ChevronRight className="w-4 h-4 text-zinc-500" />
         </button>
 
+        {/* Chiqish */}
         <button
-          onClick={() => {
-            haptic.impact('light');
-            onNavigateToCourses();
-          }}
-          className="w-full p-4 flex items-center justify-between hover:bg-brand-surface text-left transition-colors"
+          onClick={handleLogout}
+          className="w-full p-3.5 flex items-center justify-between hover:bg-red-500/10 transition-colors text-left text-red-400"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Shield className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center">
+              <LogOut className="w-4 h-4" />
             </div>
-            <div>
-              <h4 className="text-xs font-bold text-brand-dark">Katalog va Xaridlar</h4>
-              <p className="text-[10px] text-brand-secondary">Yangi kurslar kashf qilish</p>
-            </div>
+            <span className="text-xs font-bold">Hisobdan chiqish</span>
           </div>
-          <ChevronRight className="w-4 h-4 text-brand-muted" />
         </button>
       </div>
 
-      {/* Bog'lanish va Yordam Markazi (Adminlar tanlovi) */}
-      <div className="bg-white rounded-card border border-brand-border/80 shadow-soft p-4 space-y-3">
+      {/* 7. ADMIN BILAN BOG'LANISH (Yigitlar / Qizlar) */}
+      <div className="bg-[#131318] rounded-3xl p-4 border border-white/5 space-y-3 shadow-soft">
         <div className="flex items-center space-x-2">
-          <HelpCircle className="w-4 h-4 text-brand-emerald" />
-          <h3 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
-            Admin Bilan Bog'lanish
+          <MessageCircle className="w-4 h-4 text-[#B4F523]" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+            Admin bilan bog'lanish
           </h3>
         </div>
 
-        <p className="text-[11px] text-brand-secondary leading-relaxed">
-          Savol, to'lov yoki yordam uchun o'zingizga mos bo'limni tanlang:
-        </p>
-
         <div className="space-y-2">
-          {/* Yigitlar uchun -> Yaxshi Bola */}
+          {/* Yigitlar uchun */}
           <a
             href="https://t.me/yomonboia"
             target="_blank"
             rel="noreferrer"
-            className="p-3 bg-brand-surface hover:bg-brand-mint/40 rounded-2xl border border-brand-border/80 flex items-center justify-between transition-all group"
+            className="p-3 bg-[#181820] hover:border-[#B4F523]/40 rounded-2xl border border-white/5 flex items-center justify-between transition-all"
           >
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-[#B4F523]/15 text-[#B4F523] flex items-center justify-center font-bold text-xs">
                 👨‍💼
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold text-brand-emerald uppercase tracking-wider block">
-                  Yigitlar (O'g'il bolalar) uchun
-                </span>
-                <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
-                  Yaxshi Bola (@yomonboia)
-                </h4>
+              <div>
+                <span className="text-[9px] font-bold text-[#B4F523] uppercase block">Yigitlar uchun</span>
+                <h4 className="text-xs font-bold text-white">Yaxshi Bola (@yomonboia)</h4>
               </div>
             </div>
-            <span className="px-2.5 py-1 bg-brand-emerald text-white rounded-xl text-[10px] font-bold flex-shrink-0 shadow-sm">
+            <span className="px-2.5 py-1 bg-[#B4F523] text-black rounded-xl text-[10px] font-bold">
               Yozish ↗
             </span>
           </a>
 
-          {/* Qizlar uchun -> Zuhra Olimova */}
+          {/* Qizlar uchun */}
           <a
             href="https://t.me/sokin_notalar"
             target="_blank"
             rel="noreferrer"
-            className="p-3 bg-brand-surface hover:bg-brand-mint/40 rounded-2xl border border-brand-border/80 flex items-center justify-between transition-all group"
+            className="p-3 bg-[#181820] hover:border-[#B4F523]/40 rounded-2xl border border-white/5 flex items-center justify-between transition-all"
           >
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-[#B4F523]/15 text-[#B4F523] flex items-center justify-center font-bold text-xs">
                 👩‍💼
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold text-brand-emerald uppercase tracking-wider block">
-                  Qizlar (Ayollar) uchun
-                </span>
-                <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
-                  Zuhra Olimova (@sokin_notalar)
-                </h4>
+              <div>
+                <span className="text-[9px] font-bold text-[#B4F523] uppercase block">Qizlar uchun</span>
+                <h4 className="text-xs font-bold text-white">Zuhra Olimova (@sokin_notalar)</h4>
               </div>
             </div>
-            <span className="px-2.5 py-1 bg-brand-emerald text-white rounded-xl text-[10px] font-bold flex-shrink-0 shadow-sm">
+            <span className="px-2.5 py-1 bg-[#B4F523] text-black rounded-xl text-[10px] font-bold">
               Yozish ↗
             </span>
           </a>
         </div>
-
-        {/* Rasmiy Bot */}
-        <a
-          href="https://t.me/kurslarimizbot"
-          target="_blank"
-          rel="noreferrer"
-          className="w-full py-2.5 bg-brand-mint/40 hover:bg-brand-mint text-brand-emerald rounded-2xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-all border border-brand-emerald/20"
-        >
-          <MessageCircle className="w-3.5 h-3.5" />
-          <span>Rasmiy Bot: @kurslarimizbot</span>
-        </a>
       </div>
 
-      {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="w-full py-3.5 bg-red-50 text-red-600 font-bold rounded-2xl border border-red-200/60 hover:bg-red-100/60 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-xs"
-      >
-        <LogOut className="w-4 h-4" />
-        <span>Hisobdan chiqish</span>
-      </button>
-
-      {/* Admin Dashboard Modal */}
+      {/* ADMIN DASHBOARD MODAL */}
       <AdminDashboardModal
         isOpen={activeModal === 'admin'}
         onClose={() => setActiveModal(null)}
         adminName={user?.name || 'Yaxshi Bola'}
       />
 
-      {/* Certificates Modal */}
+      {/* SERTIFIKATLAR MODAL */}
       {activeModal === 'certificates' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-brand-border space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-brand-border pb-3">
-              <div className="flex items-center space-x-2">
-                <Award className="w-5 h-5 text-brand-gold" />
-                <h3 className="text-sm font-bold text-brand-dark">Sertifikatlarim</h3>
-              </div>
-              <button
-                onClick={() => setActiveModal(null)}
-                className="w-7 h-7 rounded-full bg-brand-surface flex items-center justify-center text-brand-secondary"
-              >
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-bold">Sertifikatlarim</h3>
+              <button onClick={() => setActiveModal(null)} className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            {certificates.map((cert) => (
-              <div
-                key={cert.id}
-                className="bg-gradient-to-br from-brand-cream to-brand-surface rounded-2xl p-4 border-2 border-brand-gold/30 shadow-soft space-y-3"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-brand-emerald">
-                      Rasmiy Sertifikat
-                    </span>
-                    <h4 className="text-xs font-serif font-bold text-brand-dark mt-0.5">
-                      {cert.course_title}
-                    </h4>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {certificates.length > 0 ? (
+                certificates.map((cert) => (
+                  <div key={cert.id} className="p-3 bg-[#181820] rounded-2xl border border-white/5 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold">{cert.course_title}</h4>
+                      <span className="text-[10px] text-[#B4F523]">{cert.certificate_code}</span>
+                    </div>
+                    {cert.certificate_url && (
+                      <a href={cert.certificate_url} target="_blank" rel="noreferrer" className="p-2 bg-[#B4F523] text-black rounded-xl">
+                        <Download className="w-3.5 h-3.5" />
+                      </a>
+                    )}
                   </div>
-                  <Sparkles className="w-4 h-4 text-brand-gold flex-shrink-0" />
-                </div>
-
-                <div className="text-[10px] text-brand-secondary space-y-0.5 pt-1 border-t border-brand-gold/20">
-                  <p>Talaba: <span className="font-bold text-brand-dark">{cert.student_name}</span></p>
-                  <p>Kod: <span className="font-mono text-brand-emerald">{cert.certificate_code}</span></p>
-                  <p>Berilgan sana: {cert.issued_at}</p>
-                </div>
-
-                <button
-                  onClick={() => haptic.notification('success')}
-                  className="w-full py-2 bg-brand-emerald text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 shadow-sm"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Sertifikatni yuklab olish (PDF)</span>
-                </button>
-              </div>
-            ))}
+                ))
+              ) : (
+                <p className="text-xs text-zinc-500 text-center py-4">Kursni to'liq bitiring va QR sertifikat oling!</p>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Notifications Modal */}
+      {/* BILDIRISHNOMALAR MODAL */}
       {activeModal === 'notifications' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-brand-border space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-brand-border pb-3">
-              <div className="flex items-center space-x-2">
-                <Bell className="w-5 h-5 text-brand-emerald" />
-                <h3 className="text-sm font-bold text-brand-dark">Bildirishnomalar</h3>
-              </div>
-              <button
-                onClick={() => setActiveModal(null)}
-                className="w-7 h-7 rounded-full bg-brand-surface flex items-center justify-center text-brand-secondary"
-              >
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-bold">Xabarnomalar</h3>
+              <button onClick={() => setActiveModal(null)} className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            <div className="space-y-2.5">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className="p-3 bg-brand-surface rounded-xl border border-brand-border/60 space-y-1"
-                >
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-brand-dark">{notif.title}</h4>
-                    <span className="text-[9px] text-brand-muted">{notif.created_at}</span>
-                  </div>
-                  <p className="text-[11px] text-brand-secondary leading-relaxed">{notif.message}</p>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {notifications.map((n) => (
+                <div key={n.id} className="p-3 bg-[#181820] rounded-2xl border border-white/5 space-y-1">
+                  <h4 className="text-xs font-bold text-white">{n.title}</h4>
+                  <p className="text-[11px] text-zinc-400">{n.message}</p>
                 </div>
               ))}
             </div>

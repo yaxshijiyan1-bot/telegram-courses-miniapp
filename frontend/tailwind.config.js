@@ -7,38 +7,45 @@ export default {
   theme: {
     extend: {
       colors: {
+        darkBg: '#09090C',
+        darkCard: '#131318',
+        darkCardElevated: '#1B1B22',
+        darkBorder: 'rgba(255, 255, 255, 0.08)',
+        darkBorderLight: 'rgba(255, 255, 255, 0.14)',
+        limeNeon: '#B4F523',
+        limeSoft: 'rgba(180, 245, 35, 0.15)',
         brand: {
-          emerald: '#159A6B',
-          deep: '#0D6B4E',
-          forest: '#103F32',
-          dark: '#082C24',
-          mint: '#E6F5EF',
-          soft: '#D7EEE5',
-          surface: '#F4FAF7',
-          cream: '#FBF8F1',
-          warmWhite: '#FFFDFC',
-          gold: '#C9A96B',
-          goldSoft: '#D9C18D',
-          text: '#17352D',
-          secondary: '#6B8179',
-          muted: '#96A69F',
-          border: '#E3ECE8'
+          emerald: '#B4F523',
+          deep: '#84CC16',
+          forest: '#131318',
+          dark: '#FFFFFF',
+          mint: 'rgba(180, 245, 35, 0.12)',
+          soft: '#1B1B22',
+          surface: '#131318',
+          cream: '#09090C',
+          warmWhite: '#181820',
+          gold: '#B4F523',
+          goldSoft: 'rgba(180, 245, 35, 0.2)',
+          text: '#FFFFFF',
+          secondary: '#A1A1AA',
+          muted: '#71717A',
+          border: 'rgba(255, 255, 255, 0.08)'
         }
       },
       fontFamily: {
-        serif: ['"Playfair Display"', 'Georgia', 'serif'],
         sans: ['"Inter"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        'card': '20px',
-        'hero': '26px',
-        'btn': '14px',
-        'input': '12px'
+        '3xl': '24px',
+        '4xl': '32px',
+        'card': '22px',
+        'btn': '16px',
       },
       boxShadow: {
-        'soft': '0 4px 20px -2px rgba(13, 107, 78, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
-        'elevated': '0 12px 32px -4px rgba(13, 107, 78, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.05)',
-        'gold': '0 4px 20px -2px rgba(201, 169, 107, 0.25)',
+        'soft': '0 8px 30px rgba(0, 0, 0, 0.5)',
+        'elevated': '0 16px 40px rgba(0, 0, 0, 0.7)',
+        'neon': '0 0 25px rgba(180, 245, 35, 0.35)',
+        'neonSm': '0 0 12px rgba(180, 245, 35, 0.25)',
       }
     },
   },

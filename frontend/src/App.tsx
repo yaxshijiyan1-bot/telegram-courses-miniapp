@@ -196,7 +196,7 @@ export const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-brand-cream relative">
+    <div className="flex-1 flex flex-col min-h-screen bg-[#09090C] text-white relative">
       {/* Top App Header */}
       <Header />
 

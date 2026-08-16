@@ -150,47 +150,51 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         </div>
 
         {/* Pricing Card */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-border shadow-soft flex items-center justify-between">
+        <div className="bg-[#131318] rounded-3xl p-4 border border-white/5 shadow-soft flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-brand-secondary uppercase tracking-wider block">
-              Xarid narxi:
+            <span className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
+              1 Yillik Kafolatlangan Kirish
             </span>
             <div className="flex items-baseline space-x-2 mt-0.5">
-              <span className="text-xl font-bold font-serif text-brand-dark">
+              <span className="text-xl font-bold text-white">
                 {formatPrice(course.price)}
               </span>
               {course.old_price && (
-                <span className="text-xs text-brand-muted line-through">
+                <span className="text-xs text-zinc-500 line-through">
                   {formatPrice(course.old_price)}
                 </span>
               )}
             </div>
           </div>
 
-          {course.discount_percent && (
-            <span className="text-xs font-bold text-white bg-rose-500 px-2.5 py-1 rounded-xl shadow-sm">
-              -{course.discount_percent}% chegirma
-            </span>
-          )}
+          <button
+            onClick={() => {
+              haptic.impact('medium');
+              onPurchase(course);
+            }}
+            className="px-4 py-2.5 bg-[#B4F523] text-black font-bold text-xs rounded-2xl shadow-neonSm hover:opacity-90 active:scale-95 transition-all"
+          >
+            Sotib olish
+          </button>
         </div>
 
         {/* What You'll Learn (01-05 Cards) */}
         <div className="space-y-3 pt-2">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-secondary">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
             Bu kursda nimalarni o‘rganasiz?
           </h2>
           <div className="space-y-2">
             {benefits.map((b) => (
               <div
                 key={b.num}
-                className="flex items-start space-x-3.5 p-3.5 bg-white rounded-2xl border border-brand-border/80 shadow-sm"
+                className="flex items-start space-x-3.5 p-3.5 bg-[#131318] rounded-2xl border border-white/5 shadow-soft"
               >
-                <span className="font-serif font-bold text-base text-brand-emerald bg-brand-mint px-2 py-0.5 rounded-lg flex-shrink-0">
+                <span className="font-bold text-xs text-[#B4F523] bg-[#181820] border border-[#B4F523]/20 px-2 py-0.5 rounded-lg flex-shrink-0">
                   {b.num}
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-brand-dark">{b.title}</h4>
-                  <p className="text-[11px] text-brand-secondary mt-0.5 leading-relaxed">{b.desc}</p>
+                  <h4 className="text-xs font-bold text-white">{b.title}</h4>
+                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">{b.desc}</p>
                 </div>
               </div>
             ))}
@@ -200,10 +204,10 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         {/* Curriculum Accordion */}
         <div className="space-y-3 pt-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-brand-secondary">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
               Darslar dasturi
             </h2>
-            <span className="text-xs text-brand-emerald font-semibold">
+            <span className="text-xs text-[#B4F523] font-semibold">
               {course.lesson_count} ta dars
             </span>
           </div>
@@ -214,7 +218,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               return (
                 <div
                   key={module.id}
-                  className="bg-white rounded-2xl border border-brand-border/80 overflow-hidden shadow-sm transition-all"
+                  className="bg-[#131318] rounded-2xl border border-white/5 overflow-hidden shadow-soft transition-all"
                 >
                   {/* Module Header */}
                   <button
@@ -222,20 +226,20 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                       haptic.impact('light');
                       setOpenModuleId(isOpen ? null : module.id);
                     }}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-brand-surface transition-colors"
+                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
                   >
                     <div>
-                      <h4 className="text-xs font-bold text-brand-dark leading-snug">
+                      <h4 className="text-xs font-bold text-white leading-snug">
                         {module.title}
                       </h4>
-                      <span className="text-[10px] text-brand-secondary font-medium">
+                      <span className="text-[10px] text-zinc-400 font-medium">
                         {module.lessons.length} ta amaliy dars
                       </span>
                     </div>
                     {isOpen ? (
-                      <ChevronUp className="w-4 h-4 text-brand-secondary" />
+                      <ChevronUp className="w-4 h-4 text-zinc-400" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-brand-secondary" />
+                      <ChevronDown className="w-4 h-4 text-zinc-400" />
                     )}
                   </button>
 
