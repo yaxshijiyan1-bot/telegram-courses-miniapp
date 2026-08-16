@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { InlineLoader } from 'generative-loaders';
 
 interface CheckoutModalProps {
   course: Course;
@@ -251,21 +252,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </label>
             </div>
 
-            {/* Action Button */}
+            {/* Action Button with Generative Loader */}
             <button
               onClick={handleSubmitReceipt}
               disabled={isProcessing}
               className={`w-full py-3.5 font-bold rounded-2xl shadow-elevated flex items-center justify-center space-x-2 transition-all ${
                 isProcessing
-                  ? 'bg-brand-muted text-white cursor-not-allowed'
+                  ? 'bg-brand-emerald/80 text-white cursor-not-allowed'
                   : 'bg-brand-emerald text-white hover:bg-brand-deep active:scale-[0.98]'
               }`}
             >
               {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-xs">Chek tekshiruvga yuborilmoqda...</span>
-                </>
+                <div className="flex items-center space-x-2">
+                  <InlineLoader variant="orbit" size={18} color="#ffffff" />
+                  <span className="text-xs font-semibold">Chek adminlarga uzatilmoqda...</span>
+                </div>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 text-brand-gold" />
