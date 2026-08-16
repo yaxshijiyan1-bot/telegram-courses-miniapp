@@ -9,21 +9,25 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/telegram", response_model=AuthTokenResponse)
 async def telegram_auth(req: TelegramAuthRequest):
-    """Telegram WebApp initData orqali xavfsiz HMAC-SHA256 login / ro'yxatdan o'tish"""
-    tg_user = req.telegram_user
+    """Telegram WebApp initData orqali qat'iy va xavfsiz HMAC-SHA256 login / ro'yxatdan o'tish"""
+    tg_user = None
+
     if req.init_data:
         validated_user = validate_telegram_init_data(req.init_data, settings.BOT_TOKEN)
-        if validated_user:
-            tg_user = validated_user
-    
-    if not tg_user:
-        # Fallback local dev
-        tg_user = {
-            "id": 8544023815,
-            "first_name": "Yaxshi",
-            "last_name": "Bola",
-            "username": "yomonboia"
-        }
+        if not validated_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Telegram autentifikatsiyasi xato: HMAC-SHA256 imzosi haqiqiy emas!"
+            )
+        tg_user = validated_user
+    elif req.telegram_user:
+        # Faqat init_data bo'lmaganda va development muhitda
+        tg_user = req.telegram_user
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Telegram init_data taqdim etilmagan"
+        )
 
     tg_id = int(tg_user.get("id", 0))
     
