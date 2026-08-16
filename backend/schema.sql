@@ -159,12 +159,10 @@ ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- PUBLIC READ POLICIES (anon & authenticated)
+-- FAQAT ommaviy kontent ochiq: kurslar, modullar, darslar (published).
+-- Shaxsiy jadvallar (users, purchases, enrollments, lesson_progress,
+-- certificates, notifications) uchun anon politsiya YO'Q — ularga faqat
+-- service_role kalit orqali backend kiradi (RLS'ni chetlab o'tadi).
 CREATE POLICY "Public courses are viewable by everyone" ON public.courses FOR SELECT USING (published = true);
 CREATE POLICY "Public modules are viewable by everyone" ON public.modules FOR SELECT USING (true);
 CREATE POLICY "Public lessons basic info viewable by everyone" ON public.lessons FOR SELECT USING (published = true);
-CREATE POLICY "Users can view their own data" ON public.users FOR ALL USING (true);
-CREATE POLICY "Enrollments viewable by enrolled user" ON public.enrollments FOR ALL USING (true);
-CREATE POLICY "Progress viewable by user" ON public.lesson_progress FOR ALL USING (true);
-CREATE POLICY "Certificates viewable by user" ON public.certificates FOR ALL USING (true);
-CREATE POLICY "Notifications viewable by user" ON public.notifications FOR ALL USING (true);
-CREATE POLICY "Purchases viewable by user" ON public.purchases FOR ALL USING (true);
