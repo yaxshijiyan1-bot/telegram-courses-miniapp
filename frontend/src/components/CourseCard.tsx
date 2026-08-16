@@ -1,100 +1,138 @@
 import React from 'react';
-import { Clock, BookOpen, Star, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Clock, Star, ArrowUpRight, Play, Check } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 
 interface CourseCardProps {
   course: Course;
-  onSelect: (course: Course) => void;
-  variant?: 'vertical' | 'horizontal' | 'featured';
+  onClick: () => void;
+  layout?: 'grid' | 'horizontal' | 'compact';
 }
 
-export const CourseCard: React.FC<CourseCardProps> = ({
-  course,
-  onSelect,
-  variant = 'vertical'
-}) => {
+export const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, layout = 'grid' }) => {
   const { haptic } = useTelegram();
 
   const handleClick = () => {
     haptic.impact('light');
-    onSelect(course);
+    onClick();
   };
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString('uz-UZ') + " so'm";
+    return new Intl.NumberFormat('uz-UZ').format(price) + " so'm";
   };
+
+  if (layout === 'horizontal') {
+    return (
+      <div
+        onClick={handleClick}
+        className="glass-panel p-3 rounded-2xl flex space-x-3.5 card-interactive cursor-pointer group hover:border-cyan/30"
+      >
+        <div className="relative w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#05070A]">
+          <img
+            src={course.cover_url}
+            alt={course.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+          {course.is_enrolled && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="w-7 h-7 rounded-full bg-cyan text-black flex items-center justify-center shadow-cyanGlowSm">
+                <Play className="w-3.5 h-3.5 fill-black ml-0.5" />
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold text-cyan tracking-wider uppercase">
+              {course.category}
+            </span>
+            <h3 className="text-xs font-bold text-white leading-snug line-clamp-2 group-hover:text-cyan transition-colors">
+              {course.title}
+            </h3>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+            <span className="text-xs font-bold text-white">
+              {course.is_enrolled ? (
+                <span className="text-cyan font-medium flex items-center space-x-1">
+                  <Check className="w-3 h-3" />
+                  <span>Ochilgan</span>
+                </span>
+              ) : (
+                formatPrice(course.price)
+              )}
+            </span>
+            <span className="text-[10px] text-slate-400 font-medium">
+              {course.duration}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       onClick={handleClick}
-      className="group bg-[#131318] rounded-3xl p-3.5 border border-white/5 hover:border-[#B4F523]/40 shadow-soft cursor-pointer active:scale-[0.98] transition-all duration-200 space-y-3"
+      className="glass-panel rounded-2xl overflow-hidden card-interactive cursor-pointer group flex flex-col justify-between hover:border-cyan/30"
     >
-      {/* Cover Image */}
-      <div className="relative h-36 rounded-2xl overflow-hidden bg-[#1B1B22]">
+      {/* 3D Cinematic Cover Image */}
+      <div className="relative aspect-[16/10] overflow-hidden bg-[#05070A]">
         <img
           src={course.cover_url}
           alt={course.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#131318] via-transparent to-transparent" />
         
-        {/* Top Badges */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-          <span className="text-[9px] font-extrabold uppercase tracking-wider bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[#B4F523]">
+        {/* Top Floating Category Badge */}
+        <div className="absolute top-2.5 left-2.5">
+          <span className="px-2.5 py-1 rounded-lg bg-[#05070A]/80 backdrop-blur-md border border-white/10 text-[10px] font-semibold text-cyan">
             {course.category}
           </span>
-          <div className="flex items-center space-x-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 text-[10px] text-amber-300 font-bold">
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-            <span>{course.rating.toFixed(1)}</span>
-          </div>
         </div>
 
-        {/* Bottom Details */}
-        <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[10px] text-zinc-300 font-medium">
-          <span className="flex items-center space-x-1 bg-black/40 px-2 py-0.5 rounded-lg backdrop-blur-xs">
-            <BookOpen className="w-3 h-3 text-[#B4F523]" />
-            <span>{course.lesson_count} dars</span>
-          </span>
-          <span className="flex items-center space-x-1 bg-black/40 px-2 py-0.5 rounded-lg backdrop-blur-xs">
-            <Clock className="w-3 h-3 text-[#B4F523]" />
-            <span>1 Yillik Kirish</span>
-          </span>
-        </div>
-      </div>
-
-      {/* Course Title and Info */}
-      <div className="space-y-1">
-        <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1 group-hover:text-[#B4F523] transition-colors">
-          {course.title}
-        </h3>
-        <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
-          {course.short_description || course.description}
-        </p>
-      </div>
-
-      {/* Pricing & Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-white/5">
-        <div className="flex flex-col">
-          <div className="flex items-baseline space-x-1.5">
-            <span className="text-xs sm:text-sm font-black text-[#B4F523]">
-              {formatPrice(course.price)}
+        {course.is_enrolled && (
+          <div className="absolute top-2.5 right-2.5">
+            <span className="px-2 py-0.5 rounded-lg bg-cyan text-black text-[10px] font-bold shadow-cyanGlowSm">
+              Faol
             </span>
-            {course.old_price && (
-              <span className="text-[10px] text-zinc-500 line-through">
-                {formatPrice(course.old_price)}
-              </span>
-            )}
           </div>
-          <span className="text-[9px] text-zinc-400 font-medium">
-            Ustoz: {course.instructor_name || 'Yaxshi Bola'}
-          </span>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+        <div className="space-y-1.5">
+          <h3 className="text-sm font-bold text-white leading-snug line-clamp-2 group-hover:text-cyan transition-colors">
+            {course.title}
+          </h3>
+          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+            {course.short_description}
+          </p>
         </div>
 
-        <button className="flex items-center space-x-1 bg-[#B4F523] text-black text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-neonSm group-hover:opacity-90 active:scale-95 transition-all">
-          <span>Ochish</span>
-          <ArrowRight className="w-3 h-3 stroke-[2.5]" />
-        </button>
+        {/* Metadata & Price Row */}
+        <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
+          <div>
+            <span className="text-[10px] text-slate-400 block font-medium">
+              {course.instructor_name}
+            </span>
+            <span className="text-sm font-black text-white">
+              {course.is_enrolled ? (
+                <span className="text-cyan text-xs font-bold">Davom ettirish</span>
+              ) : (
+                formatPrice(course.price)
+              )}
+            </span>
+          </div>
+
+          <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] group-hover:bg-cyan group-hover:text-black group-hover:border-cyan flex items-center justify-center transition-all">
+            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-black transition-colors" />
+          </div>
+        </div>
       </div>
     </div>
   );

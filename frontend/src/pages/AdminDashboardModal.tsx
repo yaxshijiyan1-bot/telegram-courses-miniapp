@@ -112,7 +112,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setIsActionLoading(orderId);
     try {
       const res = await api.approveReceipt(orderId);
-      showNotification(res.message || 'Chek tasdiqlandi va darslar ochildi! ✅');
+      showNotification(res.message || 'Chek tasdiqlandi va darslar ochildi!');
       await loadData(true);
     } catch (e: any) {
       showError(e?.message || 'Tasdiqlashda xatolik yuz berdi');
@@ -183,7 +183,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           category: courseCategory,
           description: courseDesc || courseTitle,
           short_description: courseDesc,
-          cover_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
+          cover_url: '/images/ai_course.jpg',
           level: "Boshlang'ich va Professional",
           duration: '10 soat',
           lesson_count: 10,
@@ -202,15 +202,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   const handleDeleteCourse = async (courseId: string) => {
-    if (!confirm('Rostan ham bu kursni o\'chirmoqchimisiz?')) return;
+    if (!confirm('Rostan ham bu kursni o‘chirmoqchimisiz?')) return;
     haptic.impact('heavy');
     setIsActionLoading(`del_${courseId}`);
     try {
       const res = await api.deleteCourse(courseId);
-      showNotification(res.message || 'Kurs o\'chirildi');
+      showNotification(res.message || 'Kurs o‘chirildi');
       await loadData(true);
     } catch (e: any) {
-      showError(e?.message || 'O\'chirishda xatolik');
+      showError(e?.message || 'O‘chirishda xatolik');
     } finally {
       setIsActionLoading(null);
     }
@@ -223,7 +223,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setIsActionLoading('broadcast');
     try {
       const res = await api.sendBroadcast(broadcastText.trim());
-      showNotification(res.message || `Xabar ${res.sent_count} ta foydalanuvchiga yuborildi! 📢`);
+      showNotification(res.message || `Xabar ${res.sent_count} ta foydalanuvchiga yuborildi!`);
       setBroadcastText('');
     } catch (e: any) {
       showError(e?.message || 'Broadcast yuborishda xatolik');
@@ -264,31 +264,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-[#131318] text-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4">
+      <div className="w-full max-w-lg bg-[#0D1117] text-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-white/[0.08] max-h-[92vh] overflow-y-auto space-y-4">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
           <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#1B1B22] border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center shadow-neonSm">
+            <div className="w-9 h-9 rounded-2xl bg-[#11161D] border border-cyan/30 text-cyan flex items-center justify-center shadow-cyanGlowSm">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-1.5">
                 <h3 className="text-sm font-bold text-white">Superadmin Panel</h3>
-                <span className="bg-[#B4F523]/15 text-[#B4F523] text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+                <span className="bg-cyan/15 border border-cyan/30 text-cyan text-[9px] font-black px-2 py-0.5 rounded-full">
                   LIVE
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400">
-                Admin: <strong className="text-[#B4F523]">{stats?.admin_name || adminName}</strong>
-                {stats && <span> • Baza: <strong className="text-zinc-300">{stats.storage_backend}</strong></span>}
+              <p className="text-[10px] text-slate-400">
+                Admin: <strong className="text-cyan">{stats?.admin_name || adminName}</strong>
+                {stats && <span> • Baza: <strong className="text-slate-300">{stats.storage_backend}</strong></span>}
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-1.5">
             <button
               onClick={() => { haptic.selection(); loadData(); }}
-              className="w-8 h-8 rounded-full bg-[#181820] flex items-center justify-center text-zinc-400 hover:text-[#B4F523]"
+              className="w-8 h-8 rounded-full bg-[#11161D] border border-white/[0.06] flex items-center justify-center text-slate-400 hover:text-cyan"
               title="Yangilash"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -298,7 +298,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 haptic.impact('light');
                 onClose();
               }}
-              className="w-8 h-8 rounded-full bg-[#181820] flex items-center justify-center text-zinc-400 hover:text-white"
+              className="w-8 h-8 rounded-full bg-[#11161D] border border-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white"
             >
               <X className="w-4 h-4" />
             </button>
@@ -306,11 +306,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="grid grid-cols-3 gap-1 bg-[#181820] p-1 rounded-2xl border border-white/5 text-[11px] font-bold">
+        <div className="grid grid-cols-3 gap-1 bg-[#11161D] p-1 rounded-2xl border border-white/[0.06] text-[11px] font-bold">
           <button
             onClick={() => { haptic.selection(); setActiveTab('receipts'); }}
             className={`py-2 rounded-xl transition-all relative flex items-center justify-center space-x-1 ${
-              activeTab === 'receipts' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
+              activeTab === 'receipts' ? 'bg-cyan text-black shadow-cyanGlowSm' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -323,7 +323,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('stats'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'stats' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
+              activeTab === 'stats' ? 'bg-cyan text-black shadow-cyanGlowSm' : 'text-slate-400 hover:text-white'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -333,7 +333,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('new_course'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'new_course' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
+              activeTab === 'new_course' ? 'bg-cyan text-black shadow-cyanGlowSm' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -343,7 +343,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('students'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'students' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
+              activeTab === 'students' ? 'bg-cyan text-black shadow-cyanGlowSm' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -353,7 +353,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('broadcast'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'broadcast' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
+              activeTab === 'broadcast' ? 'bg-cyan text-black shadow-cyanGlowSm' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Send className="w-3.5 h-3.5" />
@@ -363,7 +363,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('settings'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'settings' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
+              activeTab === 'settings' ? 'bg-cyan text-black shadow-cyanGlowSm' : 'text-slate-400 hover:text-white'
             }`}
           >
             <CreditCard className="w-3.5 h-3.5" />
@@ -373,7 +373,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
         {/* Global Notification Banner */}
         {isSuccess && (
-          <div className="p-3 bg-[#B4F523]/15 border border-[#B4F523]/30 text-[#B4F523] rounded-2xl text-xs flex items-center space-x-2 animate-in fade-in">
+          <div className="p-3 bg-cyan/15 border border-cyan/30 text-cyan rounded-2xl text-xs flex items-center space-x-2 animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
             <span className="font-bold">{successMsg}</span>
           </div>
@@ -388,8 +388,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
         {/* Loading Spinner */}
         {isLoading && (
-          <div className="py-12 flex flex-col items-center justify-center space-y-2 text-zinc-400">
-            <InlineLoader variant="orbit" size={24} color="#B4F523" />
+          <div className="py-12 flex flex-col items-center justify-center space-y-2 text-slate-400">
+            <InlineLoader variant="orbit" size={24} color="#22D3EE" />
             <span className="text-xs">Ma'lumotlar yuklanmoqda...</span>
           </div>
         )}
@@ -403,7 +403,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                    To'lov Cheklari ({receipts.length})
+                    To‘lov Cheklari ({receipts.length})
                   </h4>
                   {pendingCount > 0 && (
                     <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-500/30 font-bold px-2 py-0.5 rounded-full">
@@ -413,29 +413,29 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
 
                 {receipts.length === 0 ? (
-                  <div className="p-8 text-center bg-[#181820] rounded-2xl border border-white/5 space-y-1">
-                    <CheckCircle2 className="w-8 h-8 text-[#B4F523] mx-auto" />
-                    <p className="text-xs text-white font-bold">Barcha cheklar ko'rib chiqilgan!</p>
-                    <p className="text-[10px] text-zinc-400">Yangi to'lovlar bu yerda paydo bo'ladi</p>
+                  <div className="p-8 text-center bg-[#11161D] rounded-2xl border border-white/[0.06] space-y-1">
+                    <CheckCircle2 className="w-8 h-8 text-cyan mx-auto" />
+                    <p className="text-xs text-white font-bold">Barcha cheklar ko‘rib chiqilgan</p>
+                    <p className="text-[10px] text-slate-400">Yangi to‘lovlar bu yerda paydo bo‘ladi</p>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     {receipts.map((receipt) => (
                       <div
                         key={receipt.order_id}
-                        className="p-3 bg-[#181820] rounded-2xl border border-white/5 space-y-2.5 text-xs"
+                        className="p-3 bg-[#11161D] rounded-2xl border border-white/[0.06] space-y-2.5 text-xs"
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <strong className="text-white text-xs block">{receipt.student_name}</strong>
-                            <span className="text-[10px] text-zinc-400">
-                              @{receipt.username} • ID: <code className="text-[#B4F523]">{receipt.telegram_id}</code>
+                            <span className="text-[10px] text-slate-400">
+                              @{receipt.username} • ID: <code className="text-cyan">{receipt.telegram_id}</code>
                             </span>
                           </div>
                           <span
                             className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
                               receipt.status === 'approved'
-                                ? 'bg-[#B4F523]/15 text-[#B4F523]'
+                                ? 'bg-cyan/15 text-cyan'
                                 : receipt.status === 'rejected'
                                 ? 'bg-red-500/20 text-red-300'
                                 : 'bg-amber-500/20 text-amber-300 animate-pulse'
@@ -445,24 +445,24 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           </span>
                         </div>
 
-                        <div className="p-2.5 bg-[#131318] rounded-xl space-y-1 border border-white/5">
+                        <div className="p-2.5 bg-[#0D1117] rounded-xl space-y-1 border border-white/[0.04]">
                           <div className="flex justify-between text-[11px]">
-                            <span className="text-zinc-400">Kurs:</span>
+                            <span className="text-slate-400">Kurs:</span>
                             <strong className="text-white text-right max-w-[200px] truncate">{receipt.course_title}</strong>
                           </div>
                           <div className="flex justify-between text-[11px]">
-                            <span className="text-zinc-400">Summa:</span>
-                            <strong className="text-[#B4F523]">{fmtAmount(receipt.amount)} so'm</strong>
+                            <span className="text-slate-400">Summa:</span>
+                            <strong className="text-cyan">{fmtAmount(receipt.amount)} so'm</strong>
                           </div>
                           <div className="flex justify-between text-[11px]">
-                            <span className="text-zinc-400">To'lov:</span>
-                            <span className="text-zinc-300 uppercase">{receipt.payment_method}</span>
+                            <span className="text-slate-400">To‘lov:</span>
+                            <span className="text-slate-300 uppercase">{receipt.payment_method}</span>
                           </div>
                         </div>
 
                         {/* Receipt Image Preview */}
                         {receipt.receipt_image && (
-                          <div className="relative rounded-xl overflow-hidden border border-white/10 max-h-48 bg-black">
+                          <div className="relative rounded-xl overflow-hidden border border-white/[0.08] max-h-48 bg-black">
                             <img
                               src={receipt.receipt_image}
                               alt="To'lov cheki"
@@ -476,7 +476,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             <button
                               onClick={() => handleApprove(receipt.order_id)}
                               disabled={isActionLoading === receipt.order_id}
-                              className="py-2.5 bg-[#B4F523] text-black rounded-xl text-xs font-black flex items-center justify-center space-x-1 hover:opacity-90 active:scale-95 transition-all disabled:opacity-60 shadow-neonSm"
+                              className="py-2.5 bg-cyan text-black rounded-xl text-xs font-black flex items-center justify-center space-x-1 hover:opacity-90 active:scale-95 transition-all disabled:opacity-60 shadow-cyanGlowSm"
                             >
                               {isActionLoading === receipt.order_id ? (
                                 <InlineLoader variant="orbit" size={14} color="#000000" />
@@ -508,51 +508,51 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'stats' && stats && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
+                  <div className="p-3.5 bg-[#11161D] rounded-2xl border border-white/[0.06]">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">
                       Jami Tushum
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
-                      <span className="text-lg font-black text-[#B4F523]">
+                      <span className="text-lg font-black text-cyan">
                         {fmtMln(stats.total_revenue)}
                       </span>
-                      <span className="text-[10px] text-zinc-300">so'm</span>
+                      <span className="text-[10px] text-slate-300">so'm</span>
                     </div>
                   </div>
 
-                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
+                  <div className="p-3.5 bg-[#11161D] rounded-2xl border border-white/[0.06]">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">
                       Shu Oydagi Tushum
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
-                      <span className="text-lg font-black text-[#B4F523]">
+                      <span className="text-lg font-black text-cyan">
                         {fmtMln(stats.monthly_revenue)}
                       </span>
-                      <span className="text-[10px] text-zinc-300">so'm</span>
+                      <span className="text-[10px] text-slate-300">so'm</span>
                     </div>
                   </div>
 
-                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
-                      Jami O'quvchilar
+                  <div className="p-3.5 bg-[#11161D] rounded-2xl border border-white/[0.06]">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                      Jami O‘quvchilar
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
                       <span className="text-lg font-black text-white">
                         {fmtAmount(stats.total_students)}
                       </span>
-                      <span className="text-[10px] text-zinc-300">talaba</span>
+                      <span className="text-[10px] text-slate-300">talaba</span>
                     </div>
                   </div>
 
-                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
+                  <div className="p-3.5 bg-[#11161D] rounded-2xl border border-white/[0.06]">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">
                       Faol Kurslar
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
                       <span className="text-lg font-black text-white">
                         {stats.active_courses_count}
                       </span>
-                      <span className="text-[10px] text-zinc-300">kurs</span>
+                      <span className="text-[10px] text-slate-300">kurs</span>
                     </div>
                   </div>
                 </div>
@@ -562,18 +562,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     Oxirgi Savdolar
                   </h4>
                   {stats.recent_sales.length === 0 ? (
-                    <p className="text-xs text-zinc-500 py-3 text-center">Hozircha savdo yo'q</p>
+                    <p className="text-xs text-slate-500 py-3 text-center">Hozircha savdo yo‘q</p>
                   ) : (
                     <div className="space-y-2">
                       {stats.recent_sales.map((sale) => (
-                        <div key={sale.id} className="p-3 bg-[#181820] rounded-xl border border-white/5 flex items-center justify-between text-xs">
+                        <div key={sale.id} className="p-3 bg-[#11161D] rounded-xl border border-white/[0.06] flex items-center justify-between text-xs">
                           <div>
                             <span className="font-bold text-white block">{sale.student_name}</span>
-                            <span className="text-[10px] text-zinc-400">{sale.course_title}</span>
+                            <span className="text-[10px] text-slate-400">{sale.course_title}</span>
                           </div>
                           <div className="text-right">
-                            <span className="font-black text-[#B4F523] block">+{fmtAmount(sale.amount)} so'm</span>
-                            <span className="text-[9px] text-zinc-500">
+                            <span className="font-black text-cyan block">+{fmtAmount(sale.amount)} so'm</span>
+                            <span className="text-[9px] text-slate-500">
                               {sale.payment_method.toUpperCase()} • {String(sale.date).slice(0, 10)}
                             </span>
                           </div>
@@ -588,27 +588,26 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* TAB 3: COURSES MANAGEMENT */}
             {activeTab === 'new_course' && (
               <div className="space-y-4">
-                {/* Existing Courses */}
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center justify-between">
                     <span>Mavjud Kurslar</span>
-                    <span className="text-[10px] text-[#B4F523]">{courses.length} ta</span>
+                    <span className="text-[10px] text-cyan">{courses.length} ta</span>
                   </h4>
 
                   <div className="space-y-2">
                     {courses.map((c) => (
-                      <div key={c.id} className="p-3 bg-[#181820] rounded-2xl border border-white/5 flex items-center justify-between text-xs">
+                      <div key={c.id} className="p-3 bg-[#11161D] rounded-2xl border border-white/[0.06] flex items-center justify-between text-xs">
                         <div className="min-w-0 pr-2">
                           <strong className="text-white block truncate">{c.title}</strong>
-                          <span className="text-[10px] text-zinc-400">
-                            Ustoz: <strong className="text-[#B4F523]">{c.instructor_name}</strong> • {fmtAmount(c.price)} so'm
+                          <span className="text-[10px] text-slate-400">
+                            Ustoz: <strong className="text-cyan">{c.instructor_name}</strong> • {fmtAmount(c.price)} so'm
                           </span>
                         </div>
                         <div className="flex items-center space-x-1.5 flex-shrink-0">
                           <button
                             type="button"
                             onClick={() => startEditCourse(c)}
-                            className="px-3 py-1.5 bg-[#B4F523] text-black rounded-xl text-[10px] font-bold hover:opacity-90 transition-all"
+                            className="px-3 py-1.5 bg-cyan text-black rounded-xl text-[10px] font-bold hover:opacity-90 transition-all shadow-cyanGlowSm"
                           >
                             Tahrirlash
                           </button>
@@ -618,7 +617,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             disabled={isActionLoading === `del_${c.id}`}
                             className="px-2 py-1.5 bg-red-500/20 text-red-300 border border-red-500/30 rounded-xl text-[10px] font-bold hover:bg-red-500/30 transition-all disabled:opacity-50"
                           >
-                            O'chirish
+                            O‘chirish
                           </button>
                         </div>
                       </div>
@@ -627,7 +626,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
 
                 {/* Edit / Create Form */}
-                <form onSubmit={handleSaveCourse} className="space-y-2.5 pt-3 border-t border-white/10">
+                <form onSubmit={handleSaveCourse} className="space-y-2.5 pt-3 border-t border-white/[0.08]">
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     {editingCourseId ? 'Kursni Tahrirlash' : 'Yangi Kurs Yaratish'}
                   </h4>
@@ -640,7 +639,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       value={courseTitle}
                       onChange={(e) => setCourseTitle(e.target.value)}
                       placeholder="Masalan: Sun'iy Intellekt va Prompt Engineering Pro"
-                      className="w-full px-3 py-2.5 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
+                      className="w-full px-3 py-2.5 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan"
                     />
                   </div>
 
@@ -650,13 +649,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       <select
                         value={courseCategory}
                         onChange={(e) => setCourseCategory(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523] font-bold"
+                        className="w-full px-3 py-2 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-white focus:outline-none focus:border-cyan font-bold"
                       >
-                        <option value="AI" className="bg-[#181820]">AI</option>
-                        <option value="Dizayn" className="bg-[#181820]">Dizayn</option>
-                        <option value="Dasturlash" className="bg-[#181820]">Dasturlash</option>
-                        <option value="Marketing" className="bg-[#181820]">Marketing</option>
-                        <option value="Biznes" className="bg-[#181820]">Biznes</option>
+                        <option value="AI" className="bg-[#11161D]">AI</option>
+                        <option value="Dizayn" className="bg-[#11161D]">Dizayn</option>
+                        <option value="Dasturlash" className="bg-[#11161D]">Dasturlash</option>
+                        <option value="Marketing" className="bg-[#11161D]">Marketing</option>
+                        <option value="Biznes" className="bg-[#11161D]">Biznes</option>
                       </select>
                     </div>
 
@@ -666,7 +665,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         type="text"
                         disabled
                         value="1 yil (365 kun)"
-                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-[#B4F523] font-bold"
+                        className="w-full px-3 py-2 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-cyan font-bold"
                       />
                     </div>
                   </div>
@@ -680,7 +679,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         value={coursePrice}
                         onChange={(e) => setCoursePrice(e.target.value)}
                         placeholder="490000"
-                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
+                        className="w-full px-3 py-2 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan"
                       />
                     </div>
 
@@ -691,7 +690,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         value={courseOldPrice}
                         onChange={(e) => setCourseOldPrice(e.target.value)}
                         placeholder="890000"
-                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
+                        className="w-full px-3 py-2 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan"
                       />
                     </div>
                   </div>
@@ -703,7 +702,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       value={courseDesc}
                       onChange={(e) => setCourseDesc(e.target.value)}
                       placeholder="Kurs haqida 1-2 jumla"
-                      className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
+                      className="w-full px-3 py-2 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan"
                     />
                   </div>
 
@@ -712,7 +711,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       <button
                         type="button"
                         onClick={resetCourseForm}
-                        className="px-4 py-3 bg-[#181820] text-zinc-400 border border-white/10 rounded-2xl font-bold text-xs hover:text-white"
+                        className="px-4 py-3 bg-[#11161D] text-slate-400 border border-white/[0.08] rounded-2xl font-bold text-xs hover:text-white"
                       >
                         Bekor qilish
                       </button>
@@ -720,14 +719,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <button
                       type="submit"
                       disabled={isActionLoading === 'course_form'}
-                      className="flex-1 py-3 bg-[#B4F523] text-black font-black rounded-2xl shadow-neonSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
+                      className="flex-1 py-3 bg-cyan text-black font-black rounded-2xl shadow-cyanGlowSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
                     >
                       {isActionLoading === 'course_form' ? (
                         <InlineLoader variant="orbit" size={14} color="#000000" />
                       ) : (
                         <>
                           <Check className="w-4 h-4 stroke-[3]" />
-                          <span>{editingCourseId ? 'O\'zgarishlarni Saqlash' : 'Kursni Yaratish'}</span>
+                          <span>{editingCourseId ? 'O‘zgarishlarni Saqlash' : 'Kursni Yaratish'}</span>
                         </>
                       )}
                     </button>
@@ -741,57 +740,57 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Ro'yxatdan O'tgan Talabalar
+                    Ro‘yxatdan O‘tgan Talabalar
                   </h4>
-                  <span className="text-[10px] text-[#B4F523]">{students.length} ta</span>
+                  <span className="text-[10px] text-cyan">{students.length} ta</span>
                 </div>
 
-                {/* Grant kurs tanlash - Dark High Contrast */}
-                <div className="p-3 bg-[#181820] rounded-2xl border border-white/10 space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
+                {/* Grant kurs tanlash */}
+                <div className="p-3 bg-[#11161D] rounded-2xl border border-white/[0.08] space-y-1.5">
+                  <label className="text-[10px] font-bold text-cyan uppercase tracking-wider block">
                     Grant uchun kurs tanlang:
                   </label>
                   <select
                     value={enrollCourseId}
                     onChange={(e) => setEnrollCourseId(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#131318] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523] font-bold"
+                    className="w-full px-3 py-2 bg-[#0D1117] border border-white/[0.08] rounded-xl text-xs text-white focus:outline-none focus:border-cyan font-bold"
                   >
-                    <option value="" className="bg-[#131318]">— Kurs tanlanmagan —</option>
+                    <option value="" className="bg-[#0D1117]">— Kurs tanlanmagan —</option>
                     {courses.map(c => (
-                      <option key={c.id} value={c.id} className="bg-[#131318]">{c.title}</option>
+                      <option key={c.id} value={c.id} className="bg-[#0D1117]">{c.title}</option>
                     ))}
                   </select>
                 </div>
 
                 {students.length === 0 ? (
-                  <p className="text-xs text-zinc-500 py-6 text-center">Hozircha talaba yo'q</p>
+                  <p className="text-xs text-slate-500 py-6 text-center">Hozircha talaba yo‘q</p>
                 ) : (
                   <div className="space-y-2">
                     {students.map((st) => (
                       <div
                         key={st.id}
-                        className="p-3 bg-[#181820] rounded-2xl border border-white/5 space-y-2 text-xs"
+                        className="p-3 bg-[#11161D] rounded-2xl border border-white/[0.06] space-y-2 text-xs"
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <strong className="text-white block">{st.name}</strong>
-                            <span className="text-[10px] text-zinc-400">
-                              @{st.username} • ID: <code className="text-[#B4F523]">{st.telegram_id}</code>
+                            <span className="text-[10px] text-slate-400">
+                              @{st.username} • ID: <code className="text-cyan">{st.telegram_id}</code>
                             </span>
                           </div>
-                          <span className="text-[10px] bg-[#131318] text-[#B4F523] font-bold px-2 py-0.5 rounded-full border border-white/5">
+                          <span className="text-[10px] bg-[#0D1117] text-cyan font-bold px-2 py-0.5 rounded-full border border-white/[0.06]">
                             {st.overall_progress || '0%'}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                          <span className="text-[10px] text-zinc-400">
+                        <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                          <span className="text-[10px] text-slate-400">
                             Kursi: <strong className="text-white">{st.enrolled_courses || '— Yangi'}</strong>
                           </span>
                           <button
                             onClick={() => handleManualEnroll(st.id, enrollCourseId)}
                             disabled={isActionLoading === `enroll_${st.id}`}
-                            className="px-2.5 py-1 bg-[#B4F523] text-black font-bold rounded-lg text-[10px] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+                            className="px-2.5 py-1 bg-cyan text-black font-bold rounded-lg text-[10px] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
                           >
                             + Grant Kurs
                           </button>
@@ -810,7 +809,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     Barcha Foydalanuvchilarga Xabar (Broadcast)
                   </h4>
-                  <p className="text-[10px] text-zinc-400">
+                  <p className="text-[10px] text-slate-400">
                     Xabar Telegram Bot orqali barcha talabalarga yetkaziladi.
                   </p>
                 </div>
@@ -820,14 +819,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   required
                   value={broadcastText}
                   onChange={(e) => setBroadcastText(e.target.value)}
-                  placeholder="Xabarni kiriting: Masalan, Yangi kurslar chegirmasi yoki e'lon..."
-                  className="w-full p-3 bg-[#181820] border border-white/10 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523] resize-none leading-relaxed"
+                  placeholder="Xabarni kiriting: Masalan, Yangi kurslar yoki e'lon..."
+                  className="w-full p-3 bg-[#11161D] border border-white/[0.08] rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan resize-none leading-relaxed"
                 />
 
                 <button
                   type="submit"
                   disabled={isActionLoading === 'broadcast'}
-                  className="w-full py-3.5 bg-[#B4F523] text-black font-black rounded-2xl shadow-neonSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
+                  className="w-full py-3.5 bg-cyan text-black font-black rounded-2xl shadow-cyanGlowSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
                 >
                   {isActionLoading === 'broadcast' ? (
                     <InlineLoader variant="orbit" size={14} color="#000000" />
@@ -845,7 +844,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'settings' && (
               <form onSubmit={handleSaveCard} className="space-y-3">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                  To'lov Rekvizitlari
+                  To‘lov Rekvizitlari
                 </h4>
 
                 <div className="space-y-1">
@@ -855,7 +854,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     required
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#181820] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523] font-mono"
+                    className="w-full px-3 py-2.5 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-white focus:outline-none focus:border-cyan font-mono"
                   />
                 </div>
 
@@ -866,13 +865,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     required
                     value={cardHolder}
                     onChange={(e) => setCardHolder(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#181820] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523]"
+                    className="w-full px-3 py-2.5 bg-[#11161D] border border-white/[0.08] rounded-xl text-xs text-white focus:outline-none focus:border-cyan"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#B4F523] text-black font-black rounded-2xl shadow-neonSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1"
+                  className="w-full py-3.5 bg-cyan text-black font-black rounded-2xl shadow-cyanGlowSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1"
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
                   <span>Rekvizitlarni Saqlash</span>

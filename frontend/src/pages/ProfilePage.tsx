@@ -13,7 +13,6 @@ import {
   Trophy,
   Layers,
   ArrowRight,
-  Flame,
   BookOpen,
   GraduationCap
 } from 'lucide-react';
@@ -60,7 +59,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const totalLessons = dashboardData?.total_lessons_count ?? 0;
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
-  // Avatar: Telegram rasmi > adminlar uchun rasmi > bosh harflar
   const isZuhra = user?.telegram_id === 8112688757 || user?.username === 'sokin_notalar';
   const isYaxshi = user?.telegram_id === 8544023815 || user?.username === 'yomonboia';
   const avatarUrl: string | null =
@@ -74,35 +72,35 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   };
 
   return (
-    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 text-white animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="flex-1 pb-24 px-4 pt-3 space-y-4 text-white animate-fade-up">
 
-      {/* 1. TOP USER IDENTITY — Telegram avatari bilan */}
+      {/* 1. TOP USER IDENTITY */}
       <div className="flex flex-col items-center text-center space-y-2 pt-2">
         <div className="relative">
-          <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-[#B4F523] via-[#B4F523]/40 to-transparent">
+          <div className="w-20 h-20 rounded-full p-[2px] bg-gradient-to-br from-cyan via-cyan/30 to-transparent shadow-cyanGlowSm">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt="Avatar"
-                className="w-full h-full rounded-full object-cover border-2 border-[#09090C] shadow-elevated"
+                className="w-full h-full rounded-full object-cover border-2 border-[#05070A]"
               />
             ) : (
-              <div className="w-full h-full rounded-full bg-[#1B1B22] border-2 border-[#09090C] flex items-center justify-center text-xl font-black text-[#B4F523]">
+              <div className="w-full h-full rounded-full bg-[#0D1117] border-2 border-[#05070A] flex items-center justify-center text-xl font-black text-cyan">
                 {(user?.name || 'T')[0]}
               </div>
             )}
           </div>
-          <span className="absolute bottom-1 right-1 w-4 h-4 bg-[#B4F523] border-2 border-[#09090C] rounded-full" />
+          <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-cyan border-2 border-[#05070A] rounded-full shadow-cyanGlowSm" />
         </div>
 
         <div>
-          <h2 className="text-lg font-bold tracking-tight text-white">
+          <h2 className="text-base font-bold tracking-tight text-white">
             {user?.name || 'Talaba'}
           </h2>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-slate-400">
             {user?.username ? `@${user.username}` : 'Premium Talaba'}
             {isSuperadmin && (
-              <span className="ml-1.5 text-[9px] bg-[#B4F523]/15 text-[#B4F523] font-bold px-1.5 py-0.5 rounded-full align-middle">
+              <span className="ml-1.5 text-[9px] bg-cyan/15 text-cyan font-bold px-2 py-0.5 rounded-full align-middle border border-cyan/30">
                 SUPERADMIN
               </span>
             )}
@@ -110,42 +108,42 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       </div>
 
-      {/* 2. REAL METRIKALAR */}
+      {/* 2. REAL STATS GRID */}
       <div className="grid grid-cols-3 gap-2 pt-1">
-        <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
-          <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
-            <Flame className="w-3.5 h-3.5 fill-[#B4F523]" />
+        <div className="glass-panel p-3 rounded-2xl border border-white/[0.06] text-center space-y-1">
+          <div className="flex items-center justify-center space-x-1 text-cyan">
+            <Sparkles className="w-3.5 h-3.5 stroke-cyan" />
             <span className="text-xs font-black">{overallProgress}%</span>
           </div>
-          <span className="text-[10px] text-zinc-400 block font-medium">Natija</span>
+          <span className="text-[10px] text-slate-400 block font-medium">Natija</span>
         </div>
 
-        <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
-          <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
-            <BookOpen className="w-3.5 h-3.5" />
+        <div className="glass-panel p-3 rounded-2xl border border-white/[0.06] text-center space-y-1">
+          <div className="flex items-center justify-center space-x-1 text-cyan">
+            <BookOpen className="w-3.5 h-3.5 stroke-cyan" />
             <span className="text-xs font-black">{enrolledCourses.length}</span>
           </div>
-          <span className="text-[10px] text-zinc-400 block font-medium">Kurslarim</span>
+          <span className="text-[10px] text-slate-400 block font-medium">Kurslarim</span>
         </div>
 
-        <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
-          <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
-            <GraduationCap className="w-3.5 h-3.5" />
+        <div className="glass-panel p-3 rounded-2xl border border-white/[0.06] text-center space-y-1">
+          <div className="flex items-center justify-center space-x-1 text-cyan">
+            <GraduationCap className="w-3.5 h-3.5 stroke-cyan" />
             <span className="text-xs font-black">{certificates.length}</span>
           </div>
-          <span className="text-[10px] text-zinc-400 block font-medium">Sertifikat</span>
+          <span className="text-[10px] text-slate-400 block font-medium">Sertifikat</span>
         </div>
       </div>
 
-      {/* 3. MENING KURSLARIM — real progress (ixcham ro'yxat) */}
+      {/* 3. COURSES PROGRESS PREVIEW */}
       {enrolledCourses.length > 0 ? (
-        <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 space-y-3">
+        <div className="glass-panel p-4 rounded-3xl border border-white/[0.06] space-y-3">
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center space-x-1.5">
-              <Layers className="w-3.5 h-3.5 text-[#B4F523]" />
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+              <Layers className="w-3.5 h-3.5 text-cyan" />
               <span>Kurslarim Progressi</span>
             </span>
-            <span className="text-[10px] font-bold text-[#B4F523]">
+            <span className="text-[10px] font-bold text-cyan">
               {completedLessons}/{totalLessons} dars
             </span>
           </div>
@@ -155,11 +153,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <div key={c.id} className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-bold text-white truncate pr-2">{c.title}</span>
-                  <span className="text-[#B4F523] font-black flex-shrink-0">{c.progress_percent}%</span>
+                  <span className="text-cyan font-black flex-shrink-0">{c.progress_percent}%</span>
                 </div>
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-[#8BC34A] to-[#B4F523] rounded-full transition-all duration-700 progress-fill"
+                    className="h-full bg-cyan rounded-full animate-progress shadow-cyanGlowSm"
                     style={{ width: `${c.progress_percent}%` }}
                   />
                 </div>
@@ -168,9 +166,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             {enrolledCourses.length > 3 && (
               <button
                 onClick={() => { haptic.selection(); onNavigateToCourses(); }}
-                className="w-full text-[10px] text-zinc-400 hover:text-[#B4F523] py-1"
+                className="w-full text-[10px] text-slate-400 hover:text-cyan py-1"
               >
-                +{enrolledCourses.length - 3} ta kurs ko'rish →
+                +{enrolledCourses.length - 3} ta kurs ko‘rish →
               </button>
             )}
           </div>
@@ -178,67 +176,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       ) : (
         <button
           onClick={() => { haptic.impact('light'); onNavigateToCourses(); }}
-          className="w-full p-4 bg-[#131318] rounded-3xl border border-dashed border-[#B4F523]/25 flex items-center justify-between text-left active:scale-[0.98] transition-all"
+          className="w-full p-4 glass-panel rounded-3xl border border-dashed border-cyan/30 flex items-center justify-between text-left active:scale-[0.98] transition-all"
         >
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
+            <span className="text-[10px] font-bold text-cyan uppercase tracking-wider block">
               Birinchi kursingizni boshlang
             </span>
-            <p className="text-[11px] text-zinc-400">1 yillik kirish + QR sertifikat bilan</p>
+            <p className="text-[11px] text-slate-400">1 yillik kirish + Rasmiy sertifikat bilan</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-[#B4F523] text-black flex items-center justify-center flex-shrink-0">
-            <ArrowRight className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-xl bg-cyan text-black flex items-center justify-center flex-shrink-0 shadow-cyanGlowSm">
+            <ArrowRight className="w-4 h-4" />
           </div>
         </button>
       )}
 
-      {/* 4. YUTUQLAR (kurslar bo'lsa) */}
-      {enrolledCourses.length > 0 && (
-        <div className="bg-[#131318] p-4 rounded-3xl border border-white/5 flex items-center justify-between shadow-soft">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
-              O'quv Yutuqlari
-            </span>
-            <h4 className="text-sm font-bold text-white">
-              {completedLessons} ta dars muvaffaqiyatli yakunlandi!
-            </h4>
-            <p className="text-xs text-zinc-400">
-              {overallProgress >= 100 ? 'Sertifikatlar tayyor! 🎓' : 'Davom eting — a\'lo natijaga yaqinsiz'}
-            </p>
-          </div>
-
-          <div className={`w-14 h-14 rounded-2xl bg-[#1B1B22] border flex items-center justify-center flex-shrink-0 ${overallProgress >= 100 ? 'border-[#B4F523] shadow-neonSm text-[#B4F523]' : 'border-white/10 text-zinc-500'}`}>
-            <Trophy className="w-7 h-7" />
-          </div>
-        </div>
-      )}
-
-      {/* 5. KATTA GORIZONTAL KARTOCKA */}
-      <button
-        onClick={() => {
-          haptic.impact('light');
-          onNavigateToCourses();
-        }}
-        className="w-full p-4 bg-[#131318] rounded-3xl border border-white/5 flex items-center justify-between text-left hover:border-[#B4F523]/40 active:scale-[0.98] transition-all shadow-soft group"
-      >
-        <div className="flex items-center space-x-3 min-w-0">
-          <div className="w-11 h-11 rounded-2xl bg-[#1B1B22] border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center flex-shrink-0 shadow-neonSm group-hover:scale-105 transition-transform">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <h4 className="text-xs font-bold text-white group-hover:text-[#B4F523] transition-colors">
-              Yangi amaliy darslarni boshlash
-            </h4>
-            <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
-              Katalogdagi eng so'nggi kurslar va masterclasslar
-            </p>
-          </div>
-        </div>
-        <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-[#B4F523] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-      </button>
-
-      {/* 6. SOZLAMALAR RO'YXATI */}
-      <div className="bg-[#131318] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-soft">
+      {/* 4. ACTIONS & SETTINGS LIST */}
+      <div className="glass-panel rounded-3xl border border-white/[0.06] overflow-hidden divide-y divide-white/[0.06] shadow-soft">
+        
         {/* Superadmin Panel */}
         {isSuperadmin && (
           <button
@@ -246,202 +200,237 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               haptic.impact('medium');
               setActiveModal('admin');
             }}
-            className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
+            className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.04] transition-colors text-left"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-xl bg-[#B4F523]/15 text-[#B4F523] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-cyan/15 border border-cyan/30 text-cyan flex items-center justify-center">
                 <Shield className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-bold text-white block">👑 Superadmin Panel</span>
-                <span className="text-[10px] text-[#B4F523]">Kurslar, Cheklar & Baza</span>
+                <h4 className="text-xs font-bold text-white">Superadmin Panel</h4>
+                <p className="text-[10px] text-slate-400">Cheklar, statistika, kurslar va talabalar</p>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-500" />
+            <ChevronRight className="w-4 h-4 text-slate-500" />
           </button>
         )}
 
-        {/* Sertifikatlar */}
+        {/* Certificates */}
         <button
           onClick={() => {
             haptic.impact('light');
             setActiveModal('certificates');
           }}
-          className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
+          className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.04] transition-colors text-left"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] text-cyan flex items-center justify-center">
               <Award className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-xs font-bold text-white block">Mening Sertifikatlarim</span>
-              <span className="text-[10px] text-zinc-400">{certificates.length} ta rasmiy sertifikat</span>
+              <h4 className="text-xs font-bold text-white">Mening Sertifikatlarim</h4>
+              <p className="text-[10px] text-slate-400">
+                {certificates.length > 0 ? `${certificates.length} ta sertifikat mavjud` : 'Kurslarni yakunlang va sertifikat oling'}
+              </p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500" />
+          <ChevronRight className="w-4 h-4 text-slate-500" />
         </button>
 
-        {/* Bildirishnomalar */}
+        {/* Notifications */}
         <button
           onClick={openNotifications}
-          className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
+          className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.04] transition-colors text-left"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center relative">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] text-cyan flex items-center justify-center">
               <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-1 bg-[#B4F523] text-black rounded-full flex items-center justify-center text-[8px] font-black">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
             </div>
             <div>
-              <span className="text-xs font-bold text-white block">Bildirishnomalar</span>
-              <span className="text-[10px] text-zinc-400">
-                {notifications.length > 0 ? `${unreadCount} ta o'qilmagan • ${notifications.length} ta xabar` : 'Hozircha xabar yo\'q'}
-              </span>
+              <h4 className="text-xs font-bold text-white">Xabarnomalar</h4>
+              <p className="text-[10px] text-slate-400">Yangi darslar va xarid yangiliklari</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-500" />
+          <div className="flex items-center space-x-2">
+            {unreadCount > 0 && (
+              <span className="w-2 h-2 rounded-full bg-cyan shadow-cyanGlowSm" />
+            )}
+            <ChevronRight className="w-4 h-4 text-slate-500" />
+          </div>
         </button>
 
-        {/* Chiqish */}
+        {/* Admin bilan bog'lanish */}
+        <div className="p-3.5 space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            Admin bilan bog'lanish:
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href="https://t.me/sokin_notalar"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => haptic.impact('light')}
+              className="p-2.5 rounded-xl bg-[#0D1117] border border-white/[0.08] hover:border-cyan/40 flex items-center space-x-2 text-xs transition-colors"
+            >
+              <img src="/images/zuhra_olimova.jpg" alt="Zuhra" className="w-6 h-6 rounded-full object-cover" />
+              <div className="min-w-0">
+                <span className="font-bold text-white block text-[11px] truncate">Qizlar uchun</span>
+                <span className="text-[9px] text-cyan">@sokin_notalar</span>
+              </div>
+            </a>
+
+            <a
+              href="https://t.me/yomonboia"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => haptic.impact('light')}
+              className="p-2.5 rounded-xl bg-[#0D1117] border border-white/[0.08] hover:border-cyan/40 flex items-center space-x-2 text-xs transition-colors"
+            >
+              <img src="/images/yaxshi_bola.jpg" alt="Yaxshi Bola" className="w-6 h-6 rounded-full object-cover" />
+              <div className="min-w-0">
+                <span className="font-bold text-white block text-[11px] truncate">Yigitlar uchun</span>
+                <span className="text-[9px] text-cyan">@yomonboia</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="w-full p-3.5 flex items-center justify-between hover:bg-red-500/10 transition-colors text-left text-red-400"
+          className="w-full p-3.5 flex items-center justify-between hover:bg-red-500/10 transition-colors text-left group"
         >
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center">
               <LogOut className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold">Hisobdan chiqish</span>
+            <div>
+              <h4 className="text-xs font-bold text-red-400">Hisobdan chiqish</h4>
+              <p className="text-[10px] text-slate-500">Sessiyani yakunlash</p>
+            </div>
           </div>
+          <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-red-400 transition-colors" />
         </button>
+
       </div>
 
-      {/* 7. ADMIN BILAN BOG'LANISH */}
-      <div className="bg-[#131318] rounded-3xl p-4 border border-white/5 space-y-3 shadow-soft">
-        <div className="flex items-center space-x-2">
-          <MessageCircle className="w-4 h-4 text-[#B4F523]" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-            Admin bilan bog'lanish
-          </h3>
-        </div>
-
-        <div className="space-y-2">
-          <a
-            href="https://t.me/yomonboia"
-            target="_blank"
-            rel="noreferrer"
-            className="p-3 bg-[#181820] hover:border-[#B4F523]/40 rounded-2xl border border-white/5 flex items-center justify-between transition-all"
-          >
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-[#B4F523]/15 text-[#B4F523] flex items-center justify-center font-bold text-xs">
-                👨‍💼
-              </div>
-              <div>
-                <span className="text-[9px] font-bold text-[#B4F523] uppercase block">Yigitlar uchun</span>
-                <h4 className="text-xs font-bold text-white">Yaxshi Bola (@yomonboia)</h4>
-              </div>
-            </div>
-            <span className="px-2.5 py-1 bg-[#B4F523] text-black rounded-xl text-[10px] font-bold">
-              Yozish ↗
-            </span>
-          </a>
-
-          <a
-            href="https://t.me/sokin_notalar"
-            target="_blank"
-            rel="noreferrer"
-            className="p-3 bg-[#181820] hover:border-[#B4F523]/40 rounded-2xl border border-white/5 flex items-center justify-between transition-all"
-          >
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-[#B4F523]/15 text-[#B4F523] flex items-center justify-center font-bold text-xs">
-                👩‍💼
-              </div>
-              <div>
-                <span className="text-[9px] font-bold text-[#B4F523] uppercase block">Qizlar uchun</span>
-                <h4 className="text-xs font-bold text-white">Zuhra Olimova (@sokin_notalar)</h4>
-              </div>
-            </div>
-            <span className="px-2.5 py-1 bg-[#B4F523] text-black rounded-xl text-[10px] font-bold">
-              Yozish ↗
-            </span>
-          </a>
-        </div>
-      </div>
-
-      {/* ADMIN DASHBOARD MODAL */}
-      <AdminDashboardModal
-        isOpen={activeModal === 'admin'}
-        onClose={() => setActiveModal(null)}
-        adminName={user?.name || 'Yaxshi Bola'}
-      />
-
-      {/* SERTIFIKATLAR MODAL */}
+      {/* MODAL: Certificates */}
       {activeModal === 'certificates' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in" onClick={() => setActiveModal(null)}>
-          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4 animate-in slide-in-from-bottom-4 duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold">Sertifikatlarim</h3>
-              <button onClick={() => setActiveModal(null)} className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-[#0D1117] rounded-t-3xl sm:rounded-3xl p-5 border border-white/[0.08] max-h-[85vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center space-x-2">
+                <Award className="w-5 h-5 text-cyan" />
+                <h3 className="text-sm font-bold text-white">Sertifikatlarim</h3>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-slate-400 hover:text-white"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
-              {certificates.length > 0 ? (
-                certificates.map((cert) => (
-                  <div key={cert.id} className="p-3 bg-[#181820] rounded-2xl border border-white/5 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold">{cert.course_title}</h4>
-                      <span className="text-[10px] text-[#B4F523]">{cert.certificate_code}</span>
+
+            {certificates.length === 0 ? (
+              <div className="text-center py-10 space-y-2">
+                <Award className="w-10 h-10 text-slate-600 mx-auto" />
+                <p className="text-xs text-slate-400">Hozircha faol sertifikatlaringiz yo‘q</p>
+                <p className="text-[10px] text-slate-500">
+                  Kurs darslarini 100% yakunlaganingizdan so‘ng QR sertifikat avtomatik beriladi.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {certificates.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="p-4 bg-[#11161D] rounded-2xl border border-white/[0.08] space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-xs font-bold text-white">{cert.course_title}</h4>
+                        <span className="text-[10px] text-cyan font-mono">
+                          ID: {cert.certificate_code}
+                        </span>
+                      </div>
+                      <CheckCircle2 className="w-4 h-4 text-cyan" />
                     </div>
-                    {cert.certificate_url && (
-                      <a href={cert.certificate_url} target="_blank" rel="noreferrer" className="p-2 bg-[#B4F523] text-black rounded-xl">
-                        <Download className="w-3.5 h-3.5" />
-                      </a>
-                    )}
+
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 pt-2 border-t border-white/[0.06]">
+                      <span>Berilgan sana: {cert.issued_at?.slice(0, 10) || '2026-08-16'}</span>
+                      {cert.certificate_url && (
+                        <a
+                          href={cert.certificate_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan font-bold flex items-center space-x-1"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Yuklab olish</span>
+                        </a>
+                      )}
+                    </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-xs text-zinc-500 text-center py-4">Kursni to'liq bitiring va QR sertifikat oling!</p>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* BILDIRISHNOMALAR MODAL (ixcham) */}
+      {/* MODAL: Notifications */}
       {activeModal === 'notifications' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in" onClick={() => setActiveModal(null)}>
-          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4 animate-in slide-in-from-bottom-4 duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold">Bildirishnomalar</h3>
-              <button onClick={() => setActiveModal(null)} className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-[#0D1117] rounded-t-3xl sm:rounded-3xl p-5 border border-white/[0.08] max-h-[85vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center space-x-2">
+                <Bell className="w-5 h-5 text-cyan" />
+                <h3 className="text-sm font-bold text-white">Xabarnomalar</h3>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-slate-400 hover:text-white"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
-              {notifications.length === 0 ? (
-                <p className="text-xs text-zinc-500 text-center py-6 leading-relaxed">
-                  Hozircha bildirishnomalar yo'q.
-                  <br />Kurs tasdiqlanishi va sertifikatlar shu yerda ko'rinadi.
-                </p>
-              ) : (
-                notifications.map((n) => (
-                  <div key={n.id} className={`p-3 rounded-2xl border space-y-1 ${n.is_read ? 'bg-[#181820] border-white/5' : 'bg-[#B4F523]/8 border-[#B4F523]/20'}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-bold text-white leading-snug">{n.title}</h4>
-                      <span className="text-[9px] text-zinc-500 flex-shrink-0 mt-0.5">{n.created_at}</span>
+
+            {notifications.length === 0 ? (
+              <div className="text-center py-10 space-y-2">
+                <Bell className="w-8 h-8 text-slate-600 mx-auto" />
+                <p className="text-xs text-slate-400">Yangi xabarnomalar mavjud emas</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="p-3 bg-[#11161D] rounded-2xl border border-white/[0.06] space-y-1"
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 className="text-xs font-bold text-white">{n.title}</h4>
+                      <span className="text-[9px] text-slate-500">
+                        {n.created_at?.slice(0, 10)}
+                      </span>
                     </div>
-                    <p className="text-[11px] text-zinc-400 leading-relaxed">{n.message}</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">{n.message}</p>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* MODAL: Superadmin Dashboard */}
+      {activeModal === 'admin' && isSuperadmin && (
+        <AdminDashboardModal
+          isOpen={true}
+          onClose={() => setActiveModal(null)}
+          adminName={user?.name || 'Superadmin'}
+        />
+      )}
+
     </div>
   );
 };

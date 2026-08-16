@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Play, CheckCircle2, Award } from 'lucide-react';
+import { BookOpen, Play, CheckCircle2, Award, ChevronRight } from 'lucide-react';
 import { Course, EnrolledCourse } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 
@@ -26,24 +26,26 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
   });
 
   return (
-    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 animate-in fade-in duration-200">
+    <div className="flex-1 pb-24 px-4 pt-3 space-y-5 text-white animate-fade-up">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-serif font-bold text-brand-dark">Mening O‘qishim</h1>
-        <p className="text-xs text-brand-secondary mt-0.5">
-          Siz xarid qilgan va o'rganayotgan barcha kurslaringiz.
+      <div className="space-y-1">
+        <h1 className="text-xl font-black text-white tracking-tight">Mening O‘qishim</h1>
+        <p className="text-xs text-slate-400">
+          Siz xarid qilgan va o‘rganayotgan barcha amaliy kurslaringiz
         </p>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex bg-white p-1 rounded-2xl border border-brand-border/80 shadow-sm">
+      <div className="flex bg-[#0D1117] p-1 rounded-2xl border border-white/[0.06]">
         <button
           onClick={() => {
             haptic.selection();
             setActiveTab('all');
           }}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-xl transition-all ${
-            activeTab === 'all' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary hover:text-brand-dark'
+          className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
+            activeTab === 'all'
+              ? 'bg-cyan text-black font-bold shadow-cyanGlowSm'
+              : 'text-slate-400 hover:text-white'
           }`}
         >
           Barchasi ({enrolledCourses.length})
@@ -53,8 +55,10 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
             haptic.selection();
             setActiveTab('in_progress');
           }}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-xl transition-all ${
-            activeTab === 'in_progress' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary hover:text-brand-dark'
+          className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
+            activeTab === 'in_progress'
+              ? 'bg-cyan text-black font-bold shadow-cyanGlowSm'
+              : 'text-slate-400 hover:text-white'
           }`}
         >
           Davom etayotgan
@@ -64,8 +68,10 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
             haptic.selection();
             setActiveTab('completed');
           }}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-xl transition-all ${
-            activeTab === 'completed' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary hover:text-brand-dark'
+          className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
+            activeTab === 'completed'
+              ? 'bg-cyan text-black font-bold shadow-cyanGlowSm'
+              : 'text-slate-400 hover:text-white'
           }`}
         >
           Tugallangan
@@ -73,12 +79,12 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
       </div>
 
       {/* Courses List */}
-      <div className="space-y-3 pt-1">
+      <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-card border border-brand-border p-6 space-y-3">
-            <BookOpen className="w-10 h-10 text-brand-emerald mx-auto opacity-40" />
-            <h4 className="text-sm font-bold text-brand-dark">Kurslar mavjud emas</h4>
-            <p className="text-xs text-brand-secondary max-w-xs mx-auto">
+          <div className="text-center py-16 glass-panel rounded-3xl p-6 space-y-3 border border-white/[0.06]">
+            <BookOpen className="w-8 h-8 stroke-cyan mx-auto opacity-70" />
+            <h4 className="text-sm font-bold text-white">Kurslar mavjud emas</h4>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto">
               O‘rganishni boshlash uchun katalogimizdagi premium kurslardan birini tanlang.
             </p>
             <button
@@ -86,9 +92,9 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                 haptic.impact('light');
                 onExploreCourses();
               }}
-              className="mt-2 px-4 py-2 bg-brand-emerald text-white text-xs font-bold rounded-xl shadow-soft"
+              className="mt-2 px-5 py-2.5 bg-cyan text-black text-xs font-bold rounded-xl shadow-cyanGlowSm hover:opacity-90 active:scale-95 transition-all"
             >
-              Kurslarni ko‘rish
+              Katalogga o‘tish
             </button>
           </div>
         ) : (
@@ -101,51 +107,47 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                   haptic.impact('light');
                   onSelectCourse(fullCourse);
                 }}
-                className="group bg-white rounded-card p-4 border border-brand-border/80 shadow-soft hover:shadow-elevated transition-all cursor-pointer space-y-3"
+                className="glass-panel p-4 rounded-3xl border border-white/[0.08] hover:border-cyan/40 card-interactive cursor-pointer flex flex-col space-y-3 group"
               >
-                <div className="flex items-start space-x-3.5">
-                  <img
-                    src={c.cover_url}
-                    alt={c.title}
-                    className="w-20 h-20 rounded-2xl object-cover flex-shrink-0"
-                  />
+                <div className="flex space-x-3.5 items-center">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-[#05070A] border border-white/10">
+                    <img
+                      src={fullCourse.cover_url}
+                      alt={c.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-cyan text-black flex items-center justify-center shadow-cyanGlowSm">
+                        <Play className="w-3 h-3 fill-black ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-bold text-brand-emerald uppercase">
+                    <span className="text-[10px] font-bold text-cyan uppercase tracking-wider block">
                       {fullCourse.category}
                     </span>
-                    <h3 className="text-xs sm:text-sm font-bold text-brand-dark line-clamp-1 mt-0.5 group-hover:text-brand-emerald transition-colors">
+                    <h3 className="text-xs sm:text-sm font-bold text-white leading-snug truncate group-hover:text-cyan transition-colors">
                       {c.title}
                     </h3>
-                    <p className="text-[11px] text-brand-secondary line-clamp-1 mt-0.5">
-                      Oxirgi dars: {c.last_lesson_title}
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Oxirgi dars: {c.last_lesson_title || 'Kirish'}
                     </p>
                   </div>
                 </div>
 
-                {/* Progress Bar & CTA */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-xs text-brand-secondary">
-                    <span>
-                      {c.completed_lessons} / {c.total_lessons} dars tugatildi
-                    </span>
-                    <span className="font-bold text-brand-emerald">{c.progress_percent}%</span>
+                {/* Progress Bar */}
+                <div className="space-y-1 pt-1 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-between text-[10px] font-semibold text-slate-300">
+                    <span>Progress: {c.progress_percent}%</span>
+                    <span className="text-cyan font-bold">Davom ettirish →</span>
                   </div>
-                  <div className="w-full h-1.5 bg-brand-surface rounded-full overflow-hidden border border-brand-border/60">
+                  <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-brand-emerald rounded-full transition-all duration-500"
+                      className="h-full bg-cyan rounded-full animate-progress shadow-cyanGlowSm"
                       style={{ width: `${c.progress_percent}%` }}
                     />
                   </div>
-                </div>
-
-                <div className="pt-2 border-t border-brand-border/60 flex items-center justify-between">
-                  <span className="text-[11px] text-brand-secondary">
-                    Muallif: <span className="font-semibold text-brand-dark">{fullCourse.instructor_name}</span>
-                  </span>
-                  <button className="flex items-center space-x-1 text-xs font-bold text-brand-emerald group-hover:translate-x-0.5 transition-transform">
-                    <span>Darsga o'tish</span>
-                    <Play className="w-3 h-3 fill-current" />
-                  </button>
                 </div>
               </div>
             );

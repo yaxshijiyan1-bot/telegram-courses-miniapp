@@ -13,25 +13,27 @@
   body {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-    background-color: #09090C;
-    color: #FFFFFF;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #05070A;
+    color: #F8FAFC;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
   }
 
-  /* Yumshoq scrollbar (desktop frame uchun) */
+  /* Smooth dark scrollbar */
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(180, 245, 35, 0.18);
+    background: rgba(34, 211, 238, 0.15);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(180, 245, 35, 0.35);
+    background: rgba(34, 211, 238, 0.3);
   }
 }
 
@@ -44,90 +46,96 @@
   scrollbar-width: none;
 }
 
-/* Luxury Dark Card & Glass */
-.dark-glass-card {
-  background: rgba(19, 19, 24, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+/* ====== VISIONOS & LINEAR STYLE GLASS LAYERS ====== */
+.glass-panel {
+  background: rgba(13, 17, 23, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.dark-glass-pill {
-  background: rgba(27, 27, 34, 0.9);
+.glass-panel-elevated {
+  background: rgba(17, 22, 29, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.neon-border-active {
-  border: 1.5px solid #B4F523;
-  box-shadow: 0 0 15px rgba(180, 245, 35, 0.25);
+.glass-pill-active {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: #22D3EE;
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
 }
 
-/* ====== ANIMATSIYALAR ====== */
-
-/* Banner slayd progressi (dumaloq indikator ichida) */
-@keyframes heroSlideProgress {
-  from { width: 0%; }
-  to { width: 100%; }
-}
-.hero-slide-progress {
-  animation: heroSlideProgress linear forwards;
+.cyan-glow {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.18);
 }
 
-/* Progress barlar sahifa ochilganda sekin to'ladi */
-@keyframes progressFill {
-  from { width: 0; }
-}
-.progress-fill {
-  animation: progressFill 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+.cyan-glow-sm {
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.12);
 }
 
-/* Neon pulse — muhim elementlar uchun juda yumshoq nafas */
-@keyframes neonPulse {
-  0%, 100% { box-shadow: 0 0 10px rgba(180, 245, 35, 0.12); }
-  50% { box-shadow: 0 0 18px rgba(180, 245, 35, 0.28); }
+/* Card Touch Interactions */
+.card-interactive {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
-.neon-pulse {
-  animation: neonPulse 2.8s ease-in-out infinite;
+.card-interactive:active {
+  transform: scale(0.98);
 }
 
-/* Shimmer — premium "yuklanmoqda" effekti */
-@keyframes shimmer {
+/* Subtle Shimmer for Skeleton */
+@keyframes shimmerAnim {
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
-.shimmer {
-  background: linear-gradient(90deg, #131318 25%, #1E1E26 50%, #131318 75%);
+.shimmer-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(17, 22, 29, 0.8) 0%,
+    rgba(34, 211, 238, 0.04) 50%,
+    rgba(17, 22, 29, 0.8) 100%
+  );
   background-size: 800px 100%;
-  animation: shimmer 1.6s infinite linear;
+  animation: shimmerAnim 2.2s infinite ease-in-out;
 }
 
-/* Sahifa kirish animatsiyasi */
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Progress Fill Animation */
+@keyframes progressAnim {
+  from { width: 0%; }
 }
-.page-in {
-  animation: pageIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Safe Area Paddings */
-.pt-safe {
-  padding-top: max(16px, env(safe-area-inset-top));
-}
-.pb-safe {
-  padding-bottom: max(20px, env(safe-area-inset-bottom));
-}
-.pb-safe-nav {
-  padding-bottom: max(96px, calc(80px + env(safe-area-inset-bottom)));
+.animate-progress {
+  animation: progressAnim 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Kuchaytirilgan harakat cheklovi bilan ishlaydigan foydalanuvchilar uchun */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* Subtle Cyan Pulse for Live Dots */
+@keyframes cyanPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.92); }
+}
+.animate-cyan-pulse {
+  animation: cyanPulse 2.5s ease-in-out infinite;
+}
+
+/* Smooth Fade In Up */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

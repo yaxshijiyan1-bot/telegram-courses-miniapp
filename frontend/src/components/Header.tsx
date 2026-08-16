@@ -1,64 +1,87 @@
 import React from 'react';
-import { Bell, Sparkles } from 'lucide-react';
+import { Bell, Search, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
 
 interface HeaderProps {
   onOpenNotifications?: () => void;
-  unreadCount?: number;
-  isAuthenticated?: boolean;
+  onOpenSearch?: () => void;
+  onOpenProfile?: () => void;
+  hasUnreadNotifications?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
-  unreadCount = 0,
-  isAuthenticated = false
+  onOpenSearch,
+  onOpenProfile,
+  hasUnreadNotifications = true
 }) => {
   const { user } = useAuth();
   const { haptic } = useTelegram();
 
-  const handleNotificationClick = () => {
-    haptic.impact('light');
-    onOpenNotifications?.();
-  };
-
   return (
-    <header className="sticky top-0 z-30 bg-[#09090C]/85 backdrop-blur-xl px-4 py-2.5 border-b border-white/5 transition-all duration-200">
+    <header className="sticky top-0 z-30 bg-[#05070A]/85 backdrop-blur-2xl px-4 py-3 border-b border-white/[0.06] transition-all duration-300">
       <div className="max-w-md mx-auto flex items-center justify-between">
-        {/* Brand Identity */}
+        
+        {/* Minimalist Geometric Wordmark Logo */}
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#1B1B22] border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center shadow-neonSm">
-            <Sparkles className="w-4 h-4 fill-[#B4F523]/20" />
+          <div className="w-7 h-7 rounded-lg bg-[#0D1117] border border-cyan/30 flex items-center justify-center shadow-cyanGlowSm">
+            <div className="w-2.5 h-2.5 bg-cyan rounded-sm rotate-45" />
           </div>
-          <div>
-            <span className="text-[9px] font-extrabold tracking-wider text-[#B4F523] uppercase block">
-              PREMIUM PLATFORMA
+          <div className="flex flex-col">
+            <span className="text-[11px] font-black tracking-[0.2em] text-white uppercase font-sans">
+              COURSE<span className="text-cyan font-light ml-1">ACADEMY</span>
             </span>
-            <h1 className="text-xs font-bold text-white leading-tight">
-              {isAuthenticated && user?.name ? user.name.split(' ')[0] : 'Kurslarimiz'}
-            </h1>
           </div>
         </div>
 
-        {/* Right Notification Action */}
-        {isAuthenticated ? (
+        {/* Right Action Icons: Search, Notifications & Profile Avatar */}
+        <div className="flex items-center space-x-1.5">
+          {onOpenSearch && (
+            <button
+              onClick={() => {
+                haptic.impact('light');
+                onOpenSearch();
+              }}
+              className="w-8 h-8 rounded-full bg-[#0D1117] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white active:scale-95 transition-all"
+              aria-label="Qidiruv"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           <button
-            onClick={handleNotificationClick}
-            className="relative w-9 h-9 rounded-xl bg-[#16161C] border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white hover:border-[#B4F523]/40 active:scale-95 transition-all"
-            aria-label="Bildirishnomalar"
+            onClick={() => {
+              haptic.impact('light');
+              onOpenNotifications?.();
+            }}
+            className="relative w-8 h-8 rounded-full bg-[#0D1117] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white active:scale-95 transition-all"
+            aria-label="Xabarnomalar"
           >
-            <Bell className="w-4 h-4" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-[#B4F523] text-black rounded-full flex items-center justify-center text-[9px] font-black ring-2 ring-[#09090C] animate-in zoom-in-50">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
+            <Bell className="w-3.5 h-3.5" />
+            {hasUnreadNotifications && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-cyan rounded-full shadow-cyanGlowSm animate-cyan-pulse" />
             )}
           </button>
-        ) : (
-          <div className="w-9 h-9 rounded-xl bg-[#16161C] border border-white/5 flex items-center justify-center text-zinc-600">
-            <Bell className="w-4 h-4" />
-          </div>
-        )}
+
+          {onOpenProfile && (
+            <button
+              onClick={() => {
+                haptic.impact('light');
+                onOpenProfile();
+              }}
+              className="w-8 h-8 rounded-full bg-[#0D1117] border border-white/[0.08] hover:border-cyan/40 p-0.5 flex items-center justify-center active:scale-95 transition-all"
+              aria-label="Profil"
+            >
+              {user?.telegram_id === 8112688757 ? (
+                <img src="/images/zuhra_olimova.jpg" alt="Avatar" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <img src="/images/yaxshi_bola.jpg" alt="Avatar" className="w-full h-full rounded-full object-cover" />
+              )}
+            </button>
+          )}
+        </div>
+
       </div>
     </header>
   );

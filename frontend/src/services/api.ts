@@ -11,8 +11,8 @@ export const MOCK_COURSES: Course[] = [
     slug: 'ai-prompt-engineering-pro',
     category: 'AI',
     short_description: "Gemini 3.7, Claude va ChatGPT orqali biznes, dasturlash va avtomatizatsiyani 10x tezlashtirish.",
-    description: "Ushbu keng qamrovli kursda siz zamonaviy LLM modellari, Antigravity agentlar tizimi, Nano Banana vizual generatsiyasi va AI orqali real loyihalarni noldan professional darajada boshqarishni o'rganasiz.",
-    cover_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+    description: "Ushbu keng qamrovli kursda siz zamonaviy LLM modellari, Antigravity agentlar tizimi, vizual generatsiya va AI orqali real loyihalarni noldan professional darajada boshqarishni o'rganasiz.",
+    cover_url: '/images/ai_course.jpg',
     preview_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     price: 490000,
     old_price: 890000,
@@ -22,8 +22,8 @@ export const MOCK_COURSES: Course[] = [
     level: "Boshlang'ichdan Yuqori darajagacha",
     instructor_name: 'Yaxshi Bola',
     instructor_title: 'AI Architect & Senior Software Engineer',
-    instructor_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-    instructor_bio: 'AI Agentlar, LLM arxitekturasi va murakkab dasturiy ta\'minotlar bo\'yicha yetakchi mutaxassis.',
+    instructor_avatar: '/images/yaxshi_bola.jpg',
+    instructor_bio: "AI Agentlar, LLM arxitekturasi va murakkab dasturiy ta'minotlar bo'yicha yetakchi mutaxassis.",
     rating: 5.0,
     student_count: 1420,
     is_enrolled: true,
@@ -125,7 +125,7 @@ export const MOCK_COURSES: Course[] = [
     category: 'Dizayn',
     short_description: 'Figma, Design Systems va Apple Human Interface asosida mukammal mobil interfeyslar yaratish.',
     description: "Figma Masterclass, zamonaviy dizayn tokenlari, mikro-animatsiyalar, tipografiya va Telegram Mini App interfeyslarini xalqaro standartda yaratish bo'yicha to'liq amaliy qo'llanma.",
-    cover_url: 'https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=1200&q=80',
+    cover_url: '/images/design_course.jpg',
     preview_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     price: 550000,
     old_price: 950000,
@@ -135,7 +135,7 @@ export const MOCK_COURSES: Course[] = [
     level: "Amaliyotga yo'naltirilgan",
     instructor_name: 'Zuhra Olimova',
     instructor_title: 'Lead Product Designer & Art Director',
-    instructor_avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    instructor_avatar: '/images/zuhra_olimova.jpg',
     instructor_bio: "Fintech, EdTech va Telegram Mini App interfeyslari bo'yicha yetakchi Art Director.",
     rating: 5.0,
     student_count: 980
@@ -147,7 +147,7 @@ export const MOCK_COURSES: Course[] = [
     category: "Dasturlash",
     short_description: "FastAPI, React, TypeScript va Telegram WebApp SDK orqali real Mini Applar va to'lov tizimlarini qurish.",
     description: "Telegram platformasida Click, Payme, Supabase va Cloudflare R2 bilan ishlovchi to'liq tijoriy Mini Applarni ishlab chiqish, serverga deploy qilish va yuritish bo'yicha eng sara kurs.",
-    cover_url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80",
+    cover_url: "/images/code_course.jpg",
     preview_video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     price: 690000,
     old_price: 1200000,
@@ -157,7 +157,7 @@ export const MOCK_COURSES: Course[] = [
     level: "O'rta va Professional",
     instructor_name: "Yaxshi Bola",
     instructor_title: "Telegram Fullstack Architect",
-    instructor_avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+    instructor_avatar: "/images/yaxshi_bola.jpg",
     instructor_bio: "High-load tizimlar va Telegram ekotizimi bo'yicha yetakchi dasturchi va arxitektor.",
     rating: 4.9,
     student_count: 1850
@@ -168,8 +168,8 @@ export const MOCK_COURSES: Course[] = [
     slug: "high-ticket-smm-monetization",
     category: "Marketing",
     short_description: "Telegram va Instagram kanallardan yuqori chekli mijozlarni jalb qilish va sotuv voronkalari.",
-    description: "Kontent reja, auditoriyani isitish (lead warming), video reels skriptlari, psixologik triggerlar va to'g'ri narxlash orqali oyiga barqaror daromad qilish sirlari.",
-    cover_url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+    description: "Kontent reja, auditoriyani isitish (lead warming), video reels skriptlari, psixologik triggerlar va to'g'ri narxlash orqali barqaror daromad qilish sirlari.",
+    cover_url: '/images/market_course.jpg',
     preview_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     price: 390000,
     old_price: 700000,
@@ -179,8 +179,8 @@ export const MOCK_COURSES: Course[] = [
     level: "Boshlang'ich va Amaliyotchi",
     instructor_name: 'Zuhra Olimova',
     instructor_title: 'Marketing & Growth Strategist',
-    instructor_avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
-    instructor_bio: "100+ dan ortiq brendlar uchun million dollarlik sotuv voronkalari muallifi.",
+    instructor_avatar: '/images/zuhra_olimova.jpg',
+    instructor_bio: "Yetakchi brendlar uchun sotuv voronkalari va o'sish strategiyalari muallifi.",
     rating: 4.9,
     student_count: 2100
   }
@@ -415,6 +415,28 @@ class ApiService {
       amount: course.price,
       course_title: course.title
     };
+  }
+
+  async submitReceipt(payload: {
+    course_id: string;
+    course_title: string;
+    amount: number;
+    payment_method: string;
+    receipt_image: string;
+    student_name: string;
+    username: string;
+    telegram_id: number;
+  }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/checkout/submit-receipt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...this.getHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'To‘lov chekini yuborishda xatolik');
+    }
+    return await res.json();
   }
 
   async getCertificates(): Promise<Certificate[]> {
