@@ -207,8 +207,12 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
                 ],
                 [
                     {
-                        "text": "💬 Qo'llab-quvvatlash (@yomonboia & @sokin_notalar)",
+                        "text": "🙋‍♂️ Yigitlar uchun (Yaxshi Bola)",
                         "url": "https://t.me/yomonboia"
+                    },
+                    {
+                        "text": "🙋‍♀️ Qizlar uchun (Zuhra Olimova)",
+                        "url": "https://t.me/sokin_notalar"
                     }
                 ]
             ]
@@ -223,6 +227,42 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
             ])
 
         await send_tg_message(client, chat_id, welcome_text, keyboard)
+
+    elif text in ["/help", "/contact", "/admin_boglanish", "Admin bilan bog'lanish", "Yordam", "Bog'lanish"]:
+        contact_text = (
+            f"🤝 <b>Admin bilan bog'lanish markazi</b>\n\n"
+            f"Savollar, to'lovlar yoki takliflar bo'yicha quyidagi bo'limlardan birini tanlang:\n\n"
+            f"🙋‍♂️ <b>Yigitlar (O'g'il bolalar) uchun:</b>\n"
+            f"👤 Ustoz: <b>Yaxshi Bola</b>\n"
+            f"👉 Lichka: @yomonboia\n\n"
+            f"🙋‍♀️ <b>Qizlar (Ayollar) uchun:</b>\n"
+            f"👤 Ustoz: <b>Zuhra Olimova</b>\n"
+            f"👉 Lichka: @sokin_notalar"
+        )
+
+        contact_keyboard = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "🙋‍♂️ Yigitlar uchun (Yaxshi Bola)",
+                        "url": "https://t.me/yomonboia"
+                    }
+                ],
+                [
+                    {
+                        "text": "🙋‍♀️ Qizlar uchun (Zuhra Olimova)",
+                        "url": "https://t.me/sokin_notalar"
+                    }
+                ],
+                [
+                    {
+                        "text": "🚀 Mini Appni ochish",
+                        "web_app": {"url": webapp_url}
+                    }
+                ]
+            ]
+        }
+        await send_tg_message(client, chat_id, contact_text, contact_keyboard)
 
     elif text.startswith("/admin"):
         if not is_admin:

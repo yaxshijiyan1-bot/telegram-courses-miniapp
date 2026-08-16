@@ -155,54 +155,68 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </button>
       </div>
 
-      {/* Bog'lanish va Yordam Markazi (Adminlar lichkalari) */}
+      {/* Bog'lanish va Yordam Markazi (Adminlar tanlovi) */}
       <div className="bg-white rounded-card border border-brand-border/80 shadow-soft p-4 space-y-3">
         <div className="flex items-center space-x-2">
           <HelpCircle className="w-4 h-4 text-brand-emerald" />
           <h3 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
-            Rasmiy Aloqa & Qo'llab-quvvatlash
+            Admin Bilan Bog'lanish
           </h3>
         </div>
 
         <p className="text-[11px] text-brand-secondary leading-relaxed">
-          Savollar, to'lov cheki yoki takliflar bo'yicha to'g'ridan-to'g'ri adminlarimizga yozishingiz mumkin:
+          Savol, to'lov yoki yordam uchun o'zingizga mos bo'limni tanlang:
         </p>
 
-        <div className="grid grid-cols-2 gap-2">
-          {/* Admin 1: Yaxshi Bola */}
+        <div className="space-y-2">
+          {/* Yigitlar uchun -> Yaxshi Bola */}
           <a
             href="https://t.me/yomonboia"
             target="_blank"
             rel="noreferrer"
-            className="p-2.5 bg-brand-surface hover:bg-brand-mint/30 rounded-2xl border border-brand-border/80 flex items-center space-x-2.5 transition-all group"
+            className="p-3 bg-brand-surface hover:bg-brand-mint/40 rounded-2xl border border-brand-border/80 flex items-center justify-between transition-all group"
           >
-            <div className="w-8 h-8 rounded-xl bg-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
-              YB
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                👨‍💼
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-brand-emerald uppercase tracking-wider block">
+                  Yigitlar (O'g'il bolalar) uchun
+                </span>
+                <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
+                  Yaxshi Bola (@yomonboia)
+                </h4>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
-                Yaxshi Bola
-              </h4>
-              <p className="text-[10px] text-brand-secondary truncate">@yomonboia</p>
-            </div>
+            <span className="px-2.5 py-1 bg-brand-emerald text-white rounded-xl text-[10px] font-bold flex-shrink-0 shadow-sm">
+              Yozish ↗
+            </span>
           </a>
 
-          {/* Admin 2: Zuhra Olimova */}
+          {/* Qizlar uchun -> Zuhra Olimova */}
           <a
             href="https://t.me/sokin_notalar"
             target="_blank"
             rel="noreferrer"
-            className="p-2.5 bg-brand-surface hover:bg-brand-mint/30 rounded-2xl border border-brand-border/80 flex items-center space-x-2.5 transition-all group"
+            className="p-3 bg-brand-surface hover:bg-brand-mint/40 rounded-2xl border border-brand-border/80 flex items-center justify-between transition-all group"
           >
-            <div className="w-8 h-8 rounded-xl bg-brand-forest text-brand-gold flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
-              ZO
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-brand-forest text-brand-gold flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                👩‍💼
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">
+                  Qizlar (Ayollar) uchun
+                </span>
+                <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
+                  Zuhra Olimova (@sokin_notalar)
+                </h4>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
-                Zuhra Olimova
-              </h4>
-              <p className="text-[10px] text-brand-secondary truncate">@sokin_notalar</p>
-            </div>
+            <span className="px-2.5 py-1 bg-brand-forest text-brand-gold rounded-xl text-[10px] font-bold flex-shrink-0 shadow-sm">
+              Yozish ↗
+            </span>
           </a>
         </div>
 
