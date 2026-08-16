@@ -61,6 +61,11 @@ class Settings(BaseSettings):
             }
         }
 
+    # To'lov Karta Rekvizitlari
+    CARD_NUMBER: str = os.getenv("CARD_NUMBER", "8600 0000 0000 0000")
+    CARD_HOLDER: str = os.getenv("CARD_HOLDER", "Yaxshi Bola / Zuhra Olimova")
+    CARD_BANK: str = os.getenv("CARD_BANK", "Payme / Click / Uzum")
+
     class Config:
         case_sensitive = True
 

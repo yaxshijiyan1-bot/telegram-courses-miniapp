@@ -1,11 +1,50 @@
 import uuid
+import base64
+import httpx
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
 from app.models.schemas import CreateOrderRequest, CreateOrderResponse, VerifyOrderRequest
 from app.core.security import get_current_user
 from app.core.supabase import supabase_client
+from app.core.config import settings
 from seed_data import COURSES
 
 router = APIRouter(prefix="/checkout", tags=["Checkout & Payments"])
+
+# Kutilayotgan to'lov cheklari bazasi (In-memory cache + Supabase)
+PENDING_RECEIPTS: Dict[str, Dict[str, Any]] = {}
+
+class SubmitReceiptRequest(BaseModel):
+    course_id: str
+    payment_method: str = "payme"
+    receipt_image: str # Base64 yoki URL
+    comment: Optional[str] = None
+
+@router.get("/payment-info")
+async def get_payment_info():
+    """To'lov rekvizitlari va admin kontaktlari"""
+    return {
+        "card_number": settings.CARD_NUMBER,
+        "card_holder": settings.CARD_HOLDER,
+        "bank_name": settings.CARD_BANK,
+        "admins": [
+            {
+                "name": "Yaxshi Bola",
+                "username": "yomonboia",
+                "telegram_url": "https://t.me/yomonboia",
+                "role": "Asoschi & Superadmin"
+            },
+            {
+                "name": "Zuhra Olimova",
+                "username": "sokin_notalar",
+                "telegram_url": "https://t.me/sokin_notalar",
+                "role": "Hammuassis & Superadmin"
+            }
+        ],
+        "bot_username": settings.BOT_USERNAME,
+        "bot_url": f"https://t.me/{settings.BOT_USERNAME}"
+    }
 
 @router.post("/create-order", response_model=CreateOrderResponse)
 async def create_order(
@@ -20,7 +59,6 @@ async def create_order(
     order_id = f"ord_{uuid.uuid4().hex[:12]}"
     user_id = current_user.get("sub")
 
-    # To'lov yozuvi (Supabase / in-memory)
     purchase_data = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -32,8 +70,7 @@ async def create_order(
     }
     await supabase_client.insert("purchases", purchase_data)
 
-    # To'lov provayderi havolasi (Payme / Click / Telegram Stars simulyatsiyasi)
-    payment_url = f"https://checkout.provider.mock/pay?order_id={order_id}&amount={course['price']}"
+    payment_url = f"https://kurslarimiz-platforma.vercel.app/#checkout"
 
     return {
         "order_id": order_id,
@@ -45,6 +82,127 @@ async def create_order(
         "status": "pending"
     }
 
+@router.post("/submit-receipt")
+async def submit_receipt(
+    req: SubmitReceiptRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Talaba tomonidan to'lov cheki skrinshotini yuborish.
+    Ma'lumotlar avtomatik ravishda ikkala Superadminga Telegram Bot orqali yuboriladi!
+    """
+    course = next((c for c in COURSES if c["id"] == req.course_id or c["slug"] == req.course_id), None)
+    if not course:
+        raise HTTPException(status_code=404, detail="Kurs topilmadi")
+
+    order_id = f"rcp_{uuid.uuid4().hex[:10]}"
+    user_id = current_user.get("sub")
+    student_name = current_user.get("name", "Talaba")
+    username = current_user.get("username", "mavjud_emas")
+    telegram_id = current_user.get("telegram_id", 0)
+
+    receipt_item = {
+        "order_id": order_id,
+        "user_id": user_id,
+        "telegram_id": telegram_id,
+        "student_name": student_name,
+        "username": username,
+        "course_id": course["id"],
+        "course_title": course["title"],
+        "amount": course["price"],
+        "payment_method": req.payment_method,
+        "receipt_image": req.receipt_image,
+        "comment": req.comment,
+        "status": "pending",
+        "created_at": "Bugun, hozirgina"
+    }
+
+    # Keshga saqlash
+    PENDING_RECEIPTS[order_id] = receipt_item
+
+    # Supabase ga yozish
+    await supabase_client.insert("purchases", {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "course_id": course["id"],
+        "amount": course["price"],
+        "status": "pending_approval",
+        "payment_method": req.payment_method,
+        "transaction_id": order_id
+    })
+
+    # Ikkala Superadminga Telegram Bot orqali to'lov cheki va xabarni yuborish
+    if settings.BOT_TOKEN:
+        tg_api = f"https://api.telegram.org/bot{settings.BOT_TOKEN}"
+        caption = (
+            f"🔔 <b>YANGI TO'LOV CHEKI KELDI!</b>\n\n"
+            f"👤 <b>Talaba:</b> {student_name} (@{username})\n"
+            f"🆔 <b>Telegram ID:</b> <code>{telegram_id}</code>\n"
+            f"📚 <b>Kurs:</b> {course['title']}\n"
+            f"💰 <b>Summa:</b> {course['price']:,} so'm\n"
+            f"💳 <b>To'lov turi:</b> {req.payment_method.upper()}\n"
+            f"🔢 <b>Buyurtma ID:</b> <code>{order_id}</code>\n\n"
+            f"<i>Chekni tekshirib, quyidagi tugmalar orqali tasdiqlang:</i>"
+        )
+
+        keyboard = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "✅ Tasdiqlash (Kursni ochish)",
+                        "callback_data": f"approve_{order_id}"
+                    },
+                    {
+                        "text": "❌ Rad etish",
+                        "callback_data": f"reject_{order_id}"
+                    }
+                ],
+                [
+                    {
+                        "text": "📊 Admin Dashboard",
+                        "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}
+                    }
+                ]
+            ]
+        }
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            for admin_id in settings.ADMIN_IDS:
+                try:
+                    # Agar rasm base64 bo'lsa
+                    if req.receipt_image.startswith("data:image"):
+                        # Matnli xabar yuborish
+                        await client.post(f"{tg_api}/sendMessage", json={
+                            "chat_id": admin_id,
+                            "text": caption,
+                            "parse_mode": "HTML",
+                            "reply_markup": keyboard
+                        })
+                    elif req.receipt_image.startswith("http"):
+                        # Rasm bilan yuborish
+                        await client.post(f"{tg_api}/sendPhoto", json={
+                            "chat_id": admin_id,
+                            "photo": req.receipt_image,
+                            "caption": caption,
+                            "parse_mode": "HTML",
+                            "reply_markup": keyboard
+                        })
+                    else:
+                        await client.post(f"{tg_api}/sendMessage", json={
+                            "chat_id": admin_id,
+                            "text": caption,
+                            "parse_mode": "HTML",
+                            "reply_markup": keyboard
+                        })
+                except Exception as e:
+                    print(f"Error notifying admin {admin_id}: {e}")
+
+    return {
+        "success": True,
+        "order_id": order_id,
+        "message": "To'lov cheki qabul qilindi! Adminlar tasdiqlagach, kurs avtomatik ochiladi."
+    }
+
 @router.post("/verify")
 async def verify_order(
     req: VerifyOrderRequest,
@@ -53,28 +211,14 @@ async def verify_order(
     """To'lov muvaffaqiyatini tekshirish va talabaga kursni ochish"""
     user_id = current_user.get("sub")
     
-    # Kurs enrollment yaratish
-    # Mock / Supabase
     await supabase_client.insert("enrollments", {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
-        "course_id": "c1111111-1111-1111-1111-111111111111",
+        "course_id": req.order_id,
         "status": "active"
-    })
-
-    # Bildirishnoma qo'shish
-    await supabase_client.insert("notifications", {
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "title": "Xarid muvaffaqiyatli yakunlandi! 🎉",
-        "message": "Kurs sizning shaxsiy kabinetingizga qo'shildi. O'rganishni boshlashingiz mumkin.",
-        "type": "success",
-        "is_read": False
     })
 
     return {
         "success": True,
-        "message": "To'lov muvaffaqiyatli qabul qilindi. Kurs ochildi!",
-        "order_id": req.order_id,
-        "access_granted": True
+        "message": "To'lov muvaffaqiyatli qabul qilindi va kurs ochildi! 🚀"
     }

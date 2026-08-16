@@ -20,7 +20,150 @@ async def send_tg_message(client: httpx.AsyncClient, chat_id: int, text: str, re
     except Exception as e:
         logger.error(f"Error sending message to {chat_id}: {e}")
 
+async def handle_callback_query(client: httpx.AsyncClient, callback_query: dict):
+    """Adminlar tomonidan to'lov chekini tasdiqlash yoki rad etish tugmasi bosilganda"""
+    from app.api.checkout import PENDING_RECEIPTS
+
+    query_id = callback_query.get("id")
+    user_id = callback_query.get("from", {}).get("id")
+    data = callback_query.get("data", "")
+    message = callback_query.get("message", {})
+    chat_id = message.get("chat", {}).get("id")
+    message_id = message.get("message_id")
+
+    # Faqat ikkala Superadmin uchun ruxsat
+    if user_id not in settings.ADMIN_IDS:
+        await client.post(f"{API_URL}/answerCallbackQuery", json={
+            "callback_query_id": query_id,
+            "text": "❌ Sizda admin huquqlari yo'q!",
+            "show_alert": True
+        })
+        return
+
+    admin_name = "Yaxshi Bola" if user_id == 8544023815 else "Zuhra Olimova"
+
+    if data.startswith("approve_"):
+        order_id = data.replace("approve_", "")
+        receipt = PENDING_RECEIPTS.get(order_id)
+        
+        student_tg_id = receipt.get("telegram_id") if receipt else None
+        course_title = receipt.get("course_title", "Kurs") if receipt else "Kurs"
+
+        # Callback javobi
+        await client.post(f"{API_URL}/answerCallbackQuery", json={
+            "callback_query_id": query_id,
+            "text": f"✅ To'lov tasdiqlandi! ({admin_name})"
+        })
+
+        # Admindagi xabarni yangilash
+        updated_text = (
+            f"{message.get('text', message.get('caption', ''))}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"✅ <b>TO'LOV TASDIQLANDI!</b>\n"
+            f"👤 <b>Tasdiqlagan Admin:</b> {admin_name}\n"
+            f"🎓 <b>Holati:</b> Talabaga kurs ochildi va botdan xushxabar yuborildi."
+        )
+
+        try:
+            if "caption" in message:
+                await client.post(f"{API_URL}/editMessageCaption", json={
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "caption": updated_text,
+                    "parse_mode": "HTML"
+                })
+            else:
+                await client.post(f"{API_URL}/editMessageText", json={
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "text": updated_text,
+                    "parse_mode": "HTML"
+                })
+        except Exception:
+            pass
+
+        # Talabaga xushxabar yuborish
+        if student_tg_id:
+            congrats_text = (
+                f"🎉 <b>Ajoyib Yangilik! To'lovingiz Tasdiqlandi!</b>\n\n"
+                f"Hurmatli talaba, sizning <b>'{course_title}'</b> kursi uchun to'lovingiz adminlar tomonidan muvaffaqiyatli tasdiqlandi! 🎓\n\n"
+                f"Kurs materiallari va barcha darslar profilingizda to'liq ochildi.\n"
+                f"Hoziroq o'rganishni boshlashingiz mumkin 👇"
+            )
+            congrats_keyboard = {
+                "inline_keyboard": [
+                    [
+                        {
+                            "text": "🚀 Kursni Boshlash (Mini App)",
+                            "web_app": {"url": settings.WEBAPP_URL}
+                        }
+                    ],
+                    [
+                        {
+                            "text": "💬 Savol yoki Yordam",
+                            "url": "https://t.me/yomonboia"
+                        }
+                    ]
+                ]
+            }
+            await send_tg_message(client, student_tg_id, congrats_text, congrats_keyboard)
+
+        if receipt:
+            receipt["status"] = "approved"
+
+    elif data.startswith("reject_"):
+        order_id = data.replace("reject_", "")
+        receipt = PENDING_RECEIPTS.get(order_id)
+        student_tg_id = receipt.get("telegram_id") if receipt else None
+
+        await client.post(f"{API_URL}/answerCallbackQuery", json={
+            "callback_query_id": query_id,
+            "text": f"❌ To'lov rad etildi! ({admin_name})"
+        })
+
+        updated_text = (
+            f"{message.get('text', message.get('caption', ''))}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"❌ <b>TO'LOV RAD ETILDI!</b>\n"
+            f"👤 <b>Rad etgan Admin:</b> {admin_name}"
+        )
+
+        try:
+            if "caption" in message:
+                await client.post(f"{API_URL}/editMessageCaption", json={
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "caption": updated_text,
+                    "parse_mode": "HTML"
+                })
+            else:
+                await client.post(f"{API_URL}/editMessageText", json={
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "text": updated_text,
+                    "parse_mode": "HTML"
+                })
+        except Exception:
+            pass
+
+        if student_tg_id:
+            reject_text = (
+                f"⚠️ <b>To'lov chekingiz tasdiqlanmadi</b>\n\n"
+                f"Yuborgan to'lov chekingiz tekshiruvdan o'tmadi yoki xato yuborilgan.\n\n"
+                f"Iltimos, qayta to'lov qiling yoki yordam uchun adminlarga yozing:\n"
+                f"👤 @yomonboia (Yaxshi Bola)\n"
+                f"👤 @sokin_notalar (Zuhra Olimova)"
+            )
+            await send_tg_message(client, student_tg_id, reject_text)
+
+        if receipt:
+            receipt["status"] = "rejected"
+
 async def handle_tg_update(client: httpx.AsyncClient, update: dict):
+    if "callback_query" in update:
+        await handle_callback_query(client, update["callback_query"])
+        return
+
     message = update.get("message")
     if not message:
         return
@@ -61,6 +204,12 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
                         "text": "📚 Kurslar Katalogi",
                         "web_app": {"url": f"{webapp_url}#courses"}
                     }
+                ],
+                [
+                    {
+                        "text": "💬 Qo'llab-quvvatlash (@yomonboia & @sokin_notalar)",
+                        "url": "https://t.me/yomonboia"
+                    }
                 ]
             ]
         }
@@ -84,8 +233,8 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
         admin_text = (
             f"👑 <b>Admin Boshqaruv Markazi</b>\n\n"
             f"Assalomu alaykum, <b>{admin_name}</b>!\n"
-            f"Sizda platformaning barcha kurslari, foydalanuvchilari va tushumlarini boshqarish bo'yicha "
-            f"to'liq Superadmin imkoniyatlari mavjud.\n\n"
+            f"Sizda platformaning barcha kurslari, talabalari, tushumlari va to'lov cheklarini tasdiqlash "
+            f"bo'yicha to'liq Superadmin imkoniyatlari mavjud.\n\n"
             f"Boshqaruv panelini ochish uchun tugmani bosing 👇"
         )
 
@@ -111,7 +260,6 @@ async def start_telegram_bot_polling():
     offset = 0
 
     async with httpx.AsyncClient(timeout=30.0) as client:
-        # Commands & Menu button sozlash
         try:
             await client.post(f"{API_URL}/setMyCommands", json={
                 "commands": [

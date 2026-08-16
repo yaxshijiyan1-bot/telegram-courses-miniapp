@@ -11,7 +11,8 @@ import {
   Download,
   CheckCircle2,
   X,
-  ShieldAlert
+  ShieldAlert,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
@@ -86,7 +87,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               </div>
               <div>
                 <h4 className="text-xs font-bold text-brand-emerald">Superadmin Dashboard</h4>
-                <p className="text-[10px] text-brand-secondary">Statistika, daromad va kurs qo'shish</p>
+                <p className="text-[10px] text-brand-secondary">Cheklar, tushumlar, kurslar & CRM</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-brand-emerald" />
@@ -152,23 +153,68 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
           <ChevronRight className="w-4 h-4 text-brand-muted" />
         </button>
+      </div>
 
+      {/* Bog'lanish va Yordam Markazi (Adminlar lichkalari) */}
+      <div className="bg-white rounded-card border border-brand-border/80 shadow-soft p-4 space-y-3">
+        <div className="flex items-center space-x-2">
+          <HelpCircle className="w-4 h-4 text-brand-emerald" />
+          <h3 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+            Rasmiy Aloqa & Qo'llab-quvvatlash
+          </h3>
+        </div>
+
+        <p className="text-[11px] text-brand-secondary leading-relaxed">
+          Savollar, to'lov cheki yoki takliflar bo'yicha to'g'ridan-to'g'ri adminlarimizga yozishingiz mumkin:
+        </p>
+
+        <div className="grid grid-cols-2 gap-2">
+          {/* Admin 1: Yaxshi Bola */}
+          <a
+            href="https://t.me/yomonboia"
+            target="_blank"
+            rel="noreferrer"
+            className="p-2.5 bg-brand-surface hover:bg-brand-mint/30 rounded-2xl border border-brand-border/80 flex items-center space-x-2.5 transition-all group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+              YB
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
+                Yaxshi Bola
+              </h4>
+              <p className="text-[10px] text-brand-secondary truncate">@yomonboia</p>
+            </div>
+          </a>
+
+          {/* Admin 2: Zuhra Olimova */}
+          <a
+            href="https://t.me/sokin_notalar"
+            target="_blank"
+            rel="noreferrer"
+            className="p-2.5 bg-brand-surface hover:bg-brand-mint/30 rounded-2xl border border-brand-border/80 flex items-center space-x-2.5 transition-all group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-brand-forest text-brand-gold flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+              ZO
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
+                Zuhra Olimova
+              </h4>
+              <p className="text-[10px] text-brand-secondary truncate">@sokin_notalar</p>
+            </div>
+          </a>
+        </div>
+
+        {/* Rasmiy Bot */}
         <a
           href="https://t.me/kurslarimizbot"
           target="_blank"
           rel="noreferrer"
-          className="w-full p-4 flex items-center justify-between hover:bg-brand-surface text-left transition-colors"
+          className="w-full py-2.5 bg-brand-mint/40 hover:bg-brand-mint text-brand-emerald rounded-2xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-all border border-brand-emerald/20"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-brand-emerald flex items-center justify-center">
-              <HelpCircle className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-brand-dark">Qo'llab-quvvatlash (@kurslarimizbot)</h4>
-              <p className="text-[10px] text-brand-secondary">Savol va yordam uchun 24/7</p>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-brand-muted" />
+          <MessageCircle className="w-3.5 h-3.5" />
+          <span>Rasmiy Bot: @kurslarimizbot</span>
         </a>
       </div>
 
