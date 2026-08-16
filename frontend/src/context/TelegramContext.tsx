@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 interface TelegramContextType {
   webApp: any;
@@ -71,8 +71,15 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const backButtonHandlerRef = useRef<(() => void) | null>(null);
+
   const showBackButton = (onClick: () => void) => {
     if (webApp?.BackButton) {
+      // Eski handlerni olib tashlaymiz — aks holda ular to'planib, orqaga bosilganda bir nechta amal bajariladi
+      if (backButtonHandlerRef.current) {
+        try { webApp.BackButton.offClick(backButtonHandlerRef.current); } catch {}
+      }
+      backButtonHandlerRef.current = onClick;
       webApp.BackButton.show();
       webApp.BackButton.onClick(onClick);
     }

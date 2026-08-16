@@ -80,8 +80,17 @@ CREATE TABLE IF NOT EXISTS public.purchases (
     status VARCHAR(50) DEFAULT 'completed',
     payment_method VARCHAR(50) DEFAULT 'payme',
     transaction_id VARCHAR(255),
+    telegram_id BIGINT,
+    student_name VARCHAR(255),
+    username VARCHAR(255),
+    course_title VARCHAR(255),
+    receipt_image_url TEXT,
+    comment TEXT,
+    reviewed_by VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_purchases_transaction ON public.purchases(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_purchases_status ON public.purchases(status);
 
 -- 7. ENROLLMENTS (SOTIB OLINGAN KURSLAR HUQUQI)
 CREATE TABLE IF NOT EXISTS public.enrollments (

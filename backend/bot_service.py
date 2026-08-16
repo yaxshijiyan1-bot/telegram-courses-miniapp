@@ -2,6 +2,7 @@ import asyncio
 import logging
 import httpx
 from app.core.config import settings
+from app.services.purchases import approve_purchase, reject_purchase
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,6 @@ async def send_tg_message(client: httpx.AsyncClient, chat_id: int, text: str, re
 
 async def handle_callback_query(client: httpx.AsyncClient, callback_query: dict):
     """Adminlar tomonidan to'lov chekini tasdiqlash yoki rad etish tugmasi bosilganda"""
-    from app.api.checkout import PENDING_RECEIPTS
-
     query_id = callback_query.get("id")
     user_id = callback_query.get("from", {}).get("id")
     data = callback_query.get("data", "")
@@ -42,30 +41,34 @@ async def handle_callback_query(client: httpx.AsyncClient, callback_query: dict)
 
     admin_name = "Yaxshi Bola" if user_id == 8544023815 else "Zuhra Olimova"
 
-    if data.startswith("approve_"):
-        order_id = data.replace("approve_", "")
-        receipt = PENDING_RECEIPTS.get(order_id)
-        
-        student_tg_id = receipt.get("telegram_id") if receipt else None
-        course_title = receipt.get("course_title", "Kurs") if receipt else "Kurs"
+    if data.startswith("approve_") or data.startswith("reject_"):
+        order_id = data.replace("approve_", "").replace("reject_", "")
+        is_approve = data.startswith("approve_")
 
-        # Callback javobi
+        if is_approve:
+            ok, result_msg = await approve_purchase(order_id, admin_name)
+        else:
+            ok, result_msg = await reject_purchase(order_id, admin_name)
+
         await client.post(f"{API_URL}/answerCallbackQuery", json={
             "callback_query_id": query_id,
-            "text": f"✅ To'lov tasdiqlandi! ({admin_name})"
+            "text": f"{'✅' if is_approve else '❌'} {result_msg}" if ok else f"⚠️ {result_msg}"
         })
+
+        if not ok:
+            return
 
         # Admindagi xabarni yangilash
         updated_text = (
             f"{message.get('text', message.get('caption', ''))}\n\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"✅ <b>TO'LOV TASDIQLANDI!</b>\n"
-            f"👤 <b>Tasdiqlagan Admin:</b> {admin_name}\n"
-            f"🎓 <b>Holati:</b> Talabaga kurs ochildi va botdan xushxabar yuborildi."
+            f"{'✅ <b>TO\'LOV TASDIQLANDI!</b>' if is_approve else '❌ <b>TO\'LOV RAD ETILDI!</b>'}\n"
+            f"👤 <b>Admin:</b> {admin_name}\n"
+            + ("🎓 <b>Holati:</b> Talabaga kurs ochildi va botdan xushxabar yuborildi." if is_approve else "📩 <b>Holati:</b> Talaba rad etilganlik haqida xabardor qilindi.")
         )
 
         try:
-            if "caption" in message:
+            if message.get("caption") is not None:
                 await client.post(f"{API_URL}/editMessageCaption", json={
                     "chat_id": chat_id,
                     "message_id": message_id,
@@ -81,83 +84,6 @@ async def handle_callback_query(client: httpx.AsyncClient, callback_query: dict)
                 })
         except Exception:
             pass
-
-        # Talabaga xushxabar yuborish
-        if student_tg_id:
-            congrats_text = (
-                f"🎉 <b>Ajoyib Yangilik! To'lovingiz Tasdiqlandi!</b>\n\n"
-                f"Hurmatli talaba, sizning <b>'{course_title}'</b> kursi uchun to'lovingiz adminlar tomonidan muvaffaqiyatli tasdiqlandi! 🎓\n\n"
-                f"Kurs materiallari va barcha darslar profilingizda to'liq ochildi.\n"
-                f"Hoziroq o'rganishni boshlashingiz mumkin 👇"
-            )
-            congrats_keyboard = {
-                "inline_keyboard": [
-                    [
-                        {
-                            "text": "🚀 Kursni Boshlash (Mini App)",
-                            "web_app": {"url": settings.WEBAPP_URL}
-                        }
-                    ],
-                    [
-                        {
-                            "text": "💬 Savol yoki Yordam",
-                            "url": "https://t.me/yomonboia"
-                        }
-                    ]
-                ]
-            }
-            await send_tg_message(client, student_tg_id, congrats_text, congrats_keyboard)
-
-        if receipt:
-            receipt["status"] = "approved"
-
-    elif data.startswith("reject_"):
-        order_id = data.replace("reject_", "")
-        receipt = PENDING_RECEIPTS.get(order_id)
-        student_tg_id = receipt.get("telegram_id") if receipt else None
-
-        await client.post(f"{API_URL}/answerCallbackQuery", json={
-            "callback_query_id": query_id,
-            "text": f"❌ To'lov rad etildi! ({admin_name})"
-        })
-
-        updated_text = (
-            f"{message.get('text', message.get('caption', ''))}\n\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"❌ <b>TO'LOV RAD ETILDI!</b>\n"
-            f"👤 <b>Rad etgan Admin:</b> {admin_name}"
-        )
-
-        try:
-            if "caption" in message:
-                await client.post(f"{API_URL}/editMessageCaption", json={
-                    "chat_id": chat_id,
-                    "message_id": message_id,
-                    "caption": updated_text,
-                    "parse_mode": "HTML"
-                })
-            else:
-                await client.post(f"{API_URL}/editMessageText", json={
-                    "chat_id": chat_id,
-                    "message_id": message_id,
-                    "text": updated_text,
-                    "parse_mode": "HTML"
-                })
-        except Exception:
-            pass
-
-        if student_tg_id:
-            reject_text = (
-                f"⚠️ <b>To'lov chekingiz tasdiqlanmadi</b>\n\n"
-                f"Yuborgan to'lov chekingiz tekshiruvdan o'tmadi yoki xato yuborilgan.\n\n"
-                f"Iltimos, qayta to'lov qiling yoki yordam uchun adminlarga yozing:\n"
-                f"👤 @yomonboia (Yaxshi Bola)\n"
-                f"👤 @sokin_notalar (Zuhra Olimova)"
-            )
-            await send_tg_message(client, student_tg_id, reject_text)
-
-        if receipt:
-            receipt["status"] = "rejected"
 
 async def handle_tg_update(client: httpx.AsyncClient, update: dict):
     if "callback_query" in update:
@@ -228,7 +154,7 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
 
         await send_tg_message(client, chat_id, welcome_text, keyboard)
 
-    elif text in ["/help", "/contact", "/admin_boglanish", "Admin bilan bog'lanish", "Yordam", "Bog'lanish"]:
+    elif text in ["/help", "/contact", "Admin bilan bog'lanish", "Yordam", "Bog'lanish"]:
         contact_text = (
             f"🤝 <b>Admin bilan bog'lanish markazi</b>\n\n"
             f"Savollar, to'lovlar yoki takliflar bo'yicha quyidagi bo'limlardan birini tanlang:\n\n"
@@ -299,12 +225,12 @@ async def start_telegram_bot_polling():
     logger.info("Starting Telegram Bot Polling service for @kurslarimizbot...")
     offset = 0
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=35.0) as client:
         try:
             await client.post(f"{API_URL}/setMyCommands", json={
                 "commands": [
                     {"command": "start", "description": "Platformani ishga tushirish"},
-                    {"command": "kurslar", "description": "Barcha kurslar katalogi"},
+                    {"command": "help", "description": "Admin bilan bog'lanish"},
                     {"command": "admin", "description": "Admin boshqaruv paneli"}
                 ]
             })
@@ -318,15 +244,21 @@ async def start_telegram_bot_polling():
         except Exception as e:
             logger.error(f"Error setting bot settings: {e}")
 
-        # Polling loop
+        # Polling loop (long polling, timeout=25)
         while True:
             try:
-                res = await client.get(f"{API_URL}/getUpdates", params={"offset": offset, "timeout": 20})
+                res = await client.get(f"{API_URL}/getUpdates", params={"offset": offset, "timeout": 25})
                 if res.status_code == 200:
                     data = res.json()
                     for item in data.get("result", []):
                         offset = item["update_id"] + 1
-                        await handle_tg_update(client, item)
+                        try:
+                            await handle_tg_update(client, item)
+                        except Exception as e:
+                            logger.error(f"Update handling error: {e}")
+                elif res.status_code == 409:
+                    logger.warning("getUpdates 409: boshqa polling instansiyasi bor (eski deploy o'chishi kutilmoqda)...")
+                    await asyncio.sleep(10)
             except asyncio.CancelledError:
                 break
             except Exception as e:

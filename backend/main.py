@@ -4,13 +4,18 @@ import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
 from app.api import auth, courses, checkout, student, admin
+from app.storage import init_store, get_store
 from bot_service import start_telegram_bot_polling
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Telegram bot pollingni fon jarayoni sifatida ishga tushirish
+    # Storage'ni aniqlash (Supabase yoki SQLite fallback) va seed qilish
+    store = await init_store()
+
+    # Telegram bot pollingni fon jarayoni sifatida ishga tushirish
     bot_task = asyncio.create_task(start_telegram_bot_polling())
     yield
     # Shutdown: Botni to'xtatish
@@ -27,14 +32,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS sozlamalari (Vercel frontend va Telegram Mini App uchun)
+# CORS — faqat ishonchli frontend manbalariga ruxsat
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
+# JSON javoblar uchun gzip siqish (mobil trafik tejamkorligi)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 # Routerlarni ro'yxatdan o'tkazish
 app.include_router(auth.router, prefix=settings.API_PREFIX)
@@ -50,13 +58,18 @@ async def root():
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "bot": f"@{settings.BOT_USERNAME}",
-        "frontend_url": "https://kurslarimiz-platforma.vercel.app",
+        "frontend_url": settings.WEBAPP_URL,
         "docs_url": "/docs"
     }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    try:
+        store = get_store()
+        backend = store.backend_name
+    except Exception:
+        backend = "not_initialized"
+    return {"status": "healthy", "storage": backend, "version": settings.VERSION}
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

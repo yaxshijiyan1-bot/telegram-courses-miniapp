@@ -48,3 +48,10 @@ build/
 logs/
 .DS_Store
 Thumbs.db
+
+# Runtime storage (SQLite fallback)
+backend/data/
+backend/data_test/
+*.db
+*.db-wal
+*.db-shm

@@ -3,12 +3,17 @@ import { User } from '../types';
 import { api } from '../services/api';
 import { useTelegram } from './TelegramContext';
 
+interface AuthResult {
+  success: boolean;
+  error?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (login: string, pass: string) => Promise<boolean>;
-  telegramLogin: () => Promise<boolean>;
+  login: (login: string, pass: string) => Promise<AuthResult>;
+  telegramLogin: () => Promise<AuthResult>;
   logout: () => void;
 }
 
@@ -16,8 +21,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: async () => false,
-  telegramLogin: async () => false,
+  login: async () => ({ success: false }),
+  telegramLogin: async () => ({ success: false }),
   logout: () => {}
 });
 
@@ -30,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // LocalStorage tekshirish
     const savedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    
+
     if (savedUser && token) {
       try {
         setUser(JSON.parse(savedUser));
@@ -43,26 +48,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       telegramLogin();
     }
     setIsLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tgUser]);
 
-  const login = async (loginStr: string, pass: string): Promise<boolean> => {
+  const login = async (loginStr: string, pass: string): Promise<AuthResult> => {
     try {
       const res = await api.login(loginStr, pass);
       setUser(res.user);
-      return true;
-    } catch {
-      return false;
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Login yoki parol noto\'g\'ri.' };
     }
   };
 
-  const telegramLogin = async (): Promise<boolean> => {
+  const telegramLogin = async (): Promise<AuthResult> => {
     try {
       const initData = webApp?.initData || '';
       const res = await api.telegramAuth(initData, tgUser);
       setUser(res.user);
-      return true;
-    } catch {
-      return false;
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Telegram orqali ulanishda xatolik yuz berdi.' };
     }
   };
 

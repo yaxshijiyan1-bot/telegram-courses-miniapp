@@ -1,18 +1,7 @@
-import os
-import uuid
-import json
-import httpx
-from datetime import datetime
-
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ekjjickrhnjttzrqwakz.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVramppY2tyaG5qdHR6cnF3YWt6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Njg1NDg5NCwiZXhwIjoyMTAyNDMwODk0fQ.k4vBBSjFWGecx3L_vn9Si84nY0DkWUjYTMqTriznPig")
-
-headers = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json",
-    "Prefer": "return=representation"
-}
+"""
+Boshlang'ich (seed) ma'lumotlar — kurslar, modullar va darslar.
+MAXFIY KALITLAR BU YERDA SAQLANMAYDI: barchasi .env orqali keladi (app.core.config).
+"""
 
 # 1. SAMPLE PREMIUM COURSES
 COURSES = [
@@ -260,10 +249,69 @@ DEMO_NOTIFICATIONS = [
     }
 ]
 
+def build_course_modules(course: dict) -> list:
+    """
+    Berilgan kurs uchun modullar va darslar strukturasini quradi.
+    Kurs 1 (AI) uchun to'liq tayyorLANGAN MODULES_COURSE_1 ishlatiladi,
+    qolgan kurslar uchun universal 2-modulli amaliy dastur generatsiya qilinadi.
+    """
+    if course["id"] == "c1111111-1111-1111-1111-111111111111":
+        return MODULES_COURSE_1
+    return [
+        {
+            "id": f"m-{course['id']}-1",
+            "course_id": course["id"],
+            "title": "01. Boshlang'ich qism va fundamental asoslar",
+            "order": 1,
+            "lessons": [
+                {
+                    "id": f"l-{course['id']}-1",
+                    "module_id": f"m-{course['id']}-1",
+                    "course_id": course["id"],
+                    "title": "Kurs bilan tanishuv va metodika",
+                    "duration": "10:15",
+                    "order": 1,
+                    "is_preview": True,
+                    "description": "Kurs dasturi, o'rganish tartibi va asosiy maqsadlar bilan tanishamiz.",
+                    "resources": []
+                },
+                {
+                    "id": f"l-{course['id']}-2",
+                    "module_id": f"m-{course['id']}-1",
+                    "course_id": course["id"],
+                    "title": "Asosiy vositalar va platformani sozlash",
+                    "duration": "14:40",
+                    "order": 2,
+                    "is_preview": False,
+                    "description": "Amaliyot uchun barcha kerakli dasturiy ta'minotlarni o'rnatish.",
+                    "resources": []
+                }
+            ]
+        },
+        {
+            "id": f"m-{course['id']}-2",
+            "course_id": course["id"],
+            "title": "02. Amaliy loyihalar va vazifalar",
+            "order": 2,
+            "lessons": [
+                {
+                    "id": f"l-{course['id']}-3",
+                    "module_id": f"m-{course['id']}-2",
+                    "course_id": course["id"],
+                    "title": "Real keys tahlili va amaliy topshiriq",
+                    "duration": "24:30",
+                    "order": 1,
+                    "is_preview": False,
+                    "description": "O'rganilgan nazariy bilimlarni real biznes keysida qo'llash.",
+                    "resources": []
+                }
+            ]
+        }
+    ]
+
 def seed():
-    print("Seeding database via mock/local and Supabase REST...")
-    # Seed data logic...
-    print("Seed data prepared.")
+    print("Seed ma'lumotlari storage moduli orqali ishga tushiriladi (main.py lifespan).")
 
 if __name__ == "__main__":
     seed()
+

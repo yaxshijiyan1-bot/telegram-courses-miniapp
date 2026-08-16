@@ -100,3 +100,62 @@ export interface NotificationItem {
   is_read: boolean;
   created_at: string;
 }
+
+// ===== ADMIN TURLARI =====
+
+export interface AdminStats {
+  admin_name: string;
+  admin_username: string;
+  role: string;
+  storage_backend: string;
+  total_revenue: number;
+  monthly_revenue: number;
+  total_students: number;
+  active_courses_count: number;
+  pending_receipts_count: number;
+  recent_sales: {
+    id: string;
+    student_name: string;
+    course_title: string;
+    amount: number;
+    payment_method: string;
+    status: string;
+    date: string;
+  }[];
+}
+
+export interface PendingReceipt {
+  order_id: string;
+  student_name: string;
+  username: string;
+  telegram_id: number;
+  course_id: string;
+  course_title: string;
+  amount: number;
+  payment_method: string;
+  receipt_image: string | null;
+  comment: string | null;
+  created_at: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface AdminStudent {
+  id: string;
+  name: string;
+  username: string;
+  telegram_id: number;
+  role: string;
+  enrolled_courses_count: number;
+  enrolled_courses: string;
+  overall_progress: string;
+  joined_date: string;
+  status: string;
+}
+
+export interface PaymentInfo {
+  card_number: string;
+  card_holder: string;
+  bank_name: string;
+  bot_username: string;
+  bot_url: string;
+}

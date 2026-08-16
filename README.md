@@ -6,49 +6,61 @@ Telegram ekotizimi uchun maxsus ishlab chiqilgan, hashamatli **Emerald + Cream +
 
 ## 🌟 Asosiy Imkoniyatlar
 
-1. **Telegram-Native Dizayn & UX:**
-   - Haptic feedback (tebranish effektlari), Telegram WebApp SDK, BackButton, Safe Area insets.
-   - 320px–430px barcha smartfonlar, planshetlar va desktop brauzerlar uchun mos markaziy ramka (Desktop Shell).
-2. **Hashamatli Dizayn Tizimi:**
-   - Primary Emerald (`#159A6B`), Deep Emerald (`#0D6B4E`), Forest (`#103F32`), Cream (`#FBF8F1`), Champagne Gold (`#C9A96B`).
-   - Editorial tipografiya: Playfair Display + Inter fontlari.
-3. **To'liq Foydalanuvchi Oqimi:**
-   - **Splash / Intro:** Brend kirish ekrani va animatsion CTA.
-   - **Bosh sahifa:** Shaxsiylashtirilgan salomlashish, qidiruv, yo'nalishlar (AI, Dizayn, Dasturlash, Marketing), tavsiya etilgan Masterclass va mashhur kurslar.
-   - **Katalog:** Jonli qidiruv, toifalar filtrlari, arzonroq/qimmatroq saralash.
-   - **Kurs Tafsilotlari:** Video preview, narx bloki, "Bu kursda nimalarni o'rganasiz?" 01-05 kartochkalari, darslar dasturi (modullar va preview darslar), spiker info, FAQ va pastki yopishqoq xarid CTA.
-   - **Checkout & To'lov:** Payme, Click, Uzum, Telegram Stars integratsiyasi.
-   - **Xarid Muvaffaqiyati:** Emerald checkmark, oltin zarrachalar (confetti) va to'g'ridan-to'g'ri darsga yo'naltirish.
-   - **Talaba Kabineti (Dashboard):** "Davom ettirish" faol dars kartochkasi, 68% li Circular Progress Ring, Mening kurslarim ro'yxati.
-   - **O'quv Xonasi & Video Player:** Mobil video player (tezlik, timeline, fullscreen), Dars haqida va yuklab olinadigan PDF materiallar, "Darsni tugallangan deb belgilash" va oldingi/keyingi darsga o'tish.
-   - **Profil, Sertifikatlar va Bildirishnomalar:** Raqamli QR sertifikatlar, bildirishnomalar va xavfsiz chiqish.
+1. **Telegram-Native Dizayn & UX:** Haptic feedback, Telegram WebApp SDK, BackButton, Safe Area insets, 320px–430px mobil + desktop ramka.
+2. **To'liq Xavfsiz Auth:** Qat'iy HMAC-SHA256 initData tekshiruvi, JWT tokenlar, adminlar uchun qo'shimcha parol bilan to'g'ridan-to'g'ri kirish, rate-limit.
+3. **Real To'lov Oqimi:** Talaba chek yuboradi → rasm Cloudflare R2 ga yuklanadi → bazaga yoziladi → adminlarga Telegram orqali bildirishnoma → admin tasdiqlaydi (bot tugmasi yoki admin panel) → kurs avtomatik ochiladi → talabaga xushxabar.
+4. **Talaba Kabineti:** Real progress tracking, darslarni tugallash, avtomatik sertifikat berish, ichki bildirishnomalar.
+5. **Professional Admin Panel:** Jonli statistika (tushum, talabalar), cheklarni tasdiqlash/rad etish, talabalar CRM, grant kurs berish, kurs CRUD (yaratish/tahrirlash/o'chirish), ommaviy broadcast.
+6. **Avtomatik Storage:** Supabase jadvallari mavjud bo'lsa — PostgREST orqali ishlaydi; bo'lmasa — o'rnatilgan SQLite fallback (nol konfiguratsiya) + avtomatik kurslar seed.
 
 ---
 
 ## 🛠 Texnologik Stack
 
-* **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide React, Canvas Confetti.
-* **Backend:** FastAPI (Python), Uvicorn, Pydantic, PyJWT.
-* **Ma'lumotlar Bazasi:** Supabase (PostgreSQL, RLS).
-* **Media & Video Saqlash:** Cloudflare R2 (S3-compatible bucket, presigned streaming links).
-* **Hosting:** Render.com (Backend) va Vercel / Cloudflare Pages (Frontend).
+* **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide React, generative-loaders.
+* **Backend:** FastAPI (Python), Uvicorn, PyJWT (python-jose), httpx, boto3.
+* **Ma'lumotlar Bazasi:** Supabase (PostgreSQL, PostgREST) yoki o'rnatilgan SQLite fallback.
+* **Media:** Cloudflare R2 (presigned GET/PUT, server-side upload, zero egress).
+* **Bot:** FastAPI lifespan ichida 24/7 long-polling (callback tasdiqlash tugmalari bilan).
+* **Hosting:** Render.com (Backend) + Vercel (Frontend).
 
 ---
 
-## 🚀 Ishga Tushirish
+## 🚀 Ishga Tushirish (Lokal)
 
-### 1. Frontendni ishga tushirish:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Brauzerda `http://localhost:3000` ochiladi.
-
-### 2. Backendni ishga tushirish:
+### 1. Backend
 ```bash
 cd backend
+cp .env.example .env        # kalitlarni to'ldiring
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
-Swagger API hujjatlari: `http://localhost:8000/docs`
+Swagger: `http://localhost:8000/docs`
+
+> **MUHIM:** Production uchun Supabase SQL Editor'da `backend/schema.sql` to'liq ishga tushirilishi kerak. Jadvallar bo'lmasa backend avtomatik SQLite fallback'ga o'tadi (`/health` da `storage` maydonida ko'rinadi) — bu ishlaydi, lekin Render qayta deploy bo'lganda SQLite fayli yangilanadi.
+
+### 2. Frontend
+```bash
+cd frontend
+npm install
+npm run dev                 # http://localhost:3000
+```
+
+### 3. Testlar
+```bash
+python test_suite.py                        # productionga qarshi
+python test_suite.py http://localhost:8000  # lokalga qarshi
+cd backend && python smoke_test.py          # to'liq biznes oqimi (lokal server kerak)
+```
+
+---
+
+## 🔐 Xavfsizlik Qoidalari
+
+* Barcha maxfiy kalitlar **faqat** `.env` da (`.gitignore` himoyasida).
+* Telegram initData **har doim** HMAC-SHA256 bilan tekshiriladi (BOT_TOKEN bo'lmasa dev-rejim).
+* `/auth/login` — faqat adminlar, parol `.env` dan (`ADMIN_1_PASSWORD`, `ADMIN_2_PASSWORD`); parol bo'lmasa butunlay o'chiq.
+* Himoyalangan darslar faqat xaridorga (enrollment tekshiruvi server tomonda).
+* Kurs admin tasdiqlamasidan hech kimga ochilmaydi.
+* CORS faqat ishonchli domenlar ro'yxatiga ochiq.
+* Auth va chek yuborishga IP-rate-limit qo'llanilgan.

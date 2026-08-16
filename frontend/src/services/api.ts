@@ -1,6 +1,7 @@
-import { Course, EnrolledCourse, ContinueLearningData, Certificate, NotificationItem, User, Lesson } from '../types';
+import { Course, EnrolledCourse, ContinueLearningData, Certificate, NotificationItem, User, Lesson, AdminStats, PendingReceipt, AdminStudent, PaymentInfo } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://kurslar-backend-api.onrender.com/api';
+const IS_DEV = import.meta.env.DEV;
 
 // Boshlang'ich Offline/Fallback ma'lumotlar
 export const MOCK_COURSES: Course[] = [
@@ -234,63 +235,60 @@ class ApiService {
   }
 
   async login(login: string, password: string): Promise<{ token: string; user: User }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login, password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        return { token: data.access_token, user: data.user };
-      }
-    } catch {
-      // Fallback local auth
+    // Backenddan kelgan xatolarni (noto'g'ri parol, taqiqlangan login) yashirmaymiz
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login, password })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      return { token: data.access_token, user: data.user };
     }
-
-    const mockUser: User = {
-      id: 'u1111111-1111-1111-1111-111111111111',
-      name: login.charAt(0).toUpperCase() + login.slice(1),
-      username: login.toLowerCase(),
-      role: 'student'
-    };
-    const mockToken = 'mock_jwt_token_' + Date.now();
-    localStorage.setItem('token', mockToken);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    return { token: mockToken, user: mockUser };
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Login yoki parol noto\'g\'ri.');
   }
 
   async telegramAuth(initData: string, tgUser?: any): Promise<{ token: string; user: User }> {
+    let res: Response | null = null;
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/telegram`, {
+      res = await fetch(`${API_BASE_URL}/auth/telegram`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ init_data: initData, telegram_user: tgUser })
       });
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        return { token: data.access_token, user: data.user };
-      }
     } catch {
-      // Fallback
+      res = null;
     }
 
-    const name = tgUser ? `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() : 'Abdurahmon Fayzullayev';
-    const mockUser: User = {
-      id: 'u1111111-1111-1111-1111-111111111111',
-      telegram_id: tgUser?.id || 123456789,
-      name: name || 'Talaba',
-      username: tgUser?.username || 'abdurahmon_dev',
-      role: 'student'
-    };
-    const mockToken = 'mock_jwt_token_tg_' + Date.now();
-    localStorage.setItem('token', mockToken);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    return { token: mockToken, user: mockUser };
+    if (res && res.ok) {
+      const data = await res.json();
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      return { token: data.access_token, user: data.user };
+    }
+
+    // Backend aniq rad etdi (imzo yaroqsiz) — xatolikni qaytaramiz
+    if (res) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Telegram autentifikatsiyasi xato.');
+    }
+
+    // Backendga ulanolmadi: faqat dev-rejimda (Telegram ichida bo'lmaganda) mock ishlatamiz
+    if (!initData && IS_DEV && !tgUser) {
+      const mockUser: User = { id: 'u1111111-1111-1111-1111-111111111111', name: 'Mehmon (Dev)', username: 'dev_user', role: 'student' };
+      const mockToken = 'mock_jwt_token_' + Date.now();
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      return { token: mockToken, user: mockUser };
+    }
+    if (!initData && !tgUser) {
+      // Telegram ichida emas va initData yo'q — ochiq brauzerda
+      throw new Error('Iltimos, Mini Appni Telegram ichidan oching.');
+    }
+    throw new Error('Serverga ulanib bo\'lmadi. Internetni tekshirib qayta urinib ko\'ring.');
   }
 
   async getDashboard(): Promise<{
@@ -298,7 +296,7 @@ class ApiService {
     overall_progress_percent: number;
     completed_lessons_count: number;
     total_lessons_count: number;
-    continue_learning: ContinueLearningData;
+    continue_learning: ContinueLearningData | null;
     enrolled_courses: EnrolledCourse[];
   }> {
     try {
@@ -306,39 +304,28 @@ class ApiService {
         headers: this.getHeaders()
       });
       if (res.ok) return await res.json();
+      if (res.status === 401 || res.status === 403) {
+        // Token yaroqsiz — soxta ma'lumot ko'rsatmaymiz
+        return {
+          user_name: 'Talaba',
+          overall_progress_percent: 0,
+          completed_lessons_count: 0,
+          total_lessons_count: 0,
+          continue_learning: null,
+          enrolled_courses: []
+        };
+      }
     } catch {
       // Fallback
     }
 
     return {
-      user_name: 'Abdurahmon',
-      overall_progress_percent: 68,
-      completed_lessons_count: 24,
-      total_lessons_count: 35,
-      continue_learning: {
-        course_id: MOCK_COURSES[0].id,
-        course_title: MOCK_COURSES[0].title,
-        course_cover: MOCK_COURSES[0].cover_url,
-        lesson_id: 'l102',
-        lesson_title: 'Master Prompt Arxitekturasi: Rol, Kontekst, Cheklovlar',
-        lesson_duration: '18:20',
-        progress_percent: 68,
-        progress_text: '24 / 35 dars'
-      },
-      enrolled_courses: [
-        {
-          id: MOCK_COURSES[0].id,
-          title: MOCK_COURSES[0].title,
-          slug: MOCK_COURSES[0].slug,
-          cover_url: MOCK_COURSES[0].cover_url,
-          instructor_name: MOCK_COURSES[0].instructor_name,
-          progress_percent: 68,
-          completed_lessons: 24,
-          total_lessons: 35,
-          last_lesson_title: 'Master Prompt Arxitekturasi: Rol, Kontekst, Cheklovlar',
-          status: 'in_progress'
-        }
-      ]
+      user_name: 'Talaba',
+      overall_progress_percent: 0,
+      completed_lessons_count: 0,
+      total_lessons_count: 0,
+      continue_learning: null,
+      enrolled_courses: []
     };
   }
 
@@ -439,18 +426,7 @@ class ApiService {
     } catch {
       // Fallback
     }
-
-    return [
-      {
-        id: 'cert-1',
-        course_id: MOCK_COURSES[0].id,
-        course_title: "Sun'iy Intellekt va Prompt Engineering Pro",
-        student_name: 'Abdurahmon Fayzullayev',
-        certificate_code: 'CERT-AI-2026-8942',
-        issued_at: '15-Avgust, 2026',
-        certificate_url: '#'
-      }
-    ];
+    return [];
   }
 
   async getNotifications(): Promise<NotificationItem[]> {
@@ -462,25 +438,92 @@ class ApiService {
     } catch {
       // Fallback
     }
+    return [];
+  }
 
-    return [
-      {
-        id: 'notif-1',
-        title: 'Tabriklaymiz! 🎉',
-        message: "Siz 'AI Prompt Engineering' kursining 1-modulini muvaffaqiyatli yakunladingiz.",
-        type: 'success',
-        is_read: false,
-        created_at: 'Bugun, 14:30'
-      },
-      {
-        id: 'notif-2',
-        title: 'Yangi bonus material yuklandi',
-        message: "Figma design tokenlari va master shablonlar PDF fayli darsga biriktirildi.",
-        type: 'info',
-        is_read: true,
-        created_at: 'Kecha, 18:00'
+  // ===== TO'LOV REKVIZITLARI =====
+
+  async getPaymentInfo(): Promise<PaymentInfo | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/checkout/payment-info`);
+      if (res.ok) return await res.json();
+    } catch {}
+    return null;
+  }
+
+  // ===== ADMIN API =====
+
+  private async adminFetch(path: string, options: RequestInit = {}): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getHeaders(),
+        ...(options.headers || {})
       }
-    ];
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.detail || `Xato: ${res.status}`);
+    }
+    return data;
+  }
+
+  async getAdminStats(): Promise<AdminStats> {
+    return this.adminFetch('/admin/dashboard-stats');
+  }
+
+  async getPendingReceipts(): Promise<PendingReceipt[]> {
+    return this.adminFetch('/admin/pending-receipts');
+  }
+
+  async approveReceipt(orderId: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/approve-receipt/${orderId}`, { method: 'POST' });
+  }
+
+  async rejectReceipt(orderId: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/reject-receipt/${orderId}`, { method: 'POST' });
+  }
+
+  async getAdminStudents(): Promise<AdminStudent[]> {
+    return this.adminFetch('/admin/students');
+  }
+
+  async getAdminCourses(): Promise<Course[]> {
+    return this.adminFetch('/admin/courses');
+  }
+
+  async createCourse(course: Partial<Course>): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch('/admin/courses', { method: 'POST', body: JSON.stringify(course) });
+  }
+
+  async updateCourse(courseId: string, updates: Partial<Course>): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/courses/${courseId}`, { method: 'PUT', body: JSON.stringify(updates) });
+  }
+
+  async deleteCourse(courseId: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/courses/${courseId}`, { method: 'DELETE' });
+  }
+
+  async manualEnroll(userIdOrTgId: string, courseId: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch('/admin/manual-enroll', {
+      method: 'POST',
+      body: JSON.stringify({ user_id_or_tg_id: userIdOrTgId, course_id: courseId })
+    });
+  }
+
+  async sendBroadcast(text: string, photoUrl?: string): Promise<{ success: boolean; sent_count: number; total_recipients: number; message: string }> {
+    return this.adminFetch('/admin/broadcast', {
+      method: 'POST',
+      body: JSON.stringify({ text, photo_url: photoUrl || null })
+    });
+  }
+
+  async savePaymentSettings(cardNumber: string, cardHolder: string, bankName: string): Promise<{ success: boolean }> {
+    return this.adminFetch('/admin/payment-settings', {
+      method: 'PUT',
+      body: JSON.stringify({ card_number: cardNumber, card_holder: cardHolder, bank_name: bankName })
+    });
   }
 }
 

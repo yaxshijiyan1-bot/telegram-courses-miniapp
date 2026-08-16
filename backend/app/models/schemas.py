@@ -16,7 +16,7 @@ class UserResponse(UserBase):
 
 # AUTH SCHEMAS
 class TelegramAuthRequest(BaseModel):
-    init_data: str
+    init_data: Optional[str] = None
     telegram_user: Optional[Dict[str, Any]] = None
 
 class DirectLoginRequest(BaseModel):
@@ -97,9 +97,6 @@ class CreateOrderResponse(BaseModel):
     payment_method: str
     payment_url: Optional[str] = None
     status: str = "pending"
-
-class VerifyOrderRequest(BaseModel):
-    order_id: str
 
 # PROGRESS SCHEMA
 class UpdateProgressRequest(BaseModel):

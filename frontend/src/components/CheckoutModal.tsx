@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   CheckCircle2,
@@ -10,10 +10,12 @@ import {
   Upload,
   Check,
   Image as ImageIcon,
-  MessageCircle
+  MessageCircle,
+  AlertCircle
 } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { api } from '../services/api';
 import { InlineLoader } from 'generative-loaders';
 
 interface CheckoutModalProps {
@@ -34,12 +36,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [cardInfo, setCardInfo] = useState<{ card_number: string; card_holder: string }>({
+    card_number: '8600 5304 1234 5678',
+    card_holder: 'Yaxshi Bola / Zuhra Olimova'
+  });
   const { haptic, user } = useTelegram();
+
+  useEffect(() => {
+    api.getPaymentInfo().then(info => {
+      if (info && info.card_number) {
+        setCardInfo({ card_number: info.card_number, card_holder: info.card_holder });
+      }
+    }).catch(() => {});
+  }, []);
 
   if (!isOpen) return null;
 
-  const cardNumber = "8600 5304 1234 5678";
-  const cardHolder = "Yaxshi Bola / Zuhra Olimova";
+  const cardNumber = cardInfo.card_number;
+  const cardHolder = cardInfo.card_holder;
 
   const handleCopyCard = () => {
     haptic.impact('light');
@@ -62,18 +77,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleSubmitReceipt = async () => {
     if (!receiptImage) {
-      alert("Iltimos, avval to'lov cheki skrinshotini yuklang!");
+      setErrorMsg("Iltimos, avval to'lov cheki skrinshotini yuklang!");
       return;
     }
 
     haptic.impact('medium');
     setIsProcessing(true);
+    setErrorMsg('');
 
     try {
       // Backend API ga yuborish
       const API_URL = import.meta.env.VITE_API_URL || 'https://kurslar-backend-api.onrender.com/api';
       const token = localStorage.getItem('token');
-      
+
       const response = await fetch(`${API_URL}/checkout/submit-receipt`, {
         method: 'POST',
         headers: {
@@ -88,14 +104,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         })
       });
 
-      const resData = await response.json();
-      console.log('Submit receipt result:', resData);
+      const resData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        // Xatolikni yashirmaymiz — foydalanuvchiga ko'rsatamiz
+        setIsProcessing(false);
+        setErrorMsg(resData.detail || 'Chek yuborishda xatolik yuz berdi. Internetni tekshirib, qayta urinib ko\'ring.');
+        haptic.notification('error');
+        return;
+      }
 
       setIsProcessing(false);
       setIsSubmitted(true);
       haptic.notification('success');
 
-      // 3 soniyadan keyin modal yopiladi, kurs esa faqat admin tasdiqlagach ochiladi!
+      // 3.5 soniyadan keyin modal yopiladi — kurs faqat admin tasdiqlagach ochiladi
       setTimeout(() => {
         setIsSubmitted(false);
         setReceiptImage(null);
@@ -103,13 +126,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }, 3500);
     } catch {
       setIsProcessing(false);
-      setIsSubmitted(true);
-      haptic.notification('success');
-      setTimeout(() => {
-        setIsSubmitted(false);
-        setReceiptImage(null);
-        onClose();
-      }, 3500);
+      setErrorMsg('Serverga ulanib bo\'lmadi. Internetni tekshirib, qayta urinib ko\'ring.');
+      haptic.notification('error');
     }
   };
 
@@ -265,6 +283,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </label>
             </div>
 
+            {/* Error Banner */}
+            {errorMsg && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs flex items-start space-x-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <span className="font-semibold leading-relaxed">{errorMsg}</span>
+              </div>
+            )}
+
             {/* Action Button with Generative Loader */}
             <button
               onClick={handleSubmitReceipt}
@@ -283,7 +309,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 text-brand-gold" />
-                  <span className="text-xs">Chekni Yuborish & Kursni Ochish</span>
+                  <span className="text-xs">Chekni Yuborish (Admin Tasdiqlashida Ochiladi)</span>
                 </>
               )}
             </button>

@@ -31,14 +31,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setErrorMsg('');
     haptic.impact('medium');
 
-    const ok = await login(loginInput, passwordInput);
+    const result = await login(loginInput, passwordInput);
     setIsSubmitting(false);
 
-    if (ok) {
+    if (result.success) {
       haptic.notification('success');
       onSuccess();
     } else {
-      setErrorMsg('Login yoki parol noto‘g‘ri. Qayta urinib ko‘ring.');
+      setErrorMsg(result.error || 'Login yoki parol noto‘g‘ri. Qayta urinib ko‘ring.');
       haptic.notification('error');
     }
   };
@@ -48,14 +48,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setErrorMsg('');
     haptic.impact('medium');
 
-    const ok = await telegramLogin();
+    const result = await telegramLogin();
     setIsSubmitting(false);
 
-    if (ok) {
+    if (result.success) {
       haptic.notification('success');
       onSuccess();
     } else {
-      setErrorMsg('Telegram orqali ulanishda xatolik yuz berdi');
+      setErrorMsg(result.error || 'Telegram orqali ulanishda xatolik yuz berdi');
+      haptic.notification('error');
     }
   };
 

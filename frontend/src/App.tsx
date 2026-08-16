@@ -18,6 +18,7 @@ import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
 import { api, MOCK_COURSES } from './services/api';
 import { Course, Lesson, Certificate, NotificationItem } from './types';
+import { AdminDashboardModal } from './pages/AdminDashboardModal';
 
 export const AppContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -31,6 +32,23 @@ export const AppContent: React.FC = () => {
   const [purchasedCourse, setPurchasedCourse] = useState<Course | null>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  // #admin hash — bot'dagi "Superadmin Dashboard" tugmasi shu yerga ochiladi
+  useEffect(() => {
+    const checkHash = () => {
+      if (window.location.hash === '#admin') {
+        if (user?.role === 'superadmin') {
+          setIsAdminOpen(true);
+        }
+        // Hashni tozalaymiz (sticky bo'lib qolmasin)
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+    return () => window.removeEventListener('hashchange', checkHash);
+  }, [user?.role]);
 
   // Data states
   const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
@@ -237,6 +255,15 @@ export const AppContent: React.FC = () => {
         onChangeTab={(tab) => setActiveTab(tab)}
         isAuthenticated={isAuthenticated}
       />
+
+      {/* Superadmin Dashboard (bot tugmasi yoki profil orqali) */}
+      {isAdminOpen && user?.role === 'superadmin' && (
+        <AdminDashboardModal
+          isOpen={isAdminOpen}
+          onClose={() => setIsAdminOpen(false)}
+          adminName={user?.name || 'Admin'}
+        />
+      )}
     </div>
   );
 };
