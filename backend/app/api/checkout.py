@@ -86,7 +86,7 @@ async def create_order(
 @router.post("/submit-receipt")
 async def submit_receipt(
     req: SubmitReceiptRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: Optional[dict] = None
 ):
     """
     Talaba tomonidan to'lov cheki skrinshotini yuborish.
@@ -97,10 +97,15 @@ async def submit_receipt(
         raise HTTPException(status_code=404, detail="Kurs topilmadi")
 
     order_id = f"rcp_{uuid.uuid4().hex[:10]}"
-    user_id = current_user.get("sub")
-    student_name = current_user.get("name", "Talaba")
-    username = current_user.get("username", "mavjud_emas")
-    telegram_id = current_user.get("telegram_id", 0)
+    
+    # User ma'lumotlari
+    user_id = (current_user or {}).get("sub", str(uuid.uuid4()))
+    student_name = (current_user or {}).get("name", "Telegram Talaba")
+    username = (current_user or {}).get("username", "tg_user")
+    telegram_id = (current_user or {}).get("telegram_id", 0)
+
+    if req.comment and "Talaba:" in req.comment:
+        student_name = req.comment.split("(@")[0].replace("Talaba:", "").strip()
 
     receipt_item = {
         "order_id": order_id,

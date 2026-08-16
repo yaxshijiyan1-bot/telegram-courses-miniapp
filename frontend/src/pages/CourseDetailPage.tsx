@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Star,
   Clock,
@@ -34,6 +34,13 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   const [openModuleId, setOpenModuleId] = useState<string | null>(course.modules?.[0]?.id || null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const { haptic } = useTelegram();
+
+  // Sahifa ochilganda har doim eng yuqoridan boshlanishi
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [course.id]);
 
   const benefits = [
     { num: '01', title: 'Fundamental Asoslar', desc: "Nazariy poydevor, to'g'ri tushunchalar va tizimli fikrlash." },

@@ -55,6 +55,13 @@ export const AppContent: React.FC = () => {
     loadData();
   }, [isAuthenticated]);
 
+  // Har safar sahifa yoki kurs o'zgarganda eng yuqoriga skroll qilish
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [selectedCourse, selectedLesson, purchasedCourse, activeTab]);
+
   // Back button handling
   useEffect(() => {
     if (selectedLesson) {

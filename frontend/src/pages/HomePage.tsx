@@ -352,9 +352,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               <img
                 src="/images/zuhra_olimova.jpg"
                 alt="Zuhra Olimova"
-                className="w-16 h-16 rounded-2xl object-cover mx-auto border-2 border-brand-gold shadow-sm"
+                className="w-16 h-16 rounded-2xl object-cover mx-auto border-2 border-brand-emerald shadow-sm"
               />
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-brand-gold rounded-full border border-white flex items-center justify-center text-[9px] text-white">
+              <span className="absolute bottom-0 right-0 w-4 h-4 bg-brand-emerald rounded-full border border-white flex items-center justify-center text-[9px] text-white">
                 ✓
               </span>
             </div>
@@ -366,7 +366,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               href="https://t.me/sokin_notalar"
               target="_blank"
               rel="noreferrer"
-              className="w-full py-1.5 bg-brand-forest text-brand-gold rounded-xl text-[10px] font-bold block hover:opacity-90 transition-all"
+              className="w-full py-1.5 bg-brand-emerald text-white rounded-xl text-[10px] font-bold block hover:bg-brand-deep transition-all"
             >
               @sokin_notalar
             </a>

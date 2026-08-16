@@ -202,11 +202,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             className="p-3 bg-brand-surface hover:bg-brand-mint/40 rounded-2xl border border-brand-border/80 flex items-center justify-between transition-all group"
           >
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-brand-forest text-brand-gold flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
                 👩‍💼
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-brand-emerald uppercase tracking-wider block">
                   Qizlar (Ayollar) uchun
                 </span>
                 <h4 className="text-xs font-bold text-brand-dark group-hover:text-brand-emerald transition-colors truncate">
@@ -214,7 +214,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </h4>
               </div>
             </div>
-            <span className="px-2.5 py-1 bg-brand-forest text-brand-gold rounded-xl text-[10px] font-bold flex-shrink-0 shadow-sm">
+            <span className="px-2.5 py-1 bg-brand-emerald text-white rounded-xl text-[10px] font-bold flex-shrink-0 shadow-sm">
               Yozish ↗
             </span>
           </a>

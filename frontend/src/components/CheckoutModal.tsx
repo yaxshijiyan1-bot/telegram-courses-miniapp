@@ -72,31 +72,44 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     try {
       // Backend API ga yuborish
       const API_URL = import.meta.env.VITE_API_URL || 'https://kurslar-backend-api.onrender.com/api';
-      await fetch(`${API_URL}/checkout/submit-receipt`, {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/checkout/submit-receipt`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           course_id: course.id,
           payment_method: selectedMethod,
           receipt_image: receiptImage,
-          comment: `Talaba: ${user?.first_name || 'Foydalanuvchi'} (@${user?.username || 'tg_user'})`
+          comment: `Talaba: ${user?.first_name || 'Talaba'} (@${user?.username || 'tg_user'})`
         })
       });
+
+      const resData = await response.json();
+      console.log('Submit receipt result:', resData);
 
       setIsProcessing(false);
       setIsSubmitted(true);
       haptic.notification('success');
 
+      // 3 soniyadan keyin modal yopiladi, kurs esa faqat admin tasdiqlagach ochiladi!
       setTimeout(() => {
-        onSuccess(course);
-      }, 2500);
+        setIsSubmitted(false);
+        setReceiptImage(null);
+        onClose();
+      }, 3500);
     } catch {
-      // Fallback local success
       setIsProcessing(false);
       setIsSubmitted(true);
+      haptic.notification('success');
       setTimeout(() => {
-        onSuccess(course);
-      }, 2500);
+        setIsSubmitted(false);
+        setReceiptImage(null);
+        onClose();
+      }, 3500);
     }
   };
 
