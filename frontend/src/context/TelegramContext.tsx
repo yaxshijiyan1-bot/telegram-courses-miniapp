@@ -1,0 +1,103 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
+interface TelegramContextType {
+  webApp: any;
+  user: any;
+  isExpanded: boolean;
+  haptic: {
+    impact: (style?: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+    notification: (type?: 'error' | 'success' | 'warning') => void;
+    selection: () => void;
+  };
+  showBackButton: (onClick: () => void) => void;
+  hideBackButton: () => void;
+}
+
+const TelegramContext = createContext<TelegramContextType>({
+  webApp: null,
+  user: null,
+  isExpanded: false,
+  haptic: {
+    impact: () => {},
+    notification: () => {},
+    selection: () => {}
+  },
+  showBackButton: () => {},
+  hideBackButton: () => {}
+});
+
+export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [webApp, setWebApp] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      setWebApp(tg);
+      setIsExpanded(tg.isExpanded);
+
+      if (tg.initDataUnsafe?.user) {
+        setUser(tg.initDataUnsafe.user);
+      }
+
+      // Ranglarni sozlash
+      if (tg.setHeaderColor) {
+        tg.setHeaderColor('#FBF8F1'); // Brand cream
+      }
+      if (tg.setBackgroundColor) {
+        tg.setBackgroundColor('#FBF8F1');
+      }
+    }
+  }, []);
+
+  const haptic = {
+    impact: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'light') => {
+      try {
+        webApp?.HapticFeedback?.impactOccurred(style);
+      } catch {}
+    },
+    notification: (type: 'error' | 'success' | 'warning' = 'success') => {
+      try {
+        webApp?.HapticFeedback?.notificationOccurred(type);
+      } catch {}
+    },
+    selection: () => {
+      try {
+        webApp?.HapticFeedback?.selectionChanged();
+      } catch {}
+    }
+  };
+
+  const showBackButton = (onClick: () => void) => {
+    if (webApp?.BackButton) {
+      webApp.BackButton.show();
+      webApp.BackButton.onClick(onClick);
+    }
+  };
+
+  const hideBackButton = () => {
+    if (webApp?.BackButton) {
+      webApp.BackButton.hide();
+    }
+  };
+
+  return (
+    <TelegramContext.Provider
+      value={{
+        webApp,
+        user,
+        isExpanded,
+        haptic,
+        showBackButton,
+        hideBackButton
+      }}
+    >
+      {children}
+    </TelegramContext.Provider>
+  );
+};
+
+export const useTelegram = () => useContext(TelegramContext);

@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sat: env(safe-area-inset-top);
+    --sar: env(safe-area-inset-right);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+/* Hide scrollbar for clean mobile experience */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glass & Texture surfaces */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(227, 236, 232, 0.8);
+}
+
+.glass-card-dark {
+  background: rgba(8, 44, 36, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(201, 169, 107, 0.2);
+}
+
+/* Subtle Gold Accent Gradient */
+.gold-shimmer {
+  background: linear-gradient(135deg, #C9A96B 0%, #E8D3A7 50%, #C9A96B 100%);
+}
+
+.emerald-gradient {
+  background: linear-gradient(145deg, #159A6B 0%, #0D6B4E 100%);
+}
+
+.forest-gradient {
+  background: linear-gradient(160deg, #103F32 0%, #082C24 100%);
+}
+
+/* Safe Area Paddings */
+.pt-safe {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+.pb-safe {
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+.pb-safe-nav {
+  padding-bottom: max(84px, calc(72px + env(safe-area-inset-bottom)));
+}

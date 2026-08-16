@@ -1,0 +1,252 @@
+import os
+import uuid
+import json
+import httpx
+from datetime import datetime
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ekjjickrhnjttzrqwakz.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVramppY2tyaG5qdHR6cnF3YWt6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Njg1NDg5NCwiZXhwIjoyMTAyNDMwODk0fQ.k4vBBSjFWGecx3L_vn9Si84nY0DkWUjYTMqTriznPig")
+
+headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
+}
+
+# 1. SAMPLE PREMIUM COURSES
+COURSES = [
+    {
+        "id": "c1111111-1111-1111-1111-111111111111",
+        "title": "Sun'iy Intellekt va Prompt Engineering Pro",
+        "slug": "ai-prompt-engineering-pro",
+        "category": "AI",
+        "short_description": "Gemini 3.7, Claude va ChatGPT orqali biznes, dasturlash va avtomatizatsiyani 10x tezlashtirish.",
+        "description": "Ushbu keng qamrovli kursda siz zamonaviy LLM modellari, Antigravity agentlar tizimi, Nano Banana vizual generatsiyasi va AI orqali real loyihalarni noldan professional darajada boshqarishni o'rganasiz.",
+        "cover_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
+        "preview_video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        "price": 490000,
+        "old_price": 890000,
+        "discount_percent": 45,
+        "duration": "24 soat",
+        "lesson_count": 28,
+        "level": "Boshlang'ichdan Yuqori darajagacha",
+        "instructor_name": "Farxod Dadajonov",
+        "instructor_title": "AI & Senior Prompt Architect",
+        "instructor_avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+        "instructor_bio": "6 yillik tajribaga ega Machine Learning muhandisi va xalqaro AI loyihalar koordinatori.",
+        "rating": 4.9,
+        "student_count": 1420,
+        "published": True
+    },
+    {
+        "id": "c2222222-2222-2222-2222-222222222222",
+        "title": "Zamonaviy UI/UX va Mobile App Dizayn",
+        "slug": "ui-ux-mobile-design",
+        "category": "Dizayn",
+        "short_description": "Figma, Design Systems va Apple Human Interface asosida mukammal mobil interfeyslar yaratish.",
+        "description": "Figma Masterclass, zamonaviy dizayn tokenlari, mikro-animatsiyalar, tipografiya va Telegram Mini App interfeyslarini xalqaro standartda yaratish bo'yicha to'liq amaliy qo'llanma.",
+        "cover_url": "https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=1200&q=80",
+        "preview_video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+        "price": 550000,
+        "old_price": 950000,
+        "discount_percent": 42,
+        "duration": "30 soat",
+        "lesson_count": 35,
+        "level": "Amaliyotga yo'naltirilgan",
+        "instructor_name": "Aziza Karimova",
+        "instructor_title": "Lead Product Designer",
+        "instructor_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80",
+        "instructor_bio": "Fintech va EdTech kompaniyalarida 7 yillik Lead Product Designer tajribasi.",
+        "rating": 5.0,
+        "student_count": 980,
+        "published": True
+    },
+    {
+        "id": "c3333333-3333-3333-3333-333333333333",
+        "title": "Telegram Bot & Mini App Fullstack Dasturlash",
+        "slug": "telegram-miniapp-fullstack",
+        "category": "Dasturlash",
+        "short_description": "FastAPI, React, TypeScript va Telegram WebApp SDK orqali real Mini Applar va to'lov tizimlarini qurish.",
+        "description": "Telegram platformasida Click, Payme, Supabase va Cloudflare R2 bilan ishlovchi to'liq tijoriy Mini Applarni ishlab chiqish, serverga deploy qilish va yuritish bo'yicha eng sara kurs.",
+        "cover_url": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80",
+        "preview_video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        "price": 690000,
+        "old_price": 1200000,
+        "discount_percent": 43,
+        "duration": "42 soat",
+        "lesson_count": 45,
+        "level": "O'rta va Professional",
+        "instructor_name": "Javohir Rustamov",
+        "instructor_title": "Full-Stack Software Architect",
+        "instructor_avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+        "instructor_bio": "High-load tizimlar va Telegram ekotizimi bo'yicha yetakchi dasturchi.",
+        "rating": 4.9,
+        "student_count": 1850,
+        "published": True
+    },
+    {
+        "id": "c4444444-4444-4444-4444-444444444444",
+        "title": "High-Ticket SMM va Kontent Monetizatsiya",
+        "slug": "high-ticket-smm-monetization",
+        "category": "Marketing",
+        "short_description": "Telegram va Instagram kanallardan yuqori chekli mijozlarni jalb qilish va sotuv voronkalari.",
+        "description": "Kontent reja, auditoriyani isitish (lead warming), video reels skriptlari, psixologik triggerlar va to'g'ri narxlash orqali oyiga barqaror daromad qilish sirlari.",
+        "cover_url": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
+        "preview_video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+        "price": 390000,
+        "old_price": 700000,
+        "discount_percent": 44,
+        "duration": "16 soat",
+        "lesson_count": 20,
+        "level": "Boshlang'ich va Amaliyotchi",
+        "instructor_name": "Sardor Aliyev",
+        "instructor_title": "Marketing & Growth Strategist",
+        "instructor_avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
+        "instructor_bio": "100+ dan ortiq brendlar va shaxsiy bloglar uchun million dollarlik sotuv voronkalari muallifi.",
+        "rating": 4.8,
+        "student_count": 2100,
+        "published": True
+    }
+]
+
+# 2. MODULES & LESSONS FOR AI COURSE (Course 1)
+MODULES_COURSE_1 = [
+    {
+        "id": "m1111111-1111-1111-1111-111111111111",
+        "course_id": "c1111111-1111-1111-1111-111111111111",
+        "title": "01. Kirish va LLM Asoslari",
+        "order": 1,
+        "lessons": [
+            {
+                "id": "l1111111-1111-1111-1111-111111111101",
+                "title": "AI inqilobi va Prompt Engineering qanday ishlaydi?",
+                "duration": "12:45",
+                "is_preview": True,
+                "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                "description": "Sun'iy intellektning hozirgi imkoniyatlari, kontekst oynasi, tokenlar va to'g'ri fikrlash modeli.",
+                "resources": [{"name": "AI_Asoslari_Qollanma.pdf", "size": "2.4 MB", "url": "https://pub-a868f5ba65474136a054993d81485e0b.r2.dev/ai_basics.pdf"}]
+            },
+            {
+                "id": "l1111111-1111-1111-1111-111111111102",
+                "title": "Master Prompt Arxitekturasi: Rol, Kontekst, Cheklovlar",
+                "duration": "18:20",
+                "is_preview": True,
+                "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+                "description": "Dasturlash, tahlil va matn generatsiyasida eng aniq natijaga erishish formulasini o'rganamiz.",
+                "resources": [{"name": "Prompt_Templates_Cheatsheet.pdf", "size": "1.8 MB", "url": "https://pub-a868f5ba65474136a054993d81485e0b.r2.dev/templates.pdf"}]
+            },
+            {
+                "id": "l1111111-1111-1111-1111-111111111103",
+                "title": "Zero-shot, Few-shot va Chain-of-Thought texnikalari",
+                "duration": "15:10",
+                "is_preview": False,
+                "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                "description": "Murakkab masalalarni AI ga bosqichma-bosqich yechtirish va xatolarni 90% ga kamaytirish usullari.",
+                "resources": [{"name": "CoT_Amaliy_Topshiriqlar.pdf", "size": "3.1 MB", "url": "#"}]
+            }
+        ]
+    },
+    {
+        "id": "m1111111-1111-1111-1111-111111111112",
+        "course_id": "c1111111-1111-1111-1111-111111111111",
+        "title": "02. Amaliy AI Dasturlash va Agentlar",
+        "order": 2,
+        "lessons": [
+            {
+                "id": "l1111111-1111-1111-1111-111111111104",
+                "title": "Antigravity & Gemini 3.7 bilan kod yozish",
+                "duration": "22:15",
+                "is_preview": False,
+                "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                "description": "Katta kod bazalarini tahlil qilish, avtonom agentlarni boshqarish va to'liq loyiha yaratish.",
+                "resources": [{"name": "Agent_Workflows_Config.json", "size": "540 KB", "url": "#"}]
+            },
+            {
+                "id": "l1111111-1111-1111-1111-111111111105",
+                "title": "Avtomatik QA va Refinement strategiyasi",
+                "duration": "19:40",
+                "is_preview": False,
+                "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+                "description": "Koddagi xatolarni avtomatik test qilish va xavfsiz deployga tayyorlash.",
+                "resources": []
+            }
+        ]
+    },
+    {
+        "id": "m1111111-1111-1111-1111-111111111113",
+        "course_id": "c1111111-1111-1111-1111-111111111111",
+        "title": "03. Real Biznes Loyiha va Yakuniy Imtihon",
+        "order": 3,
+        "lessons": [
+            {
+                "id": "l1111111-1111-1111-1111-111111111106",
+                "title": "AI SaaS startupni 1 kunda ishga tushirish",
+                "duration": "28:50",
+                "is_preview": False,
+                "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
+                "description": "Landing page, API, to'lov va foydalanuvchilar qabulini noldan oxirigacha qurish.",
+                "resources": [{"name": "Startup_Blueprint.pdf", "size": "5.6 MB", "url": "#"}]
+            }
+        ]
+    }
+]
+
+# 3. DEMO USER & ENROLLMENT & CERTIFICATES
+DEMO_USER = {
+    "id": "u1111111-1111-1111-1111-111111111111",
+    "telegram_id": 123456789,
+    "name": "Abdurahmon Fayzullayev",
+    "username": "abdurahmon_dev",
+    "phone": "+998901234567",
+    "role": "student"
+}
+
+DEMO_ENROLLMENT = {
+    "id": "e1111111-1111-1111-1111-111111111111",
+    "user_id": DEMO_USER["id"],
+    "course_id": "c1111111-1111-1111-1111-111111111111",
+    "status": "active"
+}
+
+DEMO_PROGRESS = [
+    {
+        "user_id": DEMO_USER["id"],
+        "course_id": "c1111111-1111-1111-1111-111111111111",
+        "lesson_id": "l1111111-1111-1111-1111-111111111101",
+        "completed": True,
+        "last_position": 765
+    },
+    {
+        "user_id": DEMO_USER["id"],
+        "course_id": "c1111111-1111-1111-1111-111111111111",
+        "lesson_id": "l1111111-1111-1111-1111-111111111102",
+        "completed": True,
+        "last_position": 1100
+    }
+]
+
+DEMO_NOTIFICATIONS = [
+    {
+        "user_id": DEMO_USER["id"],
+        "title": "Xush kelibsiz!",
+        "message": "Premium kurslar platformasiga muvaffaqiyatli a'zo bo'ldingiz.",
+        "type": "success",
+        "is_read": False
+    },
+    {
+        "user_id": DEMO_USER["id"],
+        "title": "Yangi dars qo'shildi",
+        "message": "'AI Prompt Engineering' kursida yangi amaliy dars yuklandi.",
+        "type": "course",
+        "is_read": False
+    }
+]
+
+def seed():
+    print("Seeding database via mock/local and Supabase REST...")
+    # Seed data logic...
+    print("Seed data prepared.")
+
+if __name__ == "__main__":
+    seed()
