@@ -39,7 +39,7 @@ class LessonBase(BaseModel):
     id: str
     title: str
     duration: str
-    order: int
+    order: Optional[int] = 1
     is_preview: bool = False
     description: Optional[str] = None
     resources: List[LessonResource] = []

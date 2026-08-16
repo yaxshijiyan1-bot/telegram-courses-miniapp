@@ -122,6 +122,7 @@ MODULES_COURSE_1 = [
                 "id": "l1111111-1111-1111-1111-111111111101",
                 "title": "AI inqilobi va Prompt Engineering qanday ishlaydi?",
                 "duration": "12:45",
+                "order": 1,
                 "is_preview": True,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
                 "description": "Sun'iy intellektning hozirgi imkoniyatlari, kontekst oynasi, tokenlar va to'g'ri fikrlash modeli.",
@@ -131,6 +132,7 @@ MODULES_COURSE_1 = [
                 "id": "l1111111-1111-1111-1111-111111111102",
                 "title": "Master Prompt Arxitekturasi: Rol, Kontekst, Cheklovlar",
                 "duration": "18:20",
+                "order": 2,
                 "is_preview": True,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
                 "description": "Dasturlash, tahlil va matn generatsiyasida eng aniq natijaga erishish formulasini o'rganamiz.",
@@ -140,6 +142,7 @@ MODULES_COURSE_1 = [
                 "id": "l1111111-1111-1111-1111-111111111103",
                 "title": "Zero-shot, Few-shot va Chain-of-Thought texnikalari",
                 "duration": "15:10",
+                "order": 3,
                 "is_preview": False,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
                 "description": "Murakkab masalalarni AI ga bosqichma-bosqich yechtirish va xatolarni 90% ga kamaytirish usullari.",
@@ -157,6 +160,7 @@ MODULES_COURSE_1 = [
                 "id": "l1111111-1111-1111-1111-111111111104",
                 "title": "Antigravity & Gemini 3.7 bilan kod yozish",
                 "duration": "22:15",
+                "order": 1,
                 "is_preview": False,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
                 "description": "Katta kod bazalarini tahlil qilish, avtonom agentlarni boshqarish va to'liq loyiha yaratish.",
@@ -166,6 +170,7 @@ MODULES_COURSE_1 = [
                 "id": "l1111111-1111-1111-1111-111111111105",
                 "title": "Avtomatik QA va Refinement strategiyasi",
                 "duration": "19:40",
+                "order": 2,
                 "is_preview": False,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
                 "description": "Koddagi xatolarni avtomatik test qilish va xavfsiz deployga tayyorlash.",
@@ -183,6 +188,7 @@ MODULES_COURSE_1 = [
                 "id": "l1111111-1111-1111-1111-111111111106",
                 "title": "AI SaaS startupni 1 kunda ishga tushirish",
                 "duration": "28:50",
+                "order": 1,
                 "is_preview": False,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
                 "description": "Landing page, API, to'lov va foydalanuvchilar qabulini noldan oxirigacha qurish.",
@@ -191,6 +197,7 @@ MODULES_COURSE_1 = [
         ]
     }
 ]
+
 
 # 3. DEMO USER & ENROLLMENT & CERTIFICATES
 DEMO_USER = {
