@@ -54,14 +54,18 @@ def get_store() -> Store:
     return _store
 
 async def _seed_if_empty():
-    """Birinchi ishga tushirishda kurslarni va adminlarni bazaga yozadi"""
-    from seed_data import COURSES
+    """Birinchi ishga tushirishda kurslar, modullar va adminlarni bazaga yozadi"""
+    from seed_data import COURSES, build_course_modules
     try:
         courses = await _store.list_courses(published_only=False)
         if not courses:
             for c in COURSES:
                 await _store.upsert_course(dict(c))
             logger.info(f"{len(COURSES)} ta seed kurs bazaga yozildi")
+
+        # Har bir kurs uchun modullar va darslar (Supabase FK butunligi uchun)
+        for c in COURSES:
+            await _store.seed_course_structure(c["id"], build_course_modules(c))
 
         # Adminlar users jadvalida bo'lishini kafolatlaymiz (statistika va CRM uchun)
         from app.core.config import settings as s

@@ -8,6 +8,15 @@ from .base import Store
 
 logger = logging.getLogger(__name__)
 
+# Supabase courses jadvalidagi haqiqiy ustunlar (schema.sql) — faqat shular yuboriladi
+COURSE_COLUMNS = {
+    "id", "title", "slug", "category", "description", "short_description",
+    "cover_url", "preview_video_url", "price", "old_price", "discount_percent",
+    "duration", "lesson_count", "level", "instructor_name", "instructor_title",
+    "instructor_avatar", "instructor_bio", "rating", "student_count",
+    "published", "created_at"
+}
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -89,7 +98,8 @@ class SupabaseStore(Store):
         return rows[0] if rows else None
 
     async def upsert_course(self, course: Dict[str, Any]) -> Dict[str, Any]:
-        row = {k: v for k, v in course.items() if v is not None}
+        # Faqat sxemadagi ustunlarni yuboramiz (ortiqcha kalitlar PostgREST 400 beradi)
+        row = {k: v for k, v in course.items() if k in COURSE_COLUMNS and v is not None}
         rows = await self._req("POST", "courses", json_body=row)
         if rows:
             return rows[0]
@@ -100,6 +110,41 @@ class SupabaseStore(Store):
     async def delete_course(self, course_id: str) -> bool:
         res = await self._req("DELETE", "courses", {"or": f"(id.eq.{course_id},slug.eq.{course_id})"})
         return res is not None
+
+    async def seed_course_structure(self, course_id: str, modules: List[Dict[str, Any]]) -> bool:
+        """
+        Kursning modullari va darslarini birinchi ishga tushirishda yozadi.
+        lesson_progress.lesson_id FK talab qilgani uchun darslar bazada bo'lishi shart.
+        """
+        existing = await self._req("GET", "modules", {"course_id": f"eq.{course_id}", "select": "id", "limit": 1})
+        if existing:
+            return True
+        for m in modules:
+            mod_row = {
+                "id": m["id"], "course_id": course_id,
+                "title": m["title"], "order": m.get("order", 1)
+            }
+            res = await self._req("POST", "modules", json_body=mod_row)
+            if not res:
+                logger.warning(f"Module seed muvaffaqiyatsiz: {m['id']}")
+                continue
+            for l in m.get("lessons", []):
+                lesson_row = {
+                    "id": l["id"],
+                    "module_id": m["id"],
+                    "course_id": course_id,
+                    "title": l["title"],
+                    "description": l.get("description"),
+                    "video_url": l.get("video_url"),
+                    "duration": l.get("duration", "00:00"),
+                    "order": l.get("order", 1),
+                    "is_preview": bool(l.get("is_preview", False)),
+                    "resources": l.get("resources", []),
+                    "published": True
+                }
+                lesson_row = {k: v for k, v in lesson_row.items() if v is not None}
+                await self._req("POST", "lessons", json_body=lesson_row)
+        return True
 
     # ---------------- PURCHASES ----------------
     async def create_purchase(self, p: Dict[str, Any]) -> Dict[str, Any]:

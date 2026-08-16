@@ -232,6 +232,10 @@ class SqliteStore(Store):
             cur = c.execute("DELETE FROM courses WHERE id=? OR slug=?", (course_id, course_id))
             return cur.rowcount > 0
 
+    async def seed_course_structure(self, course_id: str, modules: list) -> bool:
+        # SQLite rejimida modullar kod tarafida (build_course_modules) saqlanadi — bazaga yozish shart emas
+        return True
+
     # ---------------- PURCHASES ----------------
     async def create_purchase(self, p: Dict[str, Any]) -> Dict[str, Any]:
         row = {
