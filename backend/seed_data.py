@@ -31,11 +31,13 @@ COURSES = [
         "duration": "24 soat",
         "lesson_count": 28,
         "level": "Boshlang'ichdan Yuqori darajagacha",
-        "instructor_name": "Farxod Dadajonov",
-        "instructor_title": "AI & Senior Prompt Architect",
+        "instructor_name": "Yaxshi Bola",
+        "instructor_title": "AI Architect & Senior Software Engineer",
         "instructor_avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
-        "instructor_bio": "6 yillik tajribaga ega Machine Learning muhandisi va xalqaro AI loyihalar koordinatori.",
-        "rating": 4.9,
+        "instructor_bio": "AI Agentlar, LLM arxitekturasi va murakkab dasturiy ta'minotlar bo'yicha yetakchi mutaxassis.",
+        "access_duration": "1 yil (365 kun)",
+        "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
+        "rating": 5.0,
         "student_count": 1420,
         "published": True
     },
@@ -54,10 +56,12 @@ COURSES = [
         "duration": "30 soat",
         "lesson_count": 35,
         "level": "Amaliyotga yo'naltirilgan",
-        "instructor_name": "Aziza Karimova",
-        "instructor_title": "Lead Product Designer",
+        "instructor_name": "Zuhra Olimova",
+        "instructor_title": "Lead Product Designer & Art Director",
         "instructor_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80",
-        "instructor_bio": "Fintech va EdTech kompaniyalarida 7 yillik Lead Product Designer tajribasi.",
+        "instructor_bio": "Fintech, EdTech va Telegram Mini App interfeyslari bo'yicha yetakchi Art Director.",
+        "access_duration": "1 yil (365 kun)",
+        "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
         "rating": 5.0,
         "student_count": 980,
         "published": True
@@ -77,10 +81,12 @@ COURSES = [
         "duration": "42 soat",
         "lesson_count": 45,
         "level": "O'rta va Professional",
-        "instructor_name": "Javohir Rustamov",
-        "instructor_title": "Full-Stack Software Architect",
+        "instructor_name": "Yaxshi Bola",
+        "instructor_title": "Telegram Fullstack Architect",
         "instructor_avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
-        "instructor_bio": "High-load tizimlar va Telegram ekotizimi bo'yicha yetakchi dasturchi.",
+        "instructor_bio": "High-load tizimlar va Telegram ekotizimi bo'yicha yetakchi dasturchi va arxitektor.",
+        "access_duration": "1 yil (365 kun)",
+        "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
         "rating": 4.9,
         "student_count": 1850,
         "published": True
@@ -100,15 +106,18 @@ COURSES = [
         "duration": "16 soat",
         "lesson_count": 20,
         "level": "Boshlang'ich va Amaliyotchi",
-        "instructor_name": "Sardor Aliyev",
+        "instructor_name": "Zuhra Olimova",
         "instructor_title": "Marketing & Growth Strategist",
         "instructor_avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
         "instructor_bio": "100+ dan ortiq brendlar va shaxsiy bloglar uchun million dollarlik sotuv voronkalari muallifi.",
-        "rating": 4.8,
+        "access_duration": "1 yil (365 kun)",
+        "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
+        "rating": 4.9,
         "student_count": 2100,
         "published": True
     }
 ]
+
 
 # 2. MODULES & LESSONS FOR AI COURSE (Course 1)
 MODULES_COURSE_1 = [

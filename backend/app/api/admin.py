@@ -245,43 +245,63 @@ async def update_payment_settings(
     settings.CARD_HOLDER = req.card_holder
     settings.CARD_BANK = req.bank_name
 
-    return {
-        "success": True,
-        "message": "To'lov rekvizitlari yangilandi!",
-        "settings": {
-            "card_number": settings.CARD_NUMBER,
-            "card_holder": settings.CARD_HOLDER,
-            "bank_name": settings.CARD_BANK
-        }
-    }
-
-@router.post("/courses/create")
-async def create_course(
+@router.put("/courses/{course_id}")
+async def update_course(
+    course_id: str,
     course_data: Dict[str, Any],
     admin: dict = Depends(get_current_admin)
 ):
-    """Yangi kurs yaratish"""
-    course_id = str(uuid.uuid4())
-    slug = course_data.get("slug") or course_data.get("title", "").lower().replace(" ", "-")
-    
-    new_course = {
-        "id": course_id,
-        "title": course_data.get("title"),
-        "slug": slug,
-        "category": course_data.get("category", "AI"),
-        "description": course_data.get("description", ""),
-        "short_description": course_data.get("short_description", ""),
-        "cover_url": course_data.get("cover_url", "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80"),
-        "price": int(course_data.get("price", 0)),
-        "old_price": int(course_data.get("old_price", 0)) if course_data.get("old_price") else None,
-        "duration": course_data.get("duration", "10 soat"),
-        "lesson_count": int(course_data.get("lesson_count", 0)),
-        "level": course_data.get("level", "Boshlang'ich"),
-        "instructor_name": course_data.get("instructor_name", admin.get("name")),
-        "instructor_title": course_data.get("instructor_title", "Senior Expert"),
-        "published": True
-    }
+    """Mavjud kursning nomi, narxi, tavsifi va parametrlarini tahrirlash"""
+    target = next((c for c in COURSES if c["id"] == course_id or c["slug"] == course_id), None)
+    if not target:
+        raise HTTPException(status_code=404, detail="Kurs topilmadi")
 
-    COURSES.append(new_course)
-    await supabase_client.insert("courses", new_course)
-    return {"success": True, "course": new_course}
+    # Ma'lumotlarni yangilash
+    if "title" in course_data: target["title"] = course_data["title"]
+    if "price" in course_data: target["price"] = int(course_data["price"])
+    if "old_price" in course_data: target["old_price"] = int(course_data["old_price"]) if course_data["old_price"] else None
+    if "category" in course_data: target["category"] = course_data["category"]
+    if "level" in course_data: target["level"] = course_data["level"]
+    if "duration" in course_data: target["duration"] = course_data["duration"]
+    if "description" in course_data: target["description"] = course_data["description"]
+    if "short_description" in course_data: target["short_description"] = course_data["short_description"]
+    if "cover_url" in course_data: target["cover_url"] = course_data["cover_url"]
+    if "instructor_name" in course_data: target["instructor_name"] = course_data["instructor_name"]
+
+    await supabase_client.insert("courses", target)
+    return {"success": True, "message": f"'{target['title']}' kursi tahrirlandi!", "course": target}
+
+@router.delete("/courses/{course_id}")
+async def delete_course(
+    course_id: str,
+    admin: dict = Depends(get_current_admin)
+):
+    """Kursni o'chirish"""
+    global COURSES
+    COURSES = [c for c in COURSES if c["id"] != course_id and c["slug"] != course_id]
+    return {"success": True, "message": "Kurs o'chirildi"}
+
+@router.post("/upload-to-r2")
+async def upload_media_to_r2(
+    filename: str,
+    file_type: str = "video/mp4",
+    admin: dict = Depends(get_current_admin)
+):
+    """
+    Admin rasm yoki video yuklaganda Cloudflare R2 ga xavfsiz presigned URL olish.
+    Link Supabase ga saqlanadi, Egress esa Cloudflare R2 dan tekin ketadi!
+    """
+    ext = filename.split(".")[-1] if "." in filename else "mp4"
+    unique_key = f"courses/{uuid.uuid4().hex[:12]}.{ext}"
+    
+    upload_url = r2_client.generate_presigned_url(unique_key, expires_in=3600)
+    public_url = r2_client.get_public_url(unique_key)
+
+    return {
+        "success": True,
+        "object_key": unique_key,
+        "upload_url": upload_url,
+        "public_r2_url": public_url,
+        "storage": "Cloudflare R2 (Zero-Egress Fees)",
+        "database": "Supabase PostgreSQL"
+    }

@@ -440,95 +440,135 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           </div>
         )}
 
-        {/* TAB 3: NEW COURSE */}
+        {/* TAB 3: COURSES MANAGEMENT & EDITING */}
         {activeTab === 'new_course' && (
-          <form onSubmit={handleCreateCourse} className="space-y-2.5">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-brand-dark">Kurs nomi</label>
-              <input
-                type="text"
-                required
-                value={courseTitle}
-                onChange={(e) => setCourseTitle(e.target.value)}
-                placeholder="Masalan: Sun'iy Intellekt va Prompt Engineering"
-                className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
-              />
-            </div>
+          <div className="space-y-4">
+            {/* Quick Edit Existing Courses */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center justify-between">
+                <span>Mavjud Kurslarni Tahrirlash</span>
+                <span className="text-[10px] text-brand-emerald font-normal">Cloudflare R2 + Supabase</span>
+              </h4>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-brand-dark">Kategoriya</label>
-                <select
-                  value={courseCategory}
-                  onChange={(e) => setCourseCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
-                >
-                  <option value="AI">AI</option>
-                  <option value="Dizayn">Dizayn</option>
-                  <option value="Dasturlash">Dasturlash</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Biznes">Biznes</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-brand-dark">Daraja</label>
-                <select
-                  value={courseLevel}
-                  onChange={(e) => setCourseLevel(e.target.value)}
-                  className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
-                >
-                  <option value="Boshlang'ich">Boshlang'ich</option>
-                  <option value="O'rta">O'rta</option>
-                  <option value="Professional">Professional</option>
-                </select>
+              <div className="space-y-2">
+                {[
+                  { id: 'c1', title: "Sun'iy Intellekt va Prompt Engineering Pro", price: "490000", instructor: "Yaxshi Bola" },
+                  { id: 'c2', title: "Zamonaviy UI/UX va Mobile App Dizayn", price: "550000", instructor: "Zuhra Olimova" },
+                  { id: 'c3', title: "Telegram Bot & Mini App Fullstack Dasturlash", price: "690000", instructor: "Yaxshi Bola" },
+                  { id: 'c4', title: "High-Ticket SMM va Kontent Monetizatsiya", price: "390000", instructor: "Zuhra Olimova" }
+                ].map((c) => (
+                  <div key={c.id} className="p-3 bg-brand-surface rounded-2xl border border-brand-border/80 flex items-center justify-between text-xs">
+                    <div className="min-w-0 pr-2">
+                      <strong className="text-brand-dark block truncate">{c.title}</strong>
+                      <span className="text-[10px] text-brand-secondary">Ustoz: <strong className="text-brand-emerald">{c.instructor}</strong> • {parseInt(c.price).toLocaleString('uz-UZ')} so'm • 1 yil kirish</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCourseTitle(c.title);
+                        setCoursePrice(c.price);
+                        haptic.selection();
+                        showNotification(`'${c.title}' tahrirlash uchun tanlandi`);
+                      }}
+                      className="px-2.5 py-1.5 bg-brand-emerald text-white rounded-xl text-[10px] font-bold flex-shrink-0 hover:bg-brand-deep transition-all"
+                    >
+                      Tahrirlash
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            {/* Edit / Create Form */}
+            <form onSubmit={handleCreateCourse} className="space-y-2.5 pt-2 border-t border-brand-border/60">
+              <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+                Kurs Parametrlari (Yangi yoki Tahrirlash)
+              </h4>
+
               <div className="space-y-1">
-                <label className="text-xs font-bold text-brand-dark">Narxi (so'm)</label>
+                <label className="text-xs font-bold text-brand-dark">Kurs nomi</label>
                 <input
-                  type="number"
+                  type="text"
                   required
-                  value={coursePrice}
-                  onChange={(e) => setCoursePrice(e.target.value)}
-                  placeholder="490000"
+                  value={courseTitle}
+                  onChange={(e) => setCourseTitle(e.target.value)}
+                  placeholder="Masalan: Sun'iy Intellekt va Prompt Engineering Pro"
                   className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-brand-dark">Eski narxi (so'm)</label>
-                <input
-                  type="number"
-                  value={courseOldPrice}
-                  onChange={(e) => setCourseOldPrice(e.target.value)}
-                  placeholder="890000"
-                  className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-brand-dark">Ustoz (Muallif)</label>
+                  <select
+                    className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald font-bold"
+                  >
+                    <option value="Yaxshi Bola">Yaxshi Bola (Senior AI & Fullstack)</option>
+                    <option value="Zuhra Olimova">Zuhra Olimova (Lead Designer & Growth)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-brand-dark">Kirish Muddati</label>
+                  <input
+                    type="text"
+                    disabled
+                    value="1 yil (365 kun)"
+                    className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-secondary font-bold"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-brand-dark">Kurs haqida qisqacha tavsif</label>
-              <textarea
-                rows={2}
-                value={courseDesc}
-                onChange={(e) => setCourseDesc(e.target.value)}
-                placeholder="Kurs kimlar uchun va nimalar o'rgatiladi..."
-                className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
-              />
-            </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-brand-dark">Narxi (so'm)</label>
+                  <input
+                    type="number"
+                    required
+                    value={coursePrice}
+                    onChange={(e) => setCoursePrice(e.target.value)}
+                    placeholder="490000"
+                    className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
+                  />
+                </div>
 
-            <button
-              type="submit"
-              className="w-full py-3 bg-brand-emerald text-white font-bold rounded-2xl shadow-soft hover:bg-brand-deep active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Kursni Bazaga Joylash</span>
-            </button>
-          </form>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-brand-dark">Eski narxi (so'm)</label>
+                  <input
+                    type="number"
+                    value={courseOldPrice}
+                    onChange={(e) => setCourseOldPrice(e.target.value)}
+                    placeholder="890000"
+                    className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
+                  />
+                </div>
+              </div>
+
+              {/* R2 Media Upload Indicator */}
+              <div className="p-3 bg-brand-mint/30 rounded-2xl border border-brand-emerald/30 space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold text-brand-dark">
+                  <span className="flex items-center space-x-1">
+                    <Video className="w-4 h-4 text-brand-emerald" />
+                    <span>Cloudflare R2 Video / Media</span>
+                  </span>
+                  <span className="text-[10px] text-brand-emerald bg-brand-mint px-2 py-0.5 rounded-full font-bold">
+                    Zero Egress
+                  </span>
+                </div>
+                <p className="text-[10px] text-brand-secondary">
+                  Dars videolari Cloudflare R2 ga xavfsiz yuklanadi, ma'lumotlar esa Supabase bazasiga ulanadi.
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-brand-emerald text-white font-bold rounded-2xl shadow-soft hover:bg-brand-deep active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>O'zgarishlarni Saqlash</span>
+              </button>
+            </form>
+          </div>
         )}
 
         {/* TAB 4: STUDENTS CRM */}

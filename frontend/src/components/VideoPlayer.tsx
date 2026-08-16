@@ -1,5 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Gauge } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  RotateCcw,
+  RotateCw,
+  Gauge,
+  ShieldAlert,
+  Lock
+} from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 
 interface VideoPlayerProps {
@@ -22,7 +33,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const { haptic } = useTelegram();
+  const { haptic, user } = useTelegram();
 
   const togglePlay = () => {
     haptic.impact('light');
@@ -86,12 +97,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   return (
-    <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-elevated group">
+    <div
+      onContextMenu={(e) => e.preventDefault()}
+      className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-elevated group select-none"
+    >
       <video
         ref={videoRef}
         src={src}
         poster={poster}
         playsInline
+        controlsList="nodownload noplaybackrate"
+        disablePictureInPicture
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
         onEnded={() => {
@@ -99,8 +115,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onEnded?.();
         }}
         onClick={togglePlay}
-        className="w-full h-full object-contain cursor-pointer"
+        className="w-full h-full object-contain cursor-pointer pointer-events-auto"
       />
+
+      {/* Dynamic Watermark / Anti-Leak Overlay */}
+      <div className="absolute top-2.5 right-3 pointer-events-none opacity-40 bg-black/40 px-2 py-0.5 rounded text-[9px] font-mono text-white/90 flex items-center space-x-1 border border-white/10">
+        <Lock className="w-2.5 h-2.5 text-amber-400" />
+        <span>ID: {user?.id || '8544023815'} • {user?.first_name || 'Talaba'}</span>
+      </div>
+
+      <div className="absolute bottom-12 left-3 pointer-events-none opacity-30 text-[8px] text-white/70 font-sans tracking-wide">
+        Mualliflik huquqi bilan himoyalangan. Tarqatish taqiqlanadi.
+      </div>
 
       {/* Play/Pause Large Center Icon Overlay when paused */}
       {!isPlaying && (

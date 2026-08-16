@@ -58,7 +58,11 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
     },
     {
       q: 'Kursga kirish muddati qancha?',
-      a: "Kursga kirish huquqi muddatsiz (umrbod) beriladi. Barcha kelgusi yangilanishlar va qo'shimcha darslar ham bepul taqdim etiladi."
+      a: "Kursga kirish huquqi 1 yil (365 kun) davomida to'liq beriladi. Ushbu davr mobaynida darslar, amaliy topshiriqlar va yangilanishlardan bemalol foydalanishingiz mumkin."
+    },
+    {
+      q: "Darslarni ko'chirib olish yoki tarqatish mumkinmi?",
+      a: "Yo'q, darslar mualliflik huquqi bilan qat'iy himoyalangan. Darslarni ko'chirib olish, ekrandan yozib olish yoki uchinchi shaxslarga tarqatish qat'iyan taqiqlanadi va qonuniy javobgarlikka sabab bo'ladi."
     },
     {
       q: 'Kurs yakunida sertifikat beriladimi?',
