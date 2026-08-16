@@ -34,12 +34,12 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   }
 
   return (
-    <div className="flex-1 pb-safe-nav px-4 pt-3 space-y-4 animate-in fade-in duration-200">
+    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 animate-in fade-in duration-200">
       {/* Page Title */}
       <div>
-        <h1 className="text-xl font-serif font-bold text-brand-dark">Kurslar Katalogi</h1>
+        <h1 className="text-xl font-serif font-bold text-brand-dark">Barcha Kurslar Katalogi</h1>
         <p className="text-xs text-brand-secondary mt-0.5">
-          O'zingizga mos yo'nalishni tanlang va professional ko'nikmalarga ega bo'ling.
+          {filtered.length} ta eksklyuziv kurs • 1 yillik kafolatlangan to'liq kirish
         </p>
       </div>
 

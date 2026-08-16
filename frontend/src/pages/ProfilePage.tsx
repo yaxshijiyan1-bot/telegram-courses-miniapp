@@ -46,7 +46,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                        user?.telegram_id === 8112688757;
 
   return (
-    <div className="flex-1 pb-safe-nav px-4 pt-3 space-y-4 animate-in fade-in duration-200">
+    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 animate-in fade-in duration-200">
       {/* Profile Info Header */}
       <div className="bg-white rounded-hero p-5 border border-brand-border/80 shadow-soft text-center space-y-3 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-brand-mint/40 rounded-full blur-2xl pointer-events-none" />

@@ -26,7 +26,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
   });
 
   return (
-    <div className="flex-1 pb-safe-nav px-4 pt-3 space-y-4 animate-in fade-in duration-200">
+    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 animate-in fade-in duration-200">
       {/* Header */}
       <div>
         <h1 className="text-xl font-serif font-bold text-brand-dark">Mening O‘qishim</h1>

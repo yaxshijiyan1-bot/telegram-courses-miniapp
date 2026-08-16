@@ -33,7 +33,7 @@ COURSES = [
         "level": "Boshlang'ichdan Yuqori darajagacha",
         "instructor_name": "Yaxshi Bola",
         "instructor_title": "AI Architect & Senior Software Engineer",
-        "instructor_avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+        "instructor_avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
         "instructor_bio": "AI Agentlar, LLM arxitekturasi va murakkab dasturiy ta'minotlar bo'yicha yetakchi mutaxassis.",
         "access_duration": "1 yil (365 kun)",
         "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
@@ -58,7 +58,7 @@ COURSES = [
         "level": "Amaliyotga yo'naltirilgan",
         "instructor_name": "Zuhra Olimova",
         "instructor_title": "Lead Product Designer & Art Director",
-        "instructor_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80",
+        "instructor_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
         "instructor_bio": "Fintech, EdTech va Telegram Mini App interfeyslari bo'yicha yetakchi Art Director.",
         "access_duration": "1 yil (365 kun)",
         "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
@@ -83,7 +83,7 @@ COURSES = [
         "level": "O'rta va Professional",
         "instructor_name": "Yaxshi Bola",
         "instructor_title": "Telegram Fullstack Architect",
-        "instructor_avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+        "instructor_avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
         "instructor_bio": "High-load tizimlar va Telegram ekotizimi bo'yicha yetakchi dasturchi va arxitektor.",
         "access_duration": "1 yil (365 kun)",
         "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
@@ -108,7 +108,7 @@ COURSES = [
         "level": "Boshlang'ich va Amaliyotchi",
         "instructor_name": "Zuhra Olimova",
         "instructor_title": "Marketing & Growth Strategist",
-        "instructor_avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
+        "instructor_avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80",
         "instructor_bio": "100+ dan ortiq brendlar va shaxsiy bloglar uchun million dollarlik sotuv voronkalari muallifi.",
         "access_duration": "1 yil (365 kun)",
         "copyright_notice": "Ko'chirib olish va tarqatish qat'iyan taqiqlanadi. Mualliflik huquqi bilan himoyalangan.",
@@ -116,6 +116,7 @@ COURSES = [
         "student_count": 2100,
         "published": True
     }
+
 ]
 
 
