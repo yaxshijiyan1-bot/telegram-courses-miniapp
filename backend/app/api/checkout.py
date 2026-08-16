@@ -1,5 +1,6 @@
 import uuid
 import base64
+import json
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -166,20 +167,35 @@ async def submit_receipt(
             ]
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=25.0) as client:
             for admin_id in settings.ADMIN_IDS:
                 try:
-                    # Agar rasm base64 bo'lsa
+                    # Agar rasm base64 bo'lsa, uni rasm qilib yuborish
                     if req.receipt_image.startswith("data:image"):
-                        # Matnli xabar yuborish
-                        await client.post(f"{tg_api}/sendMessage", json={
-                            "chat_id": admin_id,
-                            "text": caption,
-                            "parse_mode": "HTML",
-                            "reply_markup": keyboard
-                        })
+                        try:
+                            # base64 ni ochish
+                            header, encoded = req.receipt_image.split(",", 1)
+                            image_bytes = base64.b64decode(encoded)
+                            
+                            # sendPhoto multipart orqali jo'natish
+                            files = {"photo": ("receipt.jpg", image_bytes, "image/jpeg")}
+                            data = {
+                                "chat_id": str(admin_id),
+                                "caption": caption,
+                                "parse_mode": "HTML",
+                                "reply_markup": json.dumps(keyboard)
+                            }
+                            await client.post(f"{tg_api}/sendPhoto", data=data, files=files)
+                        except Exception as img_err:
+                            # Xatolik bo'lsa matn yuborish
+                            await client.post(f"{tg_api}/sendMessage", json={
+                                "chat_id": admin_id,
+                                "text": caption,
+                                "parse_mode": "HTML",
+                                "reply_markup": keyboard
+                            })
                     elif req.receipt_image.startswith("http"):
-                        # Rasm bilan yuborish
+                        # URL rasm bilan yuborish
                         await client.post(f"{tg_api}/sendPhoto", json={
                             "chat_id": admin_id,
                             "photo": req.receipt_image,

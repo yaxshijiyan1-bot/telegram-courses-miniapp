@@ -14,7 +14,11 @@ import {
   Play,
   CheckCircle2,
   Users,
-  MessageSquare
+  MessageSquare,
+  Cpu,
+  Palette,
+  Bot,
+  BarChart3
 } from 'lucide-react';
 import { Course } from '../types';
 import { CourseCard } from '../components/CourseCard';
@@ -37,40 +41,43 @@ export const HomePage: React.FC<HomePageProps> = ({
   const { haptic } = useTelegram();
   const { user } = useAuth();
 
-  // 3 ta Premium Bannerlar Slayderi
+  // 3 ta Premium Glassmorphism Bannerlar
   const heroBanners = [
     {
       id: 1,
       tag: "🔥 CHEGIRMA — 50% GACHA",
       title: "Sun'iy Intellekt va Prompt Engineering Pro",
-      subtitle: "Gemini 3.7, Claude & AI Agentlar orqali ish unumdorligini 10x oshiring",
-      gradient: "from-emerald-950 via-brand-forest to-emerald-900",
+      subtitle: "Gemini 3.7, Claude & AI Agentlar orqali daromadingizni oshiring",
+      gradient: "from-emerald-950/95 via-brand-forest/90 to-emerald-900/90",
       accent: "bg-emerald-500",
       instructor: "Yaxshi Bola",
       courseId: "c1111111-1111-1111-1111-111111111111",
-      badge: "1 Yil Kirish"
+      badge: "1 Yil Kirish",
+      icon: "🤖"
     },
     {
       id: 2,
       tag: "💎 APPLE DESIGN MASTERCLASS",
       title: "Zamonaviy UI/UX va Mobile App Dizayn",
-      subtitle: "Figma, Design Systems va Telegram Mini App interfeyslarini yaratish",
-      gradient: "from-purple-950 via-slate-900 to-indigo-950",
+      subtitle: "Figma, Design Systems va Telegram Mini App interfeyslari",
+      gradient: "from-purple-950/95 via-slate-900/90 to-indigo-950/90",
       accent: "bg-purple-500",
       instructor: "Zuhra Olimova",
       courseId: "c2222222-2222-2222-2222-222222222222",
-      badge: "Sertifikatli"
+      badge: "Sertifikatli",
+      icon: "🎨"
     },
     {
       id: 3,
       tag: "⚡️ FULLSTACK 2026",
       title: "Telegram Bot & Mini App Fullstack Dasturlash",
       subtitle: "FastAPI, React, TypeScript, Click & Payme to'lov tizimlari",
-      gradient: "from-blue-950 via-slate-900 to-cyan-950",
+      gradient: "from-blue-950/95 via-slate-900/90 to-cyan-950/90",
       accent: "bg-cyan-500",
       instructor: "Yaxshi Bola",
       courseId: "c3333333-3333-3333-3333-333333333333",
-      badge: "Top Sotuv"
+      badge: "Top Sotuv",
+      icon: "⚡️"
     }
   ];
 
@@ -86,34 +93,24 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="flex-1 pb-36 px-4 pt-3 space-y-6 animate-in fade-in duration-200">
-      {/* Top Greeting Header */}
-      <div className="flex items-center justify-between">
+      {/* Top Greeting Glass Header */}
+      <div className="flex items-center justify-between bg-white/70 backdrop-blur-md p-3.5 rounded-3xl border border-white/80 shadow-soft">
         <div>
-          <span className="text-[11px] text-brand-secondary font-medium">Assalomu alaykum 👋</span>
-          <h1 className="text-base font-bold text-brand-dark">
-            {user?.name || 'Hurmatli Talaba'}
+          <span className="text-[10px] font-bold text-brand-emerald uppercase tracking-wider">
+            Premium Ta'lim Platformasi
+          </span>
+          <h1 className="text-sm font-bold text-brand-dark">
+            Assalomu alaykum, {user?.name || 'Do\'stim'} 👋
           </h1>
         </div>
-        <div className="w-9 h-9 rounded-2xl bg-brand-mint border border-brand-emerald/20 flex items-center justify-center text-brand-emerald shadow-soft">
-          <Sparkles className="w-5 h-5 text-brand-gold" />
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-emerald to-brand-forest text-brand-gold flex items-center justify-center shadow-soft border border-white/40">
+          <Sparkles className="w-5 h-5 fill-brand-gold/30" />
         </div>
-      </div>
-
-      {/* Quick Search */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Qaysi sohani o'rganmoqchisiz?"
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-2xl text-xs text-brand-text placeholder-brand-muted focus:outline-none focus:border-brand-emerald focus:ring-2 focus:ring-brand-emerald/10 transition-all shadow-sm"
-        />
       </div>
 
       {/* 1. AUTO-SLIDING HERO BANNER CAROUSEL */}
       <div className="space-y-2">
-        <div className="relative overflow-hidden rounded-3xl shadow-xl min-h-[168px] sm:min-h-[185px]">
+        <div className="relative overflow-hidden rounded-3xl shadow-xl min-h-[175px] border border-white/20">
           {heroBanners.map((banner, index) => {
             const isActive = currentSlide === index;
             const targetCourse = courses.find((c) => c.id === banner.courseId) || courses[0];
@@ -125,7 +122,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   haptic.impact('light');
                   if (targetCourse) onSelectCourse(targetCourse);
                 }}
-                className={`absolute inset-0 p-4 sm:p-5 bg-gradient-to-br ${banner.gradient} text-white flex flex-col justify-between cursor-pointer transition-all duration-700 ease-in-out ${
+                className={`absolute inset-0 p-4 sm:p-5 bg-gradient-to-br ${banner.gradient} text-white flex flex-col justify-between cursor-pointer transition-all duration-700 ease-in-out backdrop-blur-xl ${
                   isActive ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-8 pointer-events-none'
                 }`}
               >
@@ -167,7 +164,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
 
         {/* Carousel Dots */}
-        <div className="flex items-center justify-center space-x-1.5 pt-1">
+        <div className="flex items-center justify-center space-x-1.5 pt-0.5">
           {heroBanners.map((_, i) => (
             <button
               key={i}
@@ -183,11 +180,11 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </div>
 
-      {/* 2. CATEGORY QUICK SHORTCUTS */}
-      <div className="space-y-2.5">
+      {/* 2. 3D GLASSMORPHISM YO'NALISHLAR (CATEGORIES) */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
-            Yo'nalishlar
+          <h3 className="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center space-x-1.5">
+            <span>✨ Asosiy Yo'nalishlar</span>
           </h3>
           <button
             onClick={() => {
@@ -196,31 +193,83 @@ export const HomePage: React.FC<HomePageProps> = ({
             }}
             className="text-[11px] font-bold text-brand-emerald hover:underline flex items-center space-x-0.5"
           >
-            <span>Barchasi</span>
+            <span>Katalog</span>
             <ChevronRight className="w-3 h-3" />
           </button>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { name: "Sun'iy Intellekt", icon: "🤖", count: "1 kurs" },
-            { name: "UI/UX Dizayn", icon: "🎨", count: "1 kurs" },
-            { name: "Telegram Bot", icon: "⚡️", count: "1 kurs" },
-            { name: "SMM & Savdo", icon: "📈", count: "1 kurs" }
-          ].map((cat, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                haptic.impact('light');
-                onNavigateToCourses();
-              }}
-              className="p-2.5 bg-white rounded-2xl border border-brand-border/80 text-center space-y-1 shadow-xs hover:border-brand-emerald hover:shadow-soft active:scale-95 transition-all"
-            >
-              <div className="text-lg">{cat.icon}</div>
-              <p className="text-[10px] font-bold text-brand-dark line-clamp-1">{cat.name}</p>
-              <span className="text-[8px] text-brand-secondary block">{cat.count}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-2 gap-2.5">
+          {/* AI 3D Card */}
+          <button
+            onClick={() => {
+              haptic.impact('light');
+              onNavigateToCourses();
+            }}
+            className="p-3 bg-gradient-to-br from-emerald-500/15 to-teal-500/5 backdrop-blur-xl border border-emerald-500/30 rounded-3xl text-left space-y-2 shadow-soft hover:border-emerald-500/60 active:scale-95 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+              <Cpu className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider block">1 Yillik Kirish</span>
+              <h4 className="text-xs font-bold text-brand-dark">Sun'iy Intellekt (AI)</h4>
+              <p className="text-[10px] text-brand-secondary mt-0.5">Gemini 3.7 & Prompt</p>
+            </div>
+          </button>
+
+          {/* UI/UX 3D Card */}
+          <button
+            onClick={() => {
+              haptic.impact('light');
+              onNavigateToCourses();
+            }}
+            className="p-3 bg-gradient-to-br from-purple-500/15 to-indigo-500/5 backdrop-blur-xl border border-purple-500/30 rounded-3xl text-left space-y-2 shadow-soft hover:border-purple-500/60 active:scale-95 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-400 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+              <Palette className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[9px] font-bold text-purple-700 uppercase tracking-wider block">Apple Design</span>
+              <h4 className="text-xs font-bold text-brand-dark">UI/UX & Mobile</h4>
+              <p className="text-[10px] text-brand-secondary mt-0.5">Figma & Design System</p>
+            </div>
+          </button>
+
+          {/* Telegram Fullstack 3D Card */}
+          <button
+            onClick={() => {
+              haptic.impact('light');
+              onNavigateToCourses();
+            }}
+            className="p-3 bg-gradient-to-br from-blue-500/15 to-cyan-500/5 backdrop-blur-xl border border-blue-500/30 rounded-3xl text-left space-y-2 shadow-soft hover:border-blue-500/60 active:scale-95 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-400 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+              <Bot className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider block">Mini App & Bot</span>
+              <h4 className="text-xs font-bold text-brand-dark">Telegram Fullstack</h4>
+              <p className="text-[10px] text-brand-secondary mt-0.5">FastAPI + React</p>
+            </div>
+          </button>
+
+          {/* SMM & Savdo 3D Card */}
+          <button
+            onClick={() => {
+              haptic.impact('light');
+              onNavigateToCourses();
+            }}
+            className="p-3 bg-gradient-to-br from-amber-500/15 to-orange-500/5 backdrop-blur-xl border border-amber-500/30 rounded-3xl text-left space-y-2 shadow-soft hover:border-amber-500/60 active:scale-95 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-400 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider block">Monetizatsiya</span>
+              <h4 className="text-xs font-bold text-brand-dark">High-Ticket SMM</h4>
+              <p className="text-[10px] text-brand-secondary mt-0.5">Sotuv Voronkalari</p>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -240,7 +289,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             }}
             className="text-[11px] font-bold text-brand-emerald hover:underline"
           >
-            Katalogga o'tish →
+            Barchasini ko'rish →
           </button>
         </div>
 
@@ -256,23 +305,28 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </div>
 
-      {/* 4. PLATFORM INSTRUCTORS & FOUNDERS (Ustozlar Bloki) */}
-      <div className="bg-white rounded-3xl p-4 border border-brand-border/80 shadow-soft space-y-3">
-        <div className="flex items-center space-x-2">
-          <Users className="w-4 h-4 text-brand-emerald" />
-          <h3 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
-            Bosh Mentorlar & Mualliflar
-          </h3>
+      {/* 4. PLATFORM INSTRUCTORS & FOUNDERS (Generatsiya qilingan rasmlar) */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-4 border border-white/80 shadow-soft space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Users className="w-4 h-4 text-brand-emerald" />
+            <h3 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+              Bosh Mentorlar & Mualliflar
+            </h3>
+          </div>
+          <span className="text-[10px] bg-brand-mint text-brand-emerald font-bold px-2 py-0.5 rounded-full">
+            VIP Mentorlik
+          </span>
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">
           {/* Ustoz 1: Yaxshi Bola */}
-          <div className="p-3 bg-brand-surface rounded-2xl border border-brand-border/60 text-center space-y-2">
+          <div className="p-3 bg-brand-surface rounded-2xl border border-brand-border/60 text-center space-y-2 shadow-xs">
             <div className="relative inline-block">
               <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"
+                src="/images/yaxshi_bola.jpg"
                 alt="Yaxshi Bola"
-                className="w-14 h-14 rounded-full object-cover mx-auto border-2 border-brand-emerald shadow-sm"
+                className="w-16 h-16 rounded-2xl object-cover mx-auto border-2 border-brand-emerald shadow-sm"
               />
               <span className="absolute bottom-0 right-0 w-4 h-4 bg-brand-emerald rounded-full border border-white flex items-center justify-center text-[9px] text-white">
                 ✓
@@ -293,12 +347,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {/* Ustoz 2: Zuhra Olimova */}
-          <div className="p-3 bg-brand-surface rounded-2xl border border-brand-border/60 text-center space-y-2">
+          <div className="p-3 bg-brand-surface rounded-2xl border border-brand-border/60 text-center space-y-2 shadow-xs">
             <div className="relative inline-block">
               <img
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80"
+                src="/images/zuhra_olimova.jpg"
                 alt="Zuhra Olimova"
-                className="w-14 h-14 rounded-full object-cover mx-auto border-2 border-brand-gold shadow-sm"
+                className="w-16 h-16 rounded-2xl object-cover mx-auto border-2 border-brand-gold shadow-sm"
               />
               <span className="absolute bottom-0 right-0 w-4 h-4 bg-brand-gold rounded-full border border-white flex items-center justify-center text-[9px] text-white">
                 ✓
@@ -321,8 +375,8 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* 5. WHY CHOOSE US (Afzalliklar) */}
-      <div className="bg-gradient-to-br from-brand-forest to-brand-emerald text-white rounded-3xl p-4 sm:p-5 shadow-elevated space-y-3 relative overflow-hidden">
-        <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
+      <div className="bg-gradient-to-br from-brand-forest via-brand-emerald to-emerald-950 text-white rounded-3xl p-5 shadow-elevated space-y-3 relative overflow-hidden border border-white/20">
+        <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/15 rounded-full blur-2xl pointer-events-none" />
 
         <div className="space-y-1">
           <span className="text-[9px] font-bold text-brand-gold uppercase tracking-widest">
@@ -332,28 +386,28 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-          <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-xs border border-white/10 space-y-1">
+          <div className="p-2.5 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10 space-y-1">
             <Clock className="w-4 h-4 text-brand-gold" />
             <strong className="text-[11px] block text-white">1 Yillik Kirish</strong>
-            <p className="text-[9px] text-white/70">365 kun davomida darslar to'liq ochiq bo'ladi.</p>
+            <p className="text-[9px] text-white/75">365 kun davomida barcha darslar ochiq.</p>
           </div>
 
-          <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-xs border border-white/10 space-y-1">
+          <div className="p-2.5 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10 space-y-1">
             <ShieldCheck className="w-4 h-4 text-emerald-300" />
             <strong className="text-[11px] block text-white">Anti-Leak Himoya</strong>
-            <p className="text-[9px] text-white/70">Har bir dars shaxsiy Watermark bilan himoyalangan.</p>
+            <p className="text-[9px] text-white/75">Har bir darsda shaxsiy Watermark.</p>
           </div>
 
-          <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-xs border border-white/10 space-y-1">
+          <div className="p-2.5 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10 space-y-1">
             <Award className="w-4 h-4 text-amber-300" />
-            <strong className="text-[11px] block text-white">QR-kodli Sertifikat</strong>
-            <p className="text-[9px] text-white/70">Kurs yakunida tekshiriladigan rasmiy diplom.</p>
+            <strong className="text-[11px] block text-white">QR Sertifikat</strong>
+            <p className="text-[9px] text-white/75">Rasmiy tekshiriladigan diplom.</p>
           </div>
 
-          <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-xs border border-white/10 space-y-1">
+          <div className="p-2.5 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10 space-y-1">
             <Zap className="w-4 h-4 text-yellow-300" />
             <strong className="text-[11px] block text-white">24/7 Qo'llab-quvvatlash</strong>
-            <p className="text-[9px] text-white/70">Ustozlar bilan doimiy to'g'ridan-to'g'ri aloqa.</p>
+            <p className="text-[9px] text-white/75">Ustozlar bilan to'g'ridan-to'g'ri aloqa.</p>
           </div>
         </div>
       </div>
