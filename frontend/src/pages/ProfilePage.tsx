@@ -144,65 +144,46 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       </div>
 
-      {/* 4. 2 TA IXCHAM BLOK (Friends & Keep it up Trophy) */}
-      <div className="grid grid-cols-2 gap-2.5">
-        {/* Friends / Kursdoshlar */}
-        <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 flex flex-col justify-between space-y-3">
-          <div className="flex -space-x-2 overflow-hidden pt-1">
-            <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#131318] object-cover" src="/images/yaxshi_bola.jpg" alt="" />
-            <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#131318] object-cover" src="/images/zuhra_olimova.jpg" alt="" />
-            <div className="inline-flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-[#131318] bg-zinc-800 text-[10px] font-bold text-[#B4F523]">
-              +12
-            </div>
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-white">Kursdoshlar</h4>
-            <span className="text-[10px] text-[#B4F523] font-semibold flex items-center space-x-1 mt-0.5">
-              <span className="w-1.5 h-1.5 bg-[#B4F523] rounded-full animate-ping" />
-              <span>14 nafar onlayn</span>
-            </span>
+      {/* 4. YUTUQLAR VA DIPLOM (Kursdoshlarsiz, keng va toza blok) */}
+      <div className="bg-[#131318] p-4 rounded-3xl border border-white/5 flex items-center justify-between shadow-soft">
+        <div className="space-y-1">
+          <span className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
+            O'quv Yutuqlari
+          </span>
+          <h4 className="text-sm font-bold text-white">35 kun ketma-ket darsda!</h4>
+          <p className="text-xs text-zinc-400">Faollik ko'rsatkichi a'lo darajada</p>
+          <div className="flex items-center space-x-1.5 pt-1">
+            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
+            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
+            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
+            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
+            <span className="w-2 h-2 rounded-full bg-zinc-700" />
           </div>
         </div>
 
-        {/* Keep it up! 3D Trophy */}
-        <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 flex flex-col justify-between relative overflow-hidden">
-          <div className="space-y-1 relative z-10">
-            <h4 className="text-xs font-bold text-white">Yutuqlar</h4>
-            <p className="text-[10px] text-zinc-400">35 kun ketma-ket darsda!</p>
-            {/* 5 ta progress nuqtalari */}
-            <div className="flex items-center space-x-1 pt-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#B4F523]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-            </div>
-          </div>
-
-          <div className="w-12 h-12 rounded-2xl bg-[#1B1B22] text-[#B4F523] flex items-center justify-center self-end shadow-soft mt-1">
-            <Trophy className="w-6 h-6" />
-          </div>
+        <div className="w-14 h-14 rounded-2xl bg-[#1B1B22] border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center shadow-neonSm flex-shrink-0">
+          <Trophy className="w-7 h-7" />
         </div>
       </div>
 
-      {/* 5. KATTA GORIZONTAL KARTOCKA (Rasmdagi Complete new tasks kabi) */}
+      {/* 5. KATTA GORIZONTAL KARTOCKA */}
       <button
         onClick={() => {
           haptic.impact('light');
           onNavigateToCourses();
         }}
-        className="w-full p-4 bg-gradient-to-r from-[#181820] to-[#131318] rounded-3xl border border-white/10 flex items-center justify-between text-left hover:border-[#B4F523]/40 active:scale-[0.98] transition-all shadow-soft group"
+        className="w-full p-4 bg-[#131318] rounded-3xl border border-white/5 flex items-center justify-between text-left hover:border-[#B4F523]/40 active:scale-[0.98] transition-all shadow-soft group"
       >
         <div className="flex items-center space-x-3 min-w-0">
-          <div className="w-12 h-12 rounded-2xl bg-[#B4F523]/15 border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center flex-shrink-0 shadow-neonSm group-hover:scale-105 transition-transform">
-            <Layers className="w-6 h-6" />
+          <div className="w-11 h-11 rounded-2xl bg-[#1B1B22] border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center flex-shrink-0 shadow-neonSm group-hover:scale-105 transition-transform">
+            <Layers className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <h4 className="text-xs font-bold text-white group-hover:text-[#B4F523] transition-colors">
               Yangi amaliy darslarni boshlash
             </h4>
             <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
-              Vazifalarni topshiring va +250 XP bonus oling
+              Katalogdagi eng so'nggi kurslar va masterclasslar
             </p>
           </div>
         </div>

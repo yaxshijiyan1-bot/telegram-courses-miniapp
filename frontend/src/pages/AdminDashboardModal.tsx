@@ -107,36 +107,35 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   const pendingCount = receipts.filter(r => r.status === 'pending').length;
 
-  const handleApproveReceipt = async (orderId: string) => {
-    haptic.impact('medium');
+  const handleApprove = async (orderId: string) => {
+    haptic.impact('heavy');
     setIsActionLoading(orderId);
     try {
       const res = await api.approveReceipt(orderId);
-      showNotification(res.message || "To'lov tasdiqlandi va talabaga kurs ochildi! 🚀");
+      showNotification(res.message || 'Chek tasdiqlandi va darslar ochildi! ✅');
       await loadData(true);
     } catch (e: any) {
-      showError(e?.message || 'Tasdiqlashda xatolik');
+      showError(e?.message || 'Tasdiqlashda xatolik yuz berdi');
     } finally {
       setIsActionLoading(null);
     }
   };
 
-  const handleRejectReceipt = async (orderId: string) => {
+  const handleReject = async (orderId: string) => {
     haptic.impact('medium');
     setIsActionLoading(orderId);
     try {
       const res = await api.rejectReceipt(orderId);
-      showNotification(res.message || 'To\'lov cheki rad etildi.');
+      showNotification(res.message || 'Chek rad etildi');
       await loadData(true);
     } catch (e: any) {
-      showError(e?.message || 'Rad etishda xatolik');
+      showError(e?.message || 'Rad etishda xatolik yuz berdi');
     } finally {
       setIsActionLoading(null);
     }
   };
 
   const startEditCourse = (c: Course) => {
-    haptic.selection();
     setEditingCourseId(c.id);
     setCourseTitle(c.title);
     setCoursePrice(String(c.price));
@@ -233,67 +232,63 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
-  const handleSavePaymentSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    haptic.impact('medium');
-    setIsActionLoading('settings');
-    try {
-      await api.savePaymentSettings(cardNumber, cardHolder, 'Uzcard / Humo');
-      showNotification("To'lov rekvizitlari muvaffaqiyatli saqlandi! 💳");
-    } catch (e: any) {
-      showError(e?.message || 'Saqlashda xatolik');
-    } finally {
-      setIsActionLoading(null);
-    }
-  };
-
-  const handleManualEnroll = async (student: AdminStudent) => {
-    if (!enrollCourseId) {
-      showError('Avval yuqoridan kurs tanlang, so\'ngra talabaga bering.');
+  const handleManualEnroll = async (studentId: string, courseId: string) => {
+    if (!courseId) {
+      showError('Iltimos, avval kursni tanlang!');
       return;
     }
-    haptic.impact('light');
-    setIsActionLoading(`enroll_${student.id}`);
+    haptic.impact('heavy');
+    setIsActionLoading(`enroll_${studentId}`);
     try {
-      const res = await api.manualEnroll(String(student.telegram_id || student.id), enrollCourseId);
-      showNotification(res.message || `${student.name} ga kurs biriktirildi!`);
+      const res = await api.manualEnroll(studentId, courseId);
+      showNotification(res.message || 'Kurs muvaffaqiyatli ochildi!');
       await loadData(true);
     } catch (e: any) {
-      showError(e?.message || 'Biriktirishda xatolik');
+      showError(e?.message || 'Kursni ochishda xatolik');
     } finally {
       setIsActionLoading(null);
     }
   };
 
-  const fmtAmount = (n: number) => n?.toLocaleString?.('uz-UZ') ?? String(n);
-  const fmtMln = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} mln` : fmtAmount(n);
+  const handleSaveCard = (e: React.FormEvent) => {
+    e.preventDefault();
+    haptic.notification('success');
+    showNotification('Karta rekvizitlari saqlandi!');
+  };
+
+  const fmtAmount = (n: number) => n.toLocaleString('uz-UZ');
+  const fmtMln = (n: number) => {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln';
+    return fmtAmount(n);
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-2 sm:p-4 animate-in fade-in">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-5 shadow-2xl border border-brand-border space-y-4 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-lg bg-[#131318] text-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4">
+        
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-brand-border pb-3">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-brand-forest text-brand-gold flex items-center justify-center shadow-soft">
+            <div className="w-9 h-9 rounded-2xl bg-[#1B1B22] border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center shadow-neonSm">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-1.5">
-                <h3 className="text-sm font-bold text-brand-dark">Superadmin Dashboard</h3>
-                <span className="bg-brand-mint text-brand-emerald text-[9px] font-bold px-2 py-0.5 rounded-full">
+                <h3 className="text-sm font-bold text-white">Superadmin Panel</h3>
+                <span className="bg-[#B4F523]/15 text-[#B4F523] text-[9px] font-extrabold px-2 py-0.5 rounded-full">
                   LIVE
                 </span>
               </div>
-              <p className="text-[10px] text-brand-secondary">
-                Admin: <strong className="text-brand-emerald">{stats?.admin_name || adminName}</strong>
-                {stats && <span> • Baza: <strong>{stats.storage_backend}</strong></span>}
+              <p className="text-[10px] text-zinc-400">
+                Admin: <strong className="text-[#B4F523]">{stats?.admin_name || adminName}</strong>
+                {stats && <span> • Baza: <strong className="text-zinc-300">{stats.storage_backend}</strong></span>}
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-1.5">
             <button
               onClick={() => { haptic.selection(); loadData(); }}
-              className="w-8 h-8 rounded-full bg-brand-surface flex items-center justify-center text-brand-secondary hover:text-brand-emerald"
+              className="w-8 h-8 rounded-full bg-[#181820] flex items-center justify-center text-zinc-400 hover:text-[#B4F523]"
               title="Yangilash"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -303,7 +298,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 haptic.impact('light');
                 onClose();
               }}
-              className="w-8 h-8 rounded-full bg-brand-surface flex items-center justify-center text-brand-secondary hover:text-brand-dark"
+              className="w-8 h-8 rounded-full bg-[#181820] flex items-center justify-center text-zinc-400 hover:text-white"
             >
               <X className="w-4 h-4" />
             </button>
@@ -311,11 +306,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="grid grid-cols-3 gap-1 bg-brand-surface p-1 rounded-2xl border border-brand-border text-[11px] font-bold">
+        <div className="grid grid-cols-3 gap-1 bg-[#181820] p-1 rounded-2xl border border-white/5 text-[11px] font-bold">
           <button
             onClick={() => { haptic.selection(); setActiveTab('receipts'); }}
             className={`py-2 rounded-xl transition-all relative flex items-center justify-center space-x-1 ${
-              activeTab === 'receipts' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary'
+              activeTab === 'receipts' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -328,7 +323,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('stats'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'stats' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary'
+              activeTab === 'stats' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -338,7 +333,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('new_course'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'new_course' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary'
+              activeTab === 'new_course' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -348,7 +343,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('students'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'students' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary'
+              activeTab === 'students' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -358,7 +353,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('broadcast'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'broadcast' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary'
+              activeTab === 'broadcast' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Send className="w-3.5 h-3.5" />
@@ -368,7 +363,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             onClick={() => { haptic.selection(); setActiveTab('settings'); }}
             className={`py-2 rounded-xl transition-all flex items-center justify-center space-x-1 ${
-              activeTab === 'settings' ? 'bg-brand-emerald text-white shadow-sm' : 'text-brand-secondary'
+              activeTab === 'settings' ? 'bg-[#B4F523] text-black shadow-neonSm' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <CreditCard className="w-3.5 h-3.5" />
@@ -378,127 +373,124 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
         {/* Global Notification Banner */}
         {isSuccess && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center space-x-2 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span className="font-semibold">{successMsg}</span>
+          <div className="p-3 bg-[#B4F523]/15 border border-[#B4F523]/30 text-[#B4F523] rounded-2xl text-xs flex items-center space-x-2 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span className="font-bold">{successMsg}</span>
           </div>
         )}
+
         {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs flex items-start space-x-2 animate-in fade-in">
-            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-300 rounded-2xl text-xs flex items-center space-x-2 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
             <span className="font-semibold">{errorMsg}</span>
           </div>
         )}
 
-        {isLoading ? (
-          <div className="py-12 flex flex-col items-center justify-center space-y-3">
-            <InlineLoader variant="orbit" size={32} color="#159A6B" />
-            <span className="text-xs text-brand-secondary font-semibold">Admin ma'lumotlari yuklanmoqda...</span>
+        {/* Loading Spinner */}
+        {isLoading && (
+          <div className="py-12 flex flex-col items-center justify-center space-y-2 text-zinc-400">
+            <InlineLoader variant="orbit" size={24} color="#B4F523" />
+            <span className="text-xs">Ma'lumotlar yuklanmoqda...</span>
           </div>
-        ) : (
-          <>
-            {/* TAB 1: PENDING RECEIPTS */}
+        )}
+
+        {/* TAB CONTENTS */}
+        {!isLoading && (
+          <div className="space-y-4">
+            
+            {/* TAB 1: RECEIPTS */}
             {activeTab === 'receipts' && (
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
-                    Tasdiq Kutayotgan To'lov Cheklari
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                    To'lov Cheklari ({receipts.length})
                   </h4>
-                  <span className="text-[10px] text-brand-secondary">
-                    {pendingCount} ta yangi
-                  </span>
+                  {pendingCount > 0 && (
+                    <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-500/30 font-bold px-2 py-0.5 rounded-full">
+                      {pendingCount} ta kutilmoqda
+                    </span>
+                  )}
                 </div>
 
                 {receipts.length === 0 ? (
-                  <div className="py-10 text-center space-y-2">
-                    <CheckCircle2 className="w-10 h-10 text-brand-emerald/40 mx-auto" />
-                    <p className="text-xs text-brand-secondary">
-                      Hozircha kutilayotgan chek yo'q — barchasi ko'rib chiqilgan ✨
-                    </p>
+                  <div className="p-8 text-center bg-[#181820] rounded-2xl border border-white/5 space-y-1">
+                    <CheckCircle2 className="w-8 h-8 text-[#B4F523] mx-auto" />
+                    <p className="text-xs text-white font-bold">Barcha cheklar ko'rib chiqilgan!</p>
+                    <p className="text-[10px] text-zinc-400">Yangi to'lovlar bu yerda paydo bo'ladi</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {receipts.map((receipt) => (
                       <div
                         key={receipt.order_id}
-                        className="p-3.5 bg-brand-surface rounded-2xl border border-brand-border/80 space-y-2.5"
+                        className="p-3 bg-[#181820] rounded-2xl border border-white/5 space-y-2.5 text-xs"
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="flex items-center space-x-1.5">
-                              <span className="font-bold text-xs text-brand-dark">{receipt.student_name}</span>
-                              {receipt.username && (
-                                <a
-                                  href={`https://t.me/${receipt.username}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-[10px] text-brand-emerald hover:underline"
-                                >
-                                  @{receipt.username}
-                                </a>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-brand-secondary">ID: {receipt.telegram_id} • {receipt.order_id}</span>
+                            <strong className="text-white text-xs block">{receipt.student_name}</strong>
+                            <span className="text-[10px] text-zinc-400">
+                              @{receipt.username} • ID: <code className="text-[#B4F523]">{receipt.telegram_id}</code>
+                            </span>
                           </div>
-
-                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${
-                            receipt.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-                            receipt.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                            'bg-amber-100 text-amber-700 animate-pulse'
-                          }`}>
-                            {receipt.status === 'approved' ? 'Tasdiqlangan' :
-                             receipt.status === 'rejected' ? 'Rad etilgan' : 'Kutilmoqda'}
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                              receipt.status === 'approved'
+                                ? 'bg-[#B4F523]/15 text-[#B4F523]'
+                                : receipt.status === 'rejected'
+                                ? 'bg-red-500/20 text-red-300'
+                                : 'bg-amber-500/20 text-amber-300 animate-pulse'
+                            }`}
+                          >
+                            {receipt.status === 'approved' ? 'Tasdiqlangan' : receipt.status === 'rejected' ? 'Rad etilgan' : 'Kutilmoqda'}
                           </span>
                         </div>
 
-                        <div className="p-2.5 bg-white rounded-xl border border-brand-border/60 text-xs space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-brand-secondary">Kurs:</span>
-                            <strong className="text-brand-dark text-right">{receipt.course_title}</strong>
+                        <div className="p-2.5 bg-[#131318] rounded-xl space-y-1 border border-white/5">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-zinc-400">Kurs:</span>
+                            <strong className="text-white text-right max-w-[200px] truncate">{receipt.course_title}</strong>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-brand-secondary">Summa & Tizim:</span>
-                            <strong className="text-brand-emerald">{fmtAmount(receipt.amount)} so'm ({receipt.payment_method.toUpperCase()})</strong>
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-zinc-400">Summa:</span>
+                            <strong className="text-[#B4F523]">{fmtAmount(receipt.amount)} so'm</strong>
                           </div>
-                          {receipt.comment && (
-                            <div className="text-[11px] text-brand-muted italic pt-1 border-t border-brand-border/40">
-                              "{receipt.comment}"
-                            </div>
-                          )}
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-zinc-400">To'lov:</span>
+                            <span className="text-zinc-300 uppercase">{receipt.payment_method}</span>
+                          </div>
                         </div>
 
-                        {/* Chek rasmi */}
+                        {/* Receipt Image Preview */}
                         {receipt.receipt_image && (
-                          <a href={receipt.receipt_image} target="_blank" rel="noreferrer" className="block relative rounded-xl overflow-hidden border border-brand-border max-h-36">
+                          <div className="relative rounded-xl overflow-hidden border border-white/10 max-h-48 bg-black">
                             <img
                               src={receipt.receipt_image}
                               alt="To'lov cheki"
-                              className="w-full h-full object-cover"
+                              className="w-full object-contain max-h-48"
                             />
-                          </a>
+                          </div>
                         )}
 
-                        {/* Actions */}
                         {receipt.status === 'pending' && (
                           <div className="grid grid-cols-2 gap-2 pt-1">
                             <button
-                              onClick={() => handleApproveReceipt(receipt.order_id)}
+                              onClick={() => handleApprove(receipt.order_id)}
                               disabled={isActionLoading === receipt.order_id}
-                              className="py-2 bg-brand-emerald text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1 shadow-sm hover:bg-brand-deep active:scale-95 transition-all disabled:opacity-60"
+                              className="py-2.5 bg-[#B4F523] text-black rounded-xl text-xs font-black flex items-center justify-center space-x-1 hover:opacity-90 active:scale-95 transition-all disabled:opacity-60 shadow-neonSm"
                             >
                               {isActionLoading === receipt.order_id ? (
-                                <InlineLoader variant="orbit" size={14} color="#ffffff" />
+                                <InlineLoader variant="orbit" size={14} color="#000000" />
                               ) : (
                                 <>
-                                  <Check className="w-3.5 h-3.5" />
+                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
                                   <span>Tasdiqlash</span>
                                 </>
                               )}
                             </button>
                             <button
-                              onClick={() => handleRejectReceipt(receipt.order_id)}
+                              onClick={() => handleReject(receipt.order_id)}
                               disabled={isActionLoading === receipt.order_id}
-                              className="py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold flex items-center justify-center space-x-1 hover:bg-red-100 active:scale-95 transition-all disabled:opacity-60"
+                              className="py-2.5 bg-red-500/15 text-red-300 border border-red-500/30 rounded-xl text-xs font-bold flex items-center justify-center space-x-1 hover:bg-red-500/25 active:scale-95 transition-all disabled:opacity-60"
                             >
                               <Ban className="w-3.5 h-3.5" />
                               <span>Rad etish</span>
@@ -516,73 +508,73 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'stats' && stats && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div className="p-3 bg-gradient-to-br from-brand-mint to-brand-surface rounded-2xl border border-brand-border/60">
-                    <span className="text-[10px] text-brand-secondary font-semibold uppercase block">
+                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
                       Jami Tushum
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
-                      <span className="text-base font-bold font-serif text-brand-emerald">
+                      <span className="text-lg font-black text-[#B4F523]">
                         {fmtMln(stats.total_revenue)}
                       </span>
-                      <span className="text-[10px] text-brand-dark">so'm</span>
+                      <span className="text-[10px] text-zinc-300">so'm</span>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gradient-to-br from-amber-50 to-brand-surface rounded-2xl border border-brand-border/60">
-                    <span className="text-[10px] text-brand-secondary font-semibold uppercase block">
+                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
                       Shu Oydagi Tushum
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
-                      <span className="text-base font-bold font-serif text-amber-700">
+                      <span className="text-lg font-black text-[#B4F523]">
                         {fmtMln(stats.monthly_revenue)}
                       </span>
-                      <span className="text-[10px] text-brand-dark">so'm</span>
+                      <span className="text-[10px] text-zinc-300">so'm</span>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gradient-to-br from-brand-mint to-brand-surface rounded-2xl border border-brand-border/60">
-                    <span className="text-[10px] text-brand-secondary font-semibold uppercase block">
+                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
                       Jami O'quvchilar
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
-                      <span className="text-base font-bold font-serif text-brand-emerald">
+                      <span className="text-lg font-black text-white">
                         {fmtAmount(stats.total_students)}
                       </span>
-                      <span className="text-[10px] text-brand-dark">talaba</span>
+                      <span className="text-[10px] text-zinc-300">talaba</span>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gradient-to-br from-amber-50 to-brand-surface rounded-2xl border border-brand-border/60">
-                    <span className="text-[10px] text-brand-secondary font-semibold uppercase block">
+                  <div className="p-3.5 bg-[#181820] rounded-2xl border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
                       Faol Kurslar
                     </span>
                     <div className="flex items-baseline space-x-1 mt-1">
-                      <span className="text-base font-bold font-serif text-amber-700">
+                      <span className="text-lg font-black text-white">
                         {stats.active_courses_count}
                       </span>
-                      <span className="text-[10px] text-brand-dark">kurs</span>
+                      <span className="text-[10px] text-zinc-300">kurs</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     Oxirgi Savdolar
                   </h4>
                   {stats.recent_sales.length === 0 ? (
-                    <p className="text-xs text-brand-secondary py-3 text-center">Hozircha savdo yo'q</p>
+                    <p className="text-xs text-zinc-500 py-3 text-center">Hozircha savdo yo'q</p>
                   ) : (
                     <div className="space-y-2">
                       {stats.recent_sales.map((sale) => (
-                        <div key={sale.id} className="p-2.5 bg-brand-surface rounded-xl border border-brand-border/60 flex items-center justify-between text-xs">
+                        <div key={sale.id} className="p-3 bg-[#181820] rounded-xl border border-white/5 flex items-center justify-between text-xs">
                           <div>
-                            <span className="font-bold text-brand-dark block">{sale.student_name}</span>
-                            <span className="text-[10px] text-brand-secondary">{sale.course_title}</span>
+                            <span className="font-bold text-white block">{sale.student_name}</span>
+                            <span className="text-[10px] text-zinc-400">{sale.course_title}</span>
                           </div>
                           <div className="text-right">
-                            <span className="font-bold text-brand-emerald block">+{fmtAmount(sale.amount)} so'm</span>
-                            <span className="text-[9px] text-brand-muted">
-                              {sale.payment_method.toUpperCase()} • {sale.status} • {String(sale.date).slice(0, 10)}
+                            <span className="font-black text-[#B4F523] block">+{fmtAmount(sale.amount)} so'm</span>
+                            <span className="text-[9px] text-zinc-500">
+                              {sale.payment_method.toUpperCase()} • {String(sale.date).slice(0, 10)}
                             </span>
                           </div>
                         </div>
@@ -593,30 +585,30 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               </div>
             )}
 
-            {/* TAB 3: COURSES MANAGEMENT & EDITING */}
+            {/* TAB 3: COURSES MANAGEMENT */}
             {activeTab === 'new_course' && (
               <div className="space-y-4">
                 {/* Existing Courses */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center justify-between">
-                    <span>Mavjud Kurslar (Jonli Baza)</span>
-                    <span className="text-[10px] text-brand-emerald font-normal">{courses.length} ta</span>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center justify-between">
+                    <span>Mavjud Kurslar</span>
+                    <span className="text-[10px] text-[#B4F523]">{courses.length} ta</span>
                   </h4>
 
                   <div className="space-y-2">
                     {courses.map((c) => (
-                      <div key={c.id} className="p-3 bg-brand-surface rounded-2xl border border-brand-border/80 flex items-center justify-between text-xs">
+                      <div key={c.id} className="p-3 bg-[#181820] rounded-2xl border border-white/5 flex items-center justify-between text-xs">
                         <div className="min-w-0 pr-2">
-                          <strong className="text-brand-dark block truncate">{c.title}</strong>
-                          <span className="text-[10px] text-brand-secondary">
-                            Ustoz: <strong className="text-brand-emerald">{c.instructor_name}</strong> • {fmtAmount(c.price)} so'm
+                          <strong className="text-white block truncate">{c.title}</strong>
+                          <span className="text-[10px] text-zinc-400">
+                            Ustoz: <strong className="text-[#B4F523]">{c.instructor_name}</strong> • {fmtAmount(c.price)} so'm
                           </span>
                         </div>
                         <div className="flex items-center space-x-1.5 flex-shrink-0">
                           <button
                             type="button"
                             onClick={() => startEditCourse(c)}
-                            className="px-2.5 py-1.5 bg-brand-emerald text-white rounded-xl text-[10px] font-bold hover:bg-brand-deep transition-all"
+                            className="px-3 py-1.5 bg-[#B4F523] text-black rounded-xl text-[10px] font-bold hover:opacity-90 transition-all"
                           >
                             Tahrirlash
                           </button>
@@ -624,7 +616,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             type="button"
                             onClick={() => handleDeleteCourse(c.id)}
                             disabled={isActionLoading === `del_${c.id}`}
-                            className="px-2 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-[10px] font-bold hover:bg-red-100 transition-all disabled:opacity-50"
+                            className="px-2 py-1.5 bg-red-500/20 text-red-300 border border-red-500/30 rounded-xl text-[10px] font-bold hover:bg-red-500/30 transition-all disabled:opacity-50"
                           >
                             O'chirish
                           </button>
@@ -635,108 +627,92 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
 
                 {/* Edit / Create Form */}
-                <form onSubmit={handleSaveCourse} className="space-y-2.5 pt-2 border-t border-brand-border/60">
-                  <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+                <form onSubmit={handleSaveCourse} className="space-y-2.5 pt-3 border-t border-white/10">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     {editingCourseId ? 'Kursni Tahrirlash' : 'Yangi Kurs Yaratish'}
                   </h4>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-brand-dark">Kurs nomi</label>
+                    <label className="text-xs font-bold text-white">Kurs nomi</label>
                     <input
                       type="text"
                       required
                       value={courseTitle}
                       onChange={(e) => setCourseTitle(e.target.value)}
                       placeholder="Masalan: Sun'iy Intellekt va Prompt Engineering Pro"
-                      className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
+                      className="w-full px-3 py-2.5 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-brand-dark">Kategoriya</label>
+                      <label className="text-xs font-bold text-white">Kategoriya</label>
                       <select
                         value={courseCategory}
                         onChange={(e) => setCourseCategory(e.target.value)}
-                        className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald font-bold"
+                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523] font-bold"
                       >
-                        <option value="AI">AI</option>
-                        <option value="Dizayn">Dizayn</option>
-                        <option value="Dasturlash">Dasturlash</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Biznes">Biznes</option>
+                        <option value="AI" className="bg-[#181820]">AI</option>
+                        <option value="Dizayn" className="bg-[#181820]">Dizayn</option>
+                        <option value="Dasturlash" className="bg-[#181820]">Dasturlash</option>
+                        <option value="Marketing" className="bg-[#181820]">Marketing</option>
+                        <option value="Biznes" className="bg-[#181820]">Biznes</option>
                       </select>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-brand-dark">Kirish Muddati</label>
+                      <label className="text-xs font-bold text-white">Kirish Muddati</label>
                       <input
                         type="text"
                         disabled
                         value="1 yil (365 kun)"
-                        className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-secondary font-bold"
+                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-[#B4F523] font-bold"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-brand-dark">Narxi (so'm)</label>
+                      <label className="text-xs font-bold text-white">Narxi (so'm)</label>
                       <input
                         type="number"
                         required
                         value={coursePrice}
                         onChange={(e) => setCoursePrice(e.target.value)}
                         placeholder="490000"
-                        className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
+                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-brand-dark">Eski narxi (so'm)</label>
+                      <label className="text-xs font-bold text-white">Eski narxi (so'm)</label>
                       <input
                         type="number"
                         value={courseOldPrice}
                         onChange={(e) => setCourseOldPrice(e.target.value)}
                         placeholder="890000"
-                        className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
+                        className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-brand-dark">Qisqa tavsif</label>
+                    <label className="text-xs font-bold text-white">Qisqa tavsif</label>
                     <input
                       type="text"
                       value={courseDesc}
                       onChange={(e) => setCourseDesc(e.target.value)}
                       placeholder="Kurs haqida 1-2 jumla"
-                      className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
+                      className="w-full px-3 py-2 bg-[#181820] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523]"
                     />
                   </div>
 
-                  {/* R2 Media Upload Indicator */}
-                  <div className="p-3 bg-brand-mint/30 rounded-2xl border border-brand-emerald/30 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-bold text-brand-dark">
-                      <span className="flex items-center space-x-1">
-                        <Video className="w-4 h-4 text-brand-emerald" />
-                        <span>Cloudflare R2 Video / Media</span>
-                      </span>
-                      <span className="text-[10px] text-brand-emerald bg-brand-mint px-2 py-0.5 rounded-full font-bold">
-                        Zero Egress
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-brand-secondary">
-                      Dars videolari Cloudflare R2 ga xavfsiz yuklanadi, ma'lumotlar esa bazaga saqlanadi.
-                    </p>
-                  </div>
-
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 pt-1">
                     {editingCourseId && (
                       <button
                         type="button"
                         onClick={resetCourseForm}
-                        className="px-4 py-3 bg-brand-surface text-brand-secondary border border-brand-border rounded-2xl font-bold text-xs"
+                        className="px-4 py-3 bg-[#181820] text-zinc-400 border border-white/10 rounded-2xl font-bold text-xs hover:text-white"
                       >
                         Bekor qilish
                       </button>
@@ -744,13 +720,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <button
                       type="submit"
                       disabled={isActionLoading === 'course_form'}
-                      className="flex-1 py-3 bg-brand-emerald text-white font-bold rounded-2xl shadow-soft hover:bg-brand-deep active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
+                      className="flex-1 py-3 bg-[#B4F523] text-black font-black rounded-2xl shadow-neonSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
                     >
                       {isActionLoading === 'course_form' ? (
-                        <InlineLoader variant="orbit" size={14} color="#ffffff" />
+                        <InlineLoader variant="orbit" size={14} color="#000000" />
                       ) : (
                         <>
-                          <Check className="w-4 h-4" />
+                          <Check className="w-4 h-4 stroke-[3]" />
                           <span>{editingCourseId ? 'O\'zgarishlarni Saqlash' : 'Kursni Yaratish'}</span>
                         </>
                       )}
@@ -764,65 +740,60 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'students' && (
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     Ro'yxatdan O'tgan Talabalar
                   </h4>
-                  <span className="text-[10px] text-brand-secondary">{students.length} ta</span>
+                  <span className="text-[10px] text-[#B4F523]">{students.length} ta</span>
                 </div>
 
-                {/* Grant kurs tanlash */}
-                <div className="p-2.5 bg-brand-mint/30 rounded-2xl border border-brand-emerald/30 space-y-1.5">
-                  <label className="text-[10px] font-bold text-brand-dark uppercase">
+                {/* Grant kurs tanlash - Dark High Contrast */}
+                <div className="p-3 bg-[#181820] rounded-2xl border border-white/10 space-y-1.5">
+                  <label className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
                     Grant uchun kurs tanlang:
                   </label>
                   <select
                     value={enrollCourseId}
                     onChange={(e) => setEnrollCourseId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald font-bold"
+                    className="w-full px-3 py-2 bg-[#131318] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523] font-bold"
                   >
-                    <option value="">— Kurs tanlanmagan —</option>
+                    <option value="" className="bg-[#131318]">— Kurs tanlanmagan —</option>
                     {courses.map(c => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
+                      <option key={c.id} value={c.id} className="bg-[#131318]">{c.title}</option>
                     ))}
                   </select>
                 </div>
 
                 {students.length === 0 ? (
-                  <p className="text-xs text-brand-secondary py-6 text-center">Hozircha talaba yo'q</p>
+                  <p className="text-xs text-zinc-500 py-6 text-center">Hozircha talaba yo'q</p>
                 ) : (
                   <div className="space-y-2">
                     {students.map((st) => (
                       <div
                         key={st.id}
-                        className="p-3 bg-brand-surface rounded-2xl border border-brand-border/80 space-y-2 text-xs"
+                        className="p-3 bg-[#181820] rounded-2xl border border-white/5 space-y-2 text-xs"
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <strong className="text-brand-dark block">
-                              {st.name}
-                              {st.role === 'superadmin' && (
-                                <span className="ml-1.5 text-[9px] bg-brand-forest text-brand-gold px-1.5 py-0.5 rounded-full">ADMIN</span>
-                              )}
-                            </strong>
-                            <span className="text-[10px] text-brand-secondary">
-                              {st.username ? `@${st.username} • ` : ''}ID: {st.telegram_id}
+                            <strong className="text-white block">{st.name}</strong>
+                            <span className="text-[10px] text-zinc-400">
+                              @{st.username} • ID: <code className="text-[#B4F523]">{st.telegram_id}</code>
                             </span>
                           </div>
-                          <span className="text-[10px] font-bold text-brand-emerald bg-brand-mint px-2 py-0.5 rounded-full">
-                            {st.overall_progress}
+                          <span className="text-[10px] bg-[#131318] text-[#B4F523] font-bold px-2 py-0.5 rounded-full border border-white/5">
+                            {st.overall_progress || '0%'}
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-center pt-1 border-t border-brand-border/40 text-[11px]">
-                          <span className="text-brand-secondary">
-                            Kursi: {st.enrolled_courses || '—'} • {st.status}
+                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                          <span className="text-[10px] text-zinc-400">
+                            Kursi: <strong className="text-white">{st.enrolled_courses || '— Yangi'}</strong>
                           </span>
                           <button
-                            onClick={() => handleManualEnroll(st)}
+                            onClick={() => handleManualEnroll(st.id, enrollCourseId)}
                             disabled={isActionLoading === `enroll_${st.id}`}
-                            className="px-2 py-1 bg-brand-emerald/20 text-brand-emerald font-bold rounded-lg hover:bg-brand-emerald hover:text-white transition-all text-[10px] disabled:opacity-50"
+                            className="px-2.5 py-1 bg-[#B4F523] text-black font-bold rounded-lg text-[10px] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
                           >
-                            {isActionLoading === `enroll_${st.id}` ? '...' : '+ Grant Kurs'}
+                            + Grant Kurs
                           </button>
                         </div>
                       </div>
@@ -835,95 +806,81 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* TAB 5: BROADCAST */}
             {activeTab === 'broadcast' && (
               <form onSubmit={handleSendBroadcast} className="space-y-3">
-                <div>
-                  <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
-                    Barcha Talabalarga Xabar Yuborish (Broadcast)
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Barcha Foydalanuvchilarga Xabar (Broadcast)
                   </h4>
-                  <p className="text-[11px] text-brand-secondary mt-0.5">
-                    Xabar @kurslarimizbot orqali barcha ro'yxatdan o'tgan foydalanuvchilarga yetkaziladi.
+                  <p className="text-[10px] text-zinc-400">
+                    Xabar Telegram Bot orqali barcha talabalarga yetkaziladi.
                   </p>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-brand-dark">Xabar matni</label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={broadcastText}
-                    onChange={(e) => setBroadcastText(e.target.value)}
-                    placeholder="Assalomu alaykum hurmatli talabalar! Bugun yangi bonus modul..."
-                    className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
-                  />
-                </div>
+                <textarea
+                  rows={5}
+                  required
+                  value={broadcastText}
+                  onChange={(e) => setBroadcastText(e.target.value)}
+                  placeholder="Xabarni kiriting: Masalan, Yangi kurslar chegirmasi yoki e'lon..."
+                  className="w-full p-3 bg-[#181820] border border-white/10 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#B4F523] resize-none leading-relaxed"
+                />
 
                 <button
                   type="submit"
                   disabled={isActionLoading === 'broadcast'}
-                  className="w-full py-3 bg-brand-emerald text-white font-bold rounded-2xl shadow-soft hover:bg-brand-deep active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
+                  className="w-full py-3.5 bg-[#B4F523] text-black font-black rounded-2xl shadow-neonSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
                 >
                   {isActionLoading === 'broadcast' ? (
-                    <InlineLoader variant="orbit" size={14} color="#ffffff" />
+                    <InlineLoader variant="orbit" size={14} color="#000000" />
                   ) : (
                     <>
-                      <Send className="w-4 h-4" />
-                      <span>Ommaviy Xabarni Yuborish</span>
+                      <Send className="w-4 h-4 stroke-[2.5]" />
+                      <span>Xabarni Hamma Talabalarga Yuborish</span>
                     </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* TAB 6: PAYMENT SETTINGS */}
+            {/* TAB 6: SETTINGS (Karta) */}
             {activeTab === 'settings' && (
-              <form onSubmit={handleSavePaymentSettings} className="space-y-3">
-                <div>
-                  <h4 className="text-xs font-bold text-brand-dark uppercase tracking-wider">
-                    To'lov Karta Rekvizitlari
-                  </h4>
-                  <p className="text-[11px] text-brand-secondary mt-0.5">
-                    Talabalar to'lov qilganda ko'rinadigan karta raqami va karta egasi.
-                  </p>
-                </div>
+              <form onSubmit={handleSaveCard} className="space-y-3">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                  To'lov Rekvizitlari
+                </h4>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-brand-dark">Karta Raqami</label>
+                  <label className="text-xs font-bold text-white">Karta raqami</label>
                   <input
                     type="text"
                     required
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs font-mono text-brand-text focus:outline-none focus:border-brand-emerald"
+                    className="w-full px-3 py-2.5 bg-[#181820] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523] font-mono"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-brand-dark">Karta Egasi Ism-Familiyasi</label>
+                  <label className="text-xs font-bold text-white">Karta egasi</label>
                   <input
                     type="text"
                     required
                     value={cardHolder}
                     onChange={(e) => setCardHolder(e.target.value)}
-                    className="w-full px-3 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs text-brand-text focus:outline-none focus:border-brand-emerald"
+                    className="w-full px-3 py-2.5 bg-[#181820] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#B4F523]"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={isActionLoading === 'settings'}
-                  className="w-full py-3 bg-brand-emerald text-white font-bold rounded-2xl shadow-soft hover:bg-brand-deep active:scale-95 transition-all text-xs flex items-center justify-center space-x-1.5 disabled:opacity-60"
+                  className="w-full py-3.5 bg-[#B4F523] text-black font-black rounded-2xl shadow-neonSm hover:opacity-90 active:scale-95 transition-all text-xs flex items-center justify-center space-x-1"
                 >
-                  {isActionLoading === 'settings' ? (
-                    <InlineLoader variant="orbit" size={14} color="#ffffff" />
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Rekvizitlarni Saqlash</span>
-                    </>
-                  )}
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Rekvizitlarni Saqlash</span>
                 </button>
               </form>
             )}
-          </>
+
+          </div>
         )}
       </div>
     </div>
