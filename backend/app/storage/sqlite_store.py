@@ -394,6 +394,11 @@ class SqliteStore(Store):
             )
         return row
 
+    async def mark_notifications_read(self, user_id: str) -> bool:
+        with self.lock, self._conn() as c:
+            c.execute("UPDATE notifications SET is_read=1 WHERE user_id=? AND is_read=0", (user_id,))
+        return True
+
     # ---------------- STATS ----------------
     async def revenue_stats(self) -> Dict[str, int]:
         with self.lock, self._conn() as c:

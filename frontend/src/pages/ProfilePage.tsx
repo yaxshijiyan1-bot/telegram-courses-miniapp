@@ -11,30 +11,39 @@ import {
   X,
   MessageCircle,
   Trophy,
-  Users,
-  Flame,
-  Calendar,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Flame,
+  BookOpen,
+  GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
-import { Certificate, NotificationItem } from '../types';
+import { Certificate, NotificationItem, EnrolledCourse } from '../types';
 import { AdminDashboardModal } from './AdminDashboardModal';
 
 interface ProfilePageProps {
   certificates: Certificate[];
   notifications: NotificationItem[];
+  dashboardData?: {
+    overall_progress_percent: number;
+    completed_lessons_count: number;
+    total_lessons_count: number;
+    enrolled_courses?: EnrolledCourse[];
+  } | null;
+  onNotificationsRead?: () => void;
   onNavigateToCourses: () => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   certificates,
   notifications,
+  dashboardData,
+  onNotificationsRead,
   onNavigateToCourses
 }) => {
   const { user, logout } = useAuth();
-  const { haptic } = useTelegram();
+  const { haptic, user: tgUser } = useTelegram();
   const [activeModal, setActiveModal] = useState<'certificates' | 'notifications' | 'admin' | null>(null);
 
   const handleLogout = () => {
@@ -42,129 +51,167 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     logout();
   };
 
-  const isSuperadmin = user?.role === 'superadmin' || 
-                       user?.username === 'yomonboia' || 
-                       user?.username === 'sokin_notalar' || 
-                       user?.telegram_id === 8544023815 || 
-                       user?.telegram_id === 8112688757;
+  const isSuperadmin = user?.role === 'superadmin';
 
-  // Haftalik kunlar (Streak)
-  const weekDays = [
-    { day: 'Du', date: 19, active: true },
-    { day: 'Se', date: 20, active: true },
-    { day: 'Chor', date: 21, active: true },
-    { day: 'Pay', date: 22, current: true, active: true },
-    { day: 'Jum', date: 23, active: false },
-    { day: 'Shan', date: 24, active: false },
-    { day: 'Yak', date: 25, active: false },
-  ];
+  // Real ko'rsatkichlar
+  const overallProgress = dashboardData?.overall_progress_percent ?? 0;
+  const enrolledCourses = dashboardData?.enrolled_courses ?? [];
+  const completedLessons = dashboardData?.completed_lessons_count ?? 0;
+  const totalLessons = dashboardData?.total_lessons_count ?? 0;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  // Avatar: Telegram rasmi > adminlar uchun rasmi > bosh harflar
+  const isZuhra = user?.telegram_id === 8112688757 || user?.username === 'sokin_notalar';
+  const isYaxshi = user?.telegram_id === 8544023815 || user?.username === 'yomonboia';
+  const avatarUrl: string | null =
+    tgUser?.photo_url ||
+    (isZuhra ? '/images/zuhra_olimova.jpg' : isYaxshi ? '/images/yaxshi_bola.jpg' : null);
+
+  const openNotifications = () => {
+    haptic.impact('light');
+    setActiveModal('notifications');
+    onNotificationsRead?.();
+  };
 
   return (
-    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 text-white animate-in fade-in duration-200">
-      
-      {/* 1. TOP USER IDENTITY (Rasmdagi kabi doiraviy neon avatar va ism) */}
+    <div className="flex-1 pb-36 px-4 pt-3 space-y-4 text-white animate-in fade-in slide-in-from-bottom-2 duration-300">
+
+      {/* 1. TOP USER IDENTITY — Telegram avatari bilan */}
       <div className="flex flex-col items-center text-center space-y-2 pt-2">
         <div className="relative">
-          <div className="w-20 h-20 rounded-full p-1 border-2 border-dashed border-[#B4F523] flex items-center justify-center">
-            <img
-              src="/images/yaxshi_bola.jpg"
-              alt="Avatar"
-              className="w-full h-full rounded-full object-cover shadow-elevated"
-            />
+          <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-br from-[#B4F523] via-[#B4F523]/40 to-transparent">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-full h-full rounded-full object-cover border-2 border-[#09090C] shadow-elevated"
+              />
+            ) : (
+              <div className="w-full h-full rounded-full bg-[#1B1B22] border-2 border-[#09090C] flex items-center justify-center text-xl font-black text-[#B4F523]">
+                {(user?.name || 'T')[0]}
+              </div>
+            )}
           </div>
           <span className="absolute bottom-1 right-1 w-4 h-4 bg-[#B4F523] border-2 border-[#09090C] rounded-full" />
         </div>
 
         <div>
           <h2 className="text-lg font-bold tracking-tight text-white">
-            {user?.name || 'Yaxshi Bola'}
+            {user?.name || 'Talaba'}
           </h2>
-          <p className="text-xs text-zinc-400">@{user?.username || 'yomonboia'}</p>
+          <p className="text-xs text-zinc-400">
+            {user?.username ? `@${user.username}` : 'Premium Talaba'}
+            {isSuperadmin && (
+              <span className="ml-1.5 text-[9px] bg-[#B4F523]/15 text-[#B4F523] font-bold px-1.5 py-0.5 rounded-full align-middle">
+                SUPERADMIN
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
-      {/* 2. 3 TA METRIKA (Rasmdagi 70% Win/Lose, 8 Level, 76 Days kabi) */}
+      {/* 2. REAL METRIKALAR */}
       <div className="grid grid-cols-3 gap-2 pt-1">
-        {/* Progress % */}
         <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
           <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
             <Flame className="w-3.5 h-3.5 fill-[#B4F523]" />
-            <span className="text-xs font-black">78%</span>
+            <span className="text-xs font-black">{overallProgress}%</span>
           </div>
           <span className="text-[10px] text-zinc-400 block font-medium">Natija</span>
         </div>
 
-        {/* Level */}
         <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
           <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span className="text-xs font-black">8-daraja</span>
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="text-xs font-black">{enrolledCourses.length}</span>
           </div>
-          <span className="text-[10px] text-zinc-400 block font-medium">Daraja</span>
+          <span className="text-[10px] text-zinc-400 block font-medium">Kurslarim</span>
         </div>
 
-        {/* Days */}
         <div className="bg-[#131318] p-3 rounded-2xl border border-white/5 text-center space-y-1">
           <div className="flex items-center justify-center space-x-1 text-[#B4F523]">
-            <Calendar className="w-3.5 h-3.5" />
-            <span className="text-xs font-black">35 Kun</span>
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span className="text-xs font-black">{certificates.length}</span>
           </div>
-          <span className="text-[10px] text-zinc-400 block font-medium">Davomiylik</span>
+          <span className="text-[10px] text-zinc-400 block font-medium">Sertifikat</span>
         </div>
       </div>
 
-      {/* 3. HAFTALIK KALENDAR STREAK (Rasmdagi Mon 19, Thu 22 kartochkalari) */}
-      <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-            Haftalik Faollik
-          </span>
-          <span className="text-[10px] font-bold text-[#B4F523]">
-            4/7 kun bajarildi
-          </span>
-        </div>
+      {/* 3. MENING KURSLARIM — real progress (ixcham ro'yxat) */}
+      {enrolledCourses.length > 0 ? (
+        <div className="bg-[#131318] p-3.5 rounded-3xl border border-white/5 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center space-x-1.5">
+              <Layers className="w-3.5 h-3.5 text-[#B4F523]" />
+              <span>Kurslarim Progressi</span>
+            </span>
+            <span className="text-[10px] font-bold text-[#B4F523]">
+              {completedLessons}/{totalLessons} dars
+            </span>
+          </div>
 
-        <div className="grid grid-cols-7 gap-1.5 pt-1">
-          {weekDays.map((item, i) => (
-            <div
-              key={i}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl text-center transition-all ${
-                item.current
-                  ? 'bg-[#1B1B22] border-1.5 border-[#B4F523] shadow-neonSm'
-                  : 'bg-[#181820]/60 border border-white/5'
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full mb-1 ${item.active ? 'bg-[#B4F523]' : 'bg-zinc-600'}`} />
-              <span className="text-[10px] text-zinc-400 font-medium">{item.day}</span>
-              <span className={`text-xs font-bold mt-0.5 ${item.current ? 'text-[#B4F523]' : 'text-white'}`}>
-                {item.date}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 4. YUTUQLAR VA DIPLOM (Kursdoshlarsiz, keng va toza blok) */}
-      <div className="bg-[#131318] p-4 rounded-3xl border border-white/5 flex items-center justify-between shadow-soft">
-        <div className="space-y-1">
-          <span className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
-            O'quv Yutuqlari
-          </span>
-          <h4 className="text-sm font-bold text-white">35 kun ketma-ket darsda!</h4>
-          <p className="text-xs text-zinc-400">Faollik ko'rsatkichi a'lo darajada</p>
-          <div className="flex items-center space-x-1.5 pt-1">
-            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
-            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
-            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
-            <span className="w-2 h-2 rounded-full bg-[#B4F523]" />
-            <span className="w-2 h-2 rounded-full bg-zinc-700" />
+          <div className="space-y-2.5">
+            {enrolledCourses.slice(0, 3).map((c) => (
+              <div key={c.id} className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-white truncate pr-2">{c.title}</span>
+                  <span className="text-[#B4F523] font-black flex-shrink-0">{c.progress_percent}%</span>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#8BC34A] to-[#B4F523] rounded-full transition-all duration-700 progress-fill"
+                    style={{ width: `${c.progress_percent}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {enrolledCourses.length > 3 && (
+              <button
+                onClick={() => { haptic.selection(); onNavigateToCourses(); }}
+                className="w-full text-[10px] text-zinc-400 hover:text-[#B4F523] py-1"
+              >
+                +{enrolledCourses.length - 3} ta kurs ko'rish →
+              </button>
+            )}
           </div>
         </div>
+      ) : (
+        <button
+          onClick={() => { haptic.impact('light'); onNavigateToCourses(); }}
+          className="w-full p-4 bg-[#131318] rounded-3xl border border-dashed border-[#B4F523]/25 flex items-center justify-between text-left active:scale-[0.98] transition-all"
+        >
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
+              Birinchi kursingizni boshlang
+            </span>
+            <p className="text-[11px] text-zinc-400">1 yillik kirish + QR sertifikat bilan</p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-[#B4F523] text-black flex items-center justify-center flex-shrink-0">
+            <ArrowRight className="w-5 h-5" />
+          </div>
+        </button>
+      )}
 
-        <div className="w-14 h-14 rounded-2xl bg-[#1B1B22] border border-[#B4F523]/30 text-[#B4F523] flex items-center justify-center shadow-neonSm flex-shrink-0">
-          <Trophy className="w-7 h-7" />
+      {/* 4. YUTUQLAR (kurslar bo'lsa) */}
+      {enrolledCourses.length > 0 && (
+        <div className="bg-[#131318] p-4 rounded-3xl border border-white/5 flex items-center justify-between shadow-soft">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-[#B4F523] uppercase tracking-wider block">
+              O'quv Yutuqlari
+            </span>
+            <h4 className="text-sm font-bold text-white">
+              {completedLessons} ta dars muvaffaqiyatli yakunlandi!
+            </h4>
+            <p className="text-xs text-zinc-400">
+              {overallProgress >= 100 ? 'Sertifikatlar tayyor! 🎓' : 'Davom eting — a\'lo natijaga yaqinsiz'}
+            </p>
+          </div>
+
+          <div className={`w-14 h-14 rounded-2xl bg-[#1B1B22] border flex items-center justify-center flex-shrink-0 ${overallProgress >= 100 ? 'border-[#B4F523] shadow-neonSm text-[#B4F523]' : 'border-white/10 text-zinc-500'}`}>
+            <Trophy className="w-7 h-7" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 5. KATTA GORIZONTAL KARTOCKA */}
       <button
@@ -190,7 +237,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-[#B4F523] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
       </button>
 
-      {/* 6. ADMIN DASHBOARD & SOZLAMALAR RO'YXATI */}
+      {/* 6. SOZLAMALAR RO'YXATI */}
       <div className="bg-[#131318] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-soft">
         {/* Superadmin Panel */}
         {isSuperadmin && (
@@ -236,19 +283,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         {/* Bildirishnomalar */}
         <button
-          onClick={() => {
-            haptic.impact('light');
-            setActiveModal('notifications');
-          }}
+          onClick={openNotifications}
           className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-zinc-800 text-zinc-300 flex items-center justify-center relative">
               <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-1 bg-[#B4F523] text-black rounded-full flex items-center justify-center text-[8px] font-black">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </div>
             <div>
-              <span className="text-xs font-bold text-white block">Xabarnomalar</span>
-              <span className="text-[10px] text-zinc-400">{notifications.length} ta xabar</span>
+              <span className="text-xs font-bold text-white block">Bildirishnomalar</span>
+              <span className="text-[10px] text-zinc-400">
+                {notifications.length > 0 ? `${unreadCount} ta o'qilmagan • ${notifications.length} ta xabar` : 'Hozircha xabar yo\'q'}
+              </span>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-zinc-500" />
@@ -268,7 +319,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </button>
       </div>
 
-      {/* 7. ADMIN BILAN BOG'LANISH (Yigitlar / Qizlar) */}
+      {/* 7. ADMIN BILAN BOG'LANISH */}
       <div className="bg-[#131318] rounded-3xl p-4 border border-white/5 space-y-3 shadow-soft">
         <div className="flex items-center space-x-2">
           <MessageCircle className="w-4 h-4 text-[#B4F523]" />
@@ -278,7 +329,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         <div className="space-y-2">
-          {/* Yigitlar uchun */}
           <a
             href="https://t.me/yomonboia"
             target="_blank"
@@ -299,7 +349,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </span>
           </a>
 
-          {/* Qizlar uchun */}
           <a
             href="https://t.me/sokin_notalar"
             target="_blank"
@@ -331,15 +380,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
       {/* SERTIFIKATLAR MODAL */}
       {activeModal === 'certificates' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in" onClick={() => setActiveModal(null)}>
+          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4 animate-in slide-in-from-bottom-4 duration-300" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-sm font-bold">Sertifikatlarim</h3>
               <button onClick={() => setActiveModal(null)} className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
               {certificates.length > 0 ? (
                 certificates.map((cert) => (
                   <div key={cert.id} className="p-3 bg-[#181820] rounded-2xl border border-white/5 flex items-center justify-between">
@@ -362,23 +411,33 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       )}
 
-      {/* BILDIRISHNOMALAR MODAL */}
+      {/* BILDIRISHNOMALAR MODAL (ixcham) */}
       {activeModal === 'notifications' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in" onClick={() => setActiveModal(null)}>
+          <div className="w-full max-w-md bg-[#131318] text-white rounded-3xl p-5 border border-white/10 space-y-4 animate-in slide-in-from-bottom-4 duration-300" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold">Xabarnomalar</h3>
+              <h3 className="text-sm font-bold">Bildirishnomalar</h3>
               <button onClick={() => setActiveModal(null)} className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {notifications.map((n) => (
-                <div key={n.id} className="p-3 bg-[#181820] rounded-2xl border border-white/5 space-y-1">
-                  <h4 className="text-xs font-bold text-white">{n.title}</h4>
-                  <p className="text-[11px] text-zinc-400">{n.message}</p>
-                </div>
-              ))}
+            <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
+              {notifications.length === 0 ? (
+                <p className="text-xs text-zinc-500 text-center py-6 leading-relaxed">
+                  Hozircha bildirishnomalar yo'q.
+                  <br />Kurs tasdiqlanishi va sertifikatlar shu yerda ko'rinadi.
+                </p>
+              ) : (
+                notifications.map((n) => (
+                  <div key={n.id} className={`p-3 rounded-2xl border space-y-1 ${n.is_read ? 'bg-[#181820] border-white/5' : 'bg-[#B4F523]/8 border-[#B4F523]/20'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-xs font-bold text-white leading-snug">{n.title}</h4>
+                      <span className="text-[9px] text-zinc-500 flex-shrink-0 mt-0.5">{n.created_at}</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">{n.message}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

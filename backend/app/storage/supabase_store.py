@@ -217,6 +217,12 @@ class SupabaseStore(Store):
         rows = await self._req("POST", "notifications", json_body=row)
         return rows[0] if rows else row
 
+    async def mark_notifications_read(self, user_id: str) -> bool:
+        res = await self._req("PATCH", "notifications",
+                              {"user_id": f"eq.{user_id}", "is_read": "eq.false"},
+                              {"is_read": True})
+        return res is not None
+
     # ---------------- STATS ----------------
     async def revenue_stats(self) -> Dict[str, int]:
         rows = await self._req("GET", "purchases", {

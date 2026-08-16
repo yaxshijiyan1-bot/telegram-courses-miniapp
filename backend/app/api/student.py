@@ -286,3 +286,10 @@ async def get_notifications(current_user: dict = Depends(get_current_user)):
         }
         for n in notifs
     ]
+
+@router.post("/notifications/read-all")
+async def mark_all_notifications_read(current_user: dict = Depends(get_current_user)):
+    """Barcha bildirishnomalarni o'qilgan deb belgilash"""
+    store = get_store()
+    await store.mark_notifications_read(current_user.get("sub"))
+    return {"success": True, "message": "Barcha bildirishnomalar o'qilgan deb belgilandi"}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   Sparkles,
@@ -42,21 +42,21 @@ export const HomePage: React.FC<HomePageProps> = ({
   const heroBanners = [
     {
       id: 1,
-      tag: "🔥 CHEGIRMA — 50% GACHA",
+      tag: "🔥 50% GACHA",
       title: "Sun'iy Intellekt va Prompt Engineering Pro",
-      subtitle: "Gemini 3.7, Claude & AI Agentlar orqali daromadingizni oshiring",
+      subtitle: "Gemini 3.7, Claude & AI Agentlar",
       gradient: "from-[#1B2810] via-[#131318] to-[#0D1808]",
       border: "border-[#B4F523]/30",
       instructor: "Yaxshi Bola",
       courseId: "c1111111-1111-1111-1111-111111111111",
-      badge: "1 Yil Kirish",
+      badge: "1 Yil",
       icon: "🤖"
     },
     {
       id: 2,
-      tag: "💎 APPLE DESIGN MASTERCLASS",
+      tag: "💎 APPLE DESIGN",
       title: "Zamonaviy UI/UX va Mobile App Dizayn",
-      subtitle: "Figma, Design Systems va Telegram Mini App interfeyslari",
+      subtitle: "Figma & Design Systems",
       gradient: "from-[#1F1528] via-[#131318] to-[#140D1F]",
       border: "border-purple-500/30",
       instructor: "Zuhra Olimova",
@@ -67,8 +67,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     {
       id: 3,
       tag: "⚡️ FULLSTACK 2026",
-      title: "Telegram Bot & Mini App Fullstack Dasturlash",
-      subtitle: "FastAPI, React, TypeScript, Click & Payme to'lov tizimlari",
+      title: "Telegram Bot & Mini App Dasturlash",
+      subtitle: "FastAPI, React, Click & Payme",
       gradient: "from-[#0F1E28] via-[#131318] to-[#0A161F]",
       border: "border-cyan-500/30",
       instructor: "Yaxshi Bola",
@@ -78,12 +78,30 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   ];
 
+  const SLIDE_MS = 4500;
+  const touchStartX = useRef<number | null>(null);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroBanners.length);
-    }, 4000);
+    }, SLIDE_MS);
     return () => clearInterval(timer);
-  }, [heroBanners.length]);
+  }, [heroBanners.length, currentSlide]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 45) {
+      haptic.selection();
+      setCurrentSlide((prev) =>
+        dx < 0 ? (prev + 1) % heroBanners.length : (prev - 1 + heroBanners.length) % heroBanners.length
+      );
+    }
+    touchStartX.current = null;
+  };
 
   const topCourses = courses.slice(0, 3);
 
@@ -117,9 +135,13 @@ export const HomePage: React.FC<HomePageProps> = ({
         </button>
       </div>
 
-      {/* 2. AUTO-SLIDING HERO BANNER CAROUSEL */}
-      <div className="space-y-2">
-        <div className="relative overflow-hidden rounded-3xl min-h-[175px] border border-white/10 shadow-elevated">
+      {/* 2. AUTO-SLIDING HERO BANNER CAROUSEL (ixcham + swipe) */}
+      <div
+        className="relative"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <div className="relative overflow-hidden rounded-3xl h-[150px] border border-white/10 shadow-elevated">
           {heroBanners.map((banner, index) => {
             const isActive = currentSlide === index;
             const targetCourse = courses.find((c) => c.id === banner.courseId) || courses[0];
@@ -131,37 +153,35 @@ export const HomePage: React.FC<HomePageProps> = ({
                   haptic.impact('light');
                   if (targetCourse) onSelectCourse(targetCourse);
                 }}
-                className={`absolute inset-0 p-4 sm:p-5 bg-gradient-to-br ${banner.gradient} text-white flex flex-col justify-between cursor-pointer transition-all duration-700 ease-in-out border ${banner.border} ${
-                  isActive ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-8 pointer-events-none'
+                className={`absolute inset-0 p-3.5 bg-gradient-to-br ${banner.gradient} text-white flex flex-col justify-between cursor-pointer transition-all duration-500 ease-out border ${banner.border} ${
+                  isActive ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-6 pointer-events-none'
                 }`}
               >
-                <div className="space-y-1.5 relative z-10">
+                {/* Yumshoq nur effekti */}
+                <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full blur-[60px] bg-white/[0.06] pointer-events-none" />
+
+                <div className="relative z-10">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-extrabold tracking-wider bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10 uppercase text-[#B4F523]">
+                    <span className="text-[8px] font-extrabold tracking-wider bg-white/10 px-2 py-0.5 rounded-full border border-white/10 uppercase text-[#B4F523]">
                       {banner.tag}
                     </span>
-                    <span className="text-[10px] bg-[#B4F523] text-black font-bold px-2 py-0.5 rounded-full">
+                    <span className="text-[9px] bg-[#B4F523] text-black font-black px-2 py-0.5 rounded-full">
                       {banner.badge}
                     </span>
                   </div>
-
-                  <h3 className="text-sm sm:text-base font-bold leading-snug line-clamp-2 pt-1 text-white">
-                    {banner.title}
+                  <h3 className="text-[13px] font-bold leading-snug line-clamp-2 pt-1.5 text-white">
+                    {banner.icon} {banner.title}
                   </h3>
-                  <p className="text-[11px] text-zinc-400 line-clamp-1">
-                    {banner.subtitle}
-                  </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-white/10 relative z-10">
-                  <div className="flex items-center space-x-1.5 text-[11px] text-zinc-300">
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center space-x-1 text-[10px] text-zinc-400">
                     <span>Ustoz:</span>
                     <strong className="text-white font-semibold">{banner.instructor}</strong>
                   </div>
-
-                  <div className="inline-flex items-center space-x-1 bg-white text-black px-3 py-1 rounded-xl text-[10px] font-bold shadow-md hover:bg-[#B4F523] transition-colors">
+                  <div className="inline-flex items-center space-x-1 bg-[#B4F523] text-black px-2.5 py-1 rounded-lg text-[9px] font-black active:scale-95 transition-transform">
                     <span>Batafsil</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-2.5 h-2.5" />
                   </div>
                 </div>
               </div>
@@ -169,8 +189,8 @@ export const HomePage: React.FC<HomePageProps> = ({
           })}
         </div>
 
-        {/* Carousel Dots */}
-        <div className="flex items-center justify-center space-x-1.5 pt-0.5">
+        {/* Progress + Dots ixcham indikator */}
+        <div className="flex items-center justify-center gap-1.5 pt-2">
           {heroBanners.map((_, i) => (
             <button
               key={i}
@@ -178,10 +198,19 @@ export const HomePage: React.FC<HomePageProps> = ({
                 haptic.selection();
                 setCurrentSlide(i);
               }}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                currentSlide === i ? 'w-6 bg-[#B4F523]' : 'w-1.5 bg-zinc-700'
-              }`}
-            />
+              className="group relative h-1.5 rounded-full overflow-hidden transition-all duration-300"
+              style={{ width: currentSlide === i ? 28 : 6, backgroundColor: currentSlide === i ? 'transparent' : 'rgba(113,113,122,0.4)' }}
+            >
+              {currentSlide === i && (
+                <span
+                  className="absolute inset-0 rounded-full bg-[#B4F523] hero-slide-progress"
+                  style={{ animationDuration: `${SLIDE_MS}ms` }}
+                />
+              )}
+              {currentSlide === i && (
+                <span className="absolute inset-0 rounded-full bg-[#B4F523]/30" />
+              )}
+            </button>
           ))}
         </div>
       </div>

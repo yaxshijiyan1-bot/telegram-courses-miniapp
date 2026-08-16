@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from './components/Header';
 import { BottomNav, NavTab } from './components/BottomNav';
 import { DesktopWrapper } from './components/DesktopWrapper';
@@ -13,6 +13,7 @@ import { MyCoursesPage } from './pages/MyCoursesPage';
 import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { CheckoutModal } from './components/CheckoutModal';
+import { NotificationsPanel } from './components/NotificationsPanel';
 
 import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
@@ -33,6 +34,60 @@ export const AppContent: React.FC = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isNotifsOpen, setIsNotifsOpen] = useState(false);
+
+  // ---- ORTQA QAYTISH HIMOYASI ----
+  // Ichki sahifa ochilganda browser tarixiga yozuv qo'shamiz. Shunda Telegram/Android
+  // "orqaga" tugmasi ilovani YOPMASDAN shu yozuvni oladi va biz ichki navigatsiyani
+  // bir qadam orqaga qaytaramiz (popstate orqali).
+  const navStateRef = useRef({ selectedCourse, selectedLesson, purchasedCourse });
+  navStateRef.current = { selectedCourse, selectedLesson, purchasedCourse };
+  const historyDepthRef = useRef(0);
+
+  const isInnerPage = !!(selectedCourse || selectedLesson || purchasedCourse);
+
+  // Ichki sahifaga kirilganda tarix yozuvini qo'shish
+  useEffect(() => {
+    if (isInnerPage && historyDepthRef.current === 0) {
+      window.history.pushState({ appInner: true }, '');
+      historyDepthRef.current = 1;
+    }
+  }, [isInnerPage]);
+
+  const closeTopLevel = useCallback(() => {
+    const s = navStateRef.current;
+    if (s.selectedLesson) setSelectedLesson(null);
+    else if (s.purchasedCourse) setPurchasedCourse(null);
+    else if (s.selectedCourse) setSelectedCourse(null);
+  }, []);
+
+  // OS/Telegram orqaga -> popstate
+  useEffect(() => {
+    const onPopState = () => {
+      closeTopLevel();
+      // Agar hali ichki sahifadamiz bo'lsa — keyingi "orqaga" uchun yana yozuv qo'shamiz
+      setTimeout(() => {
+        const s = navStateRef.current;
+        if (s.selectedCourse || s.selectedLesson || s.purchasedCourse) {
+          window.history.pushState({ appInner: true }, '');
+        } else {
+          historyDepthRef.current = 0;
+        }
+      }, 60);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [closeTopLevel]);
+
+  // Barcha "orqaga" harakatlari uchun yagona funksiya
+  const goBack = useCallback(() => {
+    if (historyDepthRef.current > 0 && navStateRef.current.selectedCourse) {
+      // popstate handler ishlashi uchun tarix orqali qaytaramiz
+      window.history.back();
+    } else {
+      closeTopLevel();
+    }
+  }, [closeTopLevel]);
 
   // #admin hash — bot'dagi "Superadmin Dashboard" tugmasi shu yerga ochiladi
   useEffect(() => {
@@ -73,6 +128,22 @@ export const AppContent: React.FC = () => {
     loadData();
   }, [isAuthenticated]);
 
+  // Bildirishnomalarni yangilash + ochilganda o'qilgan deb belgilash
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const notifs = await api.getNotifications();
+      setNotifications(notifs);
+    } catch {}
+  }, []);
+
+  const handleOpenNotifications = useCallback(() => {
+    setIsNotifsOpen(true);
+    // Ochilgach o'qilgan deb belgilaymiz va ro'yxatni yangilaymiz
+    api.markNotificationsRead().then(() => refreshNotifications()).catch(() => {});
+  }, [refreshNotifications]);
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   // Har safar sahifa yoki kurs o'zgarganda eng yuqoriga skroll qilish
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -80,18 +151,14 @@ export const AppContent: React.FC = () => {
     document.body.scrollTop = 0;
   }, [selectedCourse, selectedLesson, purchasedCourse, activeTab]);
 
-  // Back button handling
+  // Telegram BackButton — ichki sahifalarda
   useEffect(() => {
-    if (selectedLesson) {
-      showBackButton(() => setSelectedLesson(null));
-    } else if (selectedCourse) {
-      showBackButton(() => setSelectedCourse(null));
-    } else if (purchasedCourse) {
-      showBackButton(() => setPurchasedCourse(null));
+    if (selectedLesson || selectedCourse || purchasedCourse) {
+      showBackButton(() => goBack());
     } else {
       hideBackButton();
     }
-  }, [selectedLesson, selectedCourse, purchasedCourse]);
+  }, [selectedLesson, selectedCourse, purchasedCourse, goBack]);
 
   // Handle Play Lesson
   const handlePlayLesson = async (course: Course, lesson: Lesson) => {
@@ -128,7 +195,7 @@ export const AppContent: React.FC = () => {
         moduleTitle={selectedLesson.moduleTitle}
         prevLessonId={selectedLesson.prev}
         nextLessonId={selectedLesson.next}
-        onBack={() => setSelectedLesson(null)}
+        onBack={goBack}
         onSelectLesson={async (c, lId) => {
           const lData = await api.getProtectedLesson(c.id, lId);
           setSelectedLesson({
@@ -172,7 +239,7 @@ export const AppContent: React.FC = () => {
       <>
         <CourseDetailPage
           course={selectedCourse}
-          onBack={() => setSelectedCourse(null)}
+          onBack={goBack}
           onPurchase={(c) => {
             setCheckoutCourse(c);
             setIsCheckoutOpen(true);
@@ -191,17 +258,35 @@ export const AppContent: React.FC = () => {
             }}
           />
         )}
+        <NotificationsPanel
+          isOpen={isNotifsOpen}
+          notifications={notifications}
+          onClose={() => setIsNotifsOpen(false)}
+        />
       </>
     );
   }
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#09090C] text-white relative">
+      {/* Ambient Fon Glow Qatlamlari */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+        <div className="absolute -top-32 -left-24 w-80 h-80 bg-[#B4F523]/[0.05] rounded-full blur-[110px]" />
+        <div className="absolute top-1/3 -right-28 w-72 h-72 bg-cyan-500/[0.04] rounded-full blur-[110px]" />
+        <div className="absolute -bottom-40 left-1/4 w-96 h-96 bg-[#B4F523]/[0.03] rounded-full blur-[130px]" />
+      </div>
+
       {/* Top App Header */}
-      <Header />
+      <div className="relative z-10">
+        <Header
+          onOpenNotifications={handleOpenNotifications}
+          unreadCount={unreadCount}
+          isAuthenticated={isAuthenticated}
+        />
+      </div>
 
       {/* Main Tab Screen Switcher */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col relative z-10">
         {activeTab === 'home' && (
           <HomePage
             courses={courses}
@@ -238,6 +323,8 @@ export const AppContent: React.FC = () => {
             <ProfilePage
               certificates={certificates}
               notifications={notifications}
+              dashboardData={dashboardData}
+              onNotificationsRead={refreshNotifications}
               onNavigateToCourses={() => setActiveTab('courses')}
             />
           ) : (
@@ -254,6 +341,13 @@ export const AppContent: React.FC = () => {
         activeTab={activeTab}
         onChangeTab={(tab) => setActiveTab(tab)}
         isAuthenticated={isAuthenticated}
+      />
+
+      {/* Bildirishnomalar Paneli */}
+      <NotificationsPanel
+        isOpen={isNotifsOpen}
+        notifications={notifications}
+        onClose={() => setIsNotifsOpen(false)}
       />
 
       {/* Superadmin Dashboard (bot tugmasi yoki profil orqali) */}

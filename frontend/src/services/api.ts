@@ -441,6 +441,18 @@ class ApiService {
     return [];
   }
 
+  async markNotificationsRead(): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/student/notifications/read-all`, {
+        method: 'POST',
+        headers: this.getHeaders()
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   // ===== TO'LOV REKVIZITLARI =====
 
   async getPaymentInfo(): Promise<PaymentInfo | null> {

@@ -17,6 +17,22 @@
     color: #FFFFFF;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
+
+  /* Yumshoq scrollbar (desktop frame uchun) */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(180, 245, 35, 0.18);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(180, 245, 35, 0.35);
+  }
 }
 
 /* Hide scrollbar for clean mobile experience */
@@ -48,6 +64,54 @@
   box-shadow: 0 0 15px rgba(180, 245, 35, 0.25);
 }
 
+/* ====== ANIMATSIYALAR ====== */
+
+/* Banner slayd progressi (dumaloq indikator ichida) */
+@keyframes heroSlideProgress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.hero-slide-progress {
+  animation: heroSlideProgress linear forwards;
+}
+
+/* Progress barlar sahifa ochilganda sekin to'ladi */
+@keyframes progressFill {
+  from { width: 0; }
+}
+.progress-fill {
+  animation: progressFill 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Neon pulse — muhim elementlar uchun juda yumshoq nafas */
+@keyframes neonPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(180, 245, 35, 0.12); }
+  50% { box-shadow: 0 0 18px rgba(180, 245, 35, 0.28); }
+}
+.neon-pulse {
+  animation: neonPulse 2.8s ease-in-out infinite;
+}
+
+/* Shimmer — premium "yuklanmoqda" effekti */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #131318 25%, #1E1E26 50%, #131318 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* Sahifa kirish animatsiyasi */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-in {
+  animation: pageIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Safe Area Paddings */
 .pt-safe {
   padding-top: max(16px, env(safe-area-inset-top));
@@ -57,4 +121,13 @@
 }
 .pb-safe-nav {
   padding-bottom: max(96px, calc(80px + env(safe-area-inset-bottom)));
+}
+
+/* Kuchaytirilgan harakat cheklovi bilan ishlaydigan foydalanuvchilar uchun */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

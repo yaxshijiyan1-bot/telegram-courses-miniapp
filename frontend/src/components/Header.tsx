@@ -5,10 +5,15 @@ import { useTelegram } from '../context/TelegramContext';
 
 interface HeaderProps {
   onOpenNotifications?: () => void;
-  hasUnreadNotifications?: boolean;
+  unreadCount?: number;
+  isAuthenticated?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenNotifications, hasUnreadNotifications = true }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onOpenNotifications,
+  unreadCount = 0,
+  isAuthenticated = false
+}) => {
   const { user } = useAuth();
   const { haptic } = useTelegram();
 
@@ -18,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications, hasUnreadNo
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-[#09090C]/90 backdrop-blur-xl px-4 py-2.5 border-b border-white/5 transition-all duration-200">
+    <header className="sticky top-0 z-30 bg-[#09090C]/85 backdrop-blur-xl px-4 py-2.5 border-b border-white/5 transition-all duration-200">
       <div className="max-w-md mx-auto flex items-center justify-between">
         {/* Brand Identity */}
         <div className="flex items-center space-x-2.5">
@@ -30,22 +35,30 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications, hasUnreadNo
               PREMIUM PLATFORMA
             </span>
             <h1 className="text-xs font-bold text-white leading-tight">
-              {user?.name ? user.name.split(' ')[0] : 'Kurslarimiz'}
+              {isAuthenticated && user?.name ? user.name.split(' ')[0] : 'Kurslarimiz'}
             </h1>
           </div>
         </div>
 
         {/* Right Notification Action */}
-        <button
-          onClick={handleNotificationClick}
-          className="relative w-8 h-8 rounded-xl bg-[#16161C] border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-all"
-          aria-label="Xabarnomalar"
-        >
-          <Bell className="w-4 h-4" />
-          {hasUnreadNotifications && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#B4F523] rounded-full ring-2 ring-[#09090C] animate-pulse" />
-          )}
-        </button>
+        {isAuthenticated ? (
+          <button
+            onClick={handleNotificationClick}
+            className="relative w-9 h-9 rounded-xl bg-[#16161C] border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white hover:border-[#B4F523]/40 active:scale-95 transition-all"
+            aria-label="Bildirishnomalar"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-[#B4F523] text-black rounded-full flex items-center justify-center text-[9px] font-black ring-2 ring-[#09090C] animate-in zoom-in-50">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+        ) : (
+          <div className="w-9 h-9 rounded-xl bg-[#16161C] border border-white/5 flex items-center justify-center text-zinc-600">
+            <Bell className="w-4 h-4" />
+          </div>
+        )}
       </div>
     </header>
   );
