@@ -8,7 +8,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8876379472:AAGHgR0wyJlKGHfT8rvMyB_rulh7bby7zXA")
 ADMIN_IDS = [8544023815, 8112688757]
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://kurslarimiz.vercel.app")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://kurslarimiz-platforma.vercel.app")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
