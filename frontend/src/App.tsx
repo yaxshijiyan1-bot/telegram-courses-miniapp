@@ -366,11 +366,13 @@ export const AppContent: React.FC = () => {
       </main>
 
       {/* Unbreakable Symmetrical Floating Bottom Navigation */}
-      <BottomNav
-        activeTab={activeTab}
-        onChangeTab={(tab) => setActiveTab(tab)}
-        isAuthenticated={isAuthenticated}
-      />
+      {!isNotifsOpen && !isAdminOpen && (
+        <BottomNav
+          activeTab={activeTab}
+          onChangeTab={(tab) => setActiveTab(tab)}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
 
       {/* Global Notifications Panel */}
       <NotificationsPanel
