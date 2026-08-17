@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Award,
   CircleHelp,
   ShieldCheck,
   ChevronRight,
   ExternalLink,
-  User,
-  ArrowUpRight
+  ArrowUpRight,
+  BookOpen,
+  Trophy,
+  GraduationCap,
+  Send,
+  X,
 } from 'lucide-react';
 import { Certificate, NotificationItem } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { useAuth } from '../context/AuthContext';
 import { AdminDashboardModal } from './AdminDashboardModal';
+import { relativeTime } from '../utils/format';
 
 interface ProfilePageProps {
   certificates: Certificate[];
@@ -21,9 +27,19 @@ interface ProfilePageProps {
   onNavigateToCourses: () => void;
 }
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+const item = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 26 } },
+};
+
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   certificates,
   notifications,
+  dashboardData,
   onNotificationsRead,
   onNavigateToCourses,
 }) => {
@@ -33,68 +49,97 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [showCertModal, setShowCertModal] = useState(false);
 
   const isSuperadmin = user?.role === 'superadmin' || tgUser?.id === 8544023815 || tgUser?.id === 8112688757;
-  const displayName = tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim() : (user?.name || 'Yaxshi Bola');
-  const username = tgUser?.username || user?.username || 'yomonboia';
+  const displayName = tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim() : (user?.name || 'Talaba');
+  const username = tgUser?.username || user?.username || '—';
+  const photoUrl = tgUser?.photo_url;
+
+  // REAL metrikalar — backend dashboard ma'lumotidan
+  const completedLessons = dashboardData?.completed_lessons_count ?? 0;
+  const enrolledCount = dashboardData?.enrolled_courses?.length ?? 0;
+  const overallProgress = dashboardData?.overall_progress_percent ?? 0;
+
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const metrics = [
+    { icon: BookOpen, label: 'yakunlangan dars', value: completedLessons, accent: 'text-cyan bg-cyan/10 border-cyan/20' },
+    { icon: GraduationCap, label: 'aktiv kurs', value: enrolledCount, accent: 'text-violet-light bg-violet/10 border-violet/20' },
+    { icon: Trophy, label: 'umumiy progress', value: `${overallProgress}%`, accent: 'text-gold bg-gold/10 border-gold/20' },
+  ];
 
   return (
-    <div className="px-4 pt-3 space-y-4 animate-fade-up">
-      {/* 1. Profile Info Card */}
-      <section className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-soft space-y-1">
-        <div className="w-10 h-10 rounded-2xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center mb-2 shadow-sm">
-          <User className="w-5 h-5" strokeWidth={2.2} />
-        </div>
-        <p className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">
-          SHAXSIY HUDUD
-        </p>
-        <h1 className="text-lg sm:text-xl font-extrabold text-[#0f172a] leading-tight">
-          {displayName}
-        </h1>
-        <p className="text-xs font-semibold text-[#64748b]">
-          Telegram: <span className="text-[#2563eb]">@{username}</span>
-        </p>
-      </section>
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="px-4 pt-4 space-y-4"
+    >
+      {/* Profil kartasi */}
+      <motion.section variants={item} className="glass rounded-[26px] p-5 relative overflow-hidden">
+        <div className="absolute -right-12 -top-16 w-44 h-44 rounded-full bg-cyan/[0.08] blur-3xl pointer-events-none" />
+        <div className="absolute -left-10 -bottom-16 w-40 h-40 rounded-full bg-violet/[0.06] blur-3xl pointer-events-none" />
 
-      {/* 2. Telegram Connect Status Card */}
-      <section className="bg-white rounded-2xl p-4 border border-slate-100 shadow-soft flex items-start space-x-3">
-        <div className="w-8 h-8 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0 mt-0.5">
-          <ArrowUpRight className="w-4 h-4" strokeWidth={2.5} />
+        <div className="flex items-center space-x-4">
+          <div className="w-14 h-14 rounded-[18px] overflow-hidden bg-gradient-to-br from-cyan/40 to-violet/40 border border-white/15 flex items-center justify-center text-[#05070A] font-extrabold text-lg flex-shrink-0 shadow-cyanGlowSm">
+            {photoUrl ? (
+              <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              initial
+            )}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold text-ink leading-tight truncate">{displayName}</h1>
+            <p className="text-[11px] font-semibold text-ink-muted">
+              Telegram: <span className="text-cyan">@{username}</span>
+            </p>
+            <span className="inline-flex items-center gap-1 mt-1 text-[9px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full">
+              <Send className="w-2.5 h-2.5" />
+              Profil birikkan
+            </span>
+          </div>
         </div>
-        <div className="space-y-0.5 min-w-0">
-          <h3 className="text-xs sm:text-[13px] font-bold text-[#0f172a]">
-            Telegram bilan birikkan profil
-          </h3>
-          <p className="text-[11px] text-[#64748b] leading-relaxed">
-            Bot ichida ochilganda profilingiz xavfsiz tekshiriladi.
-          </p>
+
+        {/* REAL metrikalar */}
+        <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+          {metrics.map((m) => {
+            const Icon = m.icon;
+            return (
+              <div key={m.label} className="text-center space-y-1">
+                <div className={`w-8 h-8 rounded-xl border flex items-center justify-center mx-auto ${m.accent}`}>
+                  <Icon className="w-4 h-4" strokeWidth={2.2} />
+                </div>
+                <b className="text-sm font-extrabold text-ink block leading-none tabular-nums">{m.value}</b>
+                <span className="text-[9px] text-ink-muted block leading-tight">{m.label}</span>
+              </div>
+            );
+          })}
         </div>
-      </section>
+      </motion.section>
 
-      {/* 3. Account Actions / Preferences */}
-      <div className="space-y-2">
-        <h2 className="text-sm font-bold text-[#0f172a] px-1">
-          Hisob boshqaruvi
-        </h2>
+      {/* Hisob boshqaruvi */}
+      <motion.div variants={item} className="space-y-2">
+        <h2 className="text-sm font-bold text-ink px-1">Hisob boshqaruvi</h2>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-soft divide-y divide-slate-100 overflow-hidden">
-          {/* Sertifikatlar */}
+        <div className="glass rounded-[22px] divide-y divide-white/[0.05] overflow-hidden">
           <button
             type="button"
             onClick={() => {
               haptic.impact('light');
               setShowCertModal(true);
             }}
-            className="w-full p-3.5 flex items-center justify-between hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors text-left"
+            className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.03] transition-colors text-left"
           >
             <div className="flex items-center space-x-3">
-              <Award className="w-4 h-4 text-[#2563eb]" />
-              <span className="text-xs font-semibold text-[#0f172a]">
-                Mening sertifikatlarim
-              </span>
+              <Award className="w-4 h-4 text-cyan" strokeWidth={2.2} />
+              <span className="text-xs font-semibold text-ink">Mening sertifikatlarim</span>
+              {certificates.length > 0 && (
+                <span className="text-[9px] font-extrabold bg-cyan/10 text-cyan border border-cyan/20 px-1.5 py-0.5 rounded-md">
+                  {certificates.length}
+                </span>
+              )}
             </div>
-            <ChevronRight className="w-4 h-4 text-[#94a3b8]" />
+            <ChevronRight className="w-4 h-4 text-ink-muted" />
           </button>
 
-          {/* Superadmin Panel */}
           {isSuperadmin && (
             <button
               type="button"
@@ -102,133 +147,146 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 haptic.impact('medium');
                 setIsAdminOpen(true);
               }}
-              className="w-full p-3.5 flex items-center justify-between bg-[#eff6ff]/60 hover:bg-[#eff6ff] transition-colors text-left"
+              className="w-full p-3.5 flex items-center justify-between bg-cyan/[0.05] hover:bg-cyan/[0.09] transition-colors text-left"
             >
               <div className="flex items-center space-x-3">
-                <ShieldCheck className="w-4 h-4 text-[#2563eb]" />
-                <span className="text-xs font-bold text-[#2563eb]">
-                  Superadmin Boshqaruv Paneli
-                </span>
+                <ShieldCheck className="w-4 h-4 text-cyan" strokeWidth={2.2} />
+                <span className="text-xs font-extrabold text-cyan">Superadmin boshqaruv paneli</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-[#2563eb]" />
+              <ChevronRight className="w-4 h-4 text-cyan" />
             </button>
           )}
 
-          {/* Yordam va Qo'llab-quvvatlash */}
           <a
             href="https://t.me/yomonboia"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => haptic.impact('light')}
-            className="w-full p-3.5 flex items-center justify-between hover:bg-[#f8fafc] active:bg-[#f1f5f9] transition-colors text-left"
+            className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.03] transition-colors text-left"
           >
             <div className="flex items-center space-x-3">
-              <CircleHelp className="w-4 h-4 text-[#2563eb]" />
-              <span className="text-xs font-semibold text-[#0f172a]">
-                Yordam va qo‘llab-quvvatlash
-              </span>
+              <CircleHelp className="w-4 h-4 text-cyan" strokeWidth={2.2} />
+              <span className="text-xs font-semibold text-ink">Yordam va qo‘llab-quvvatlash</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-[#94a3b8]" />
+            <ChevronRight className="w-4 h-4 text-ink-muted" />
           </a>
         </div>
-      </div>
+      </motion.div>
 
-      {/* 4. Mentors Direct Contact */}
-      <div className="space-y-2 pt-1">
-        <h2 className="text-sm font-bold text-[#0f172a] px-1">
-          Ustozlar bilan bog‘lanish
-        </h2>
+      {/* Ustozlar */}
+      <motion.div variants={item} className="space-y-2">
+        <h2 className="text-sm font-bold text-ink px-1">Ustozlar bilan bog‘lanish</h2>
 
         <div className="grid grid-cols-2 gap-2.5">
-          <a
-            href="https://t.me/yomonboia"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => haptic.impact('light')}
-            className="p-3 bg-white border border-slate-100 rounded-2xl shadow-soft flex items-center justify-between hover:border-[#2563eb]/40 active:scale-[0.98] transition-all"
-          >
-            <div className="flex items-center space-x-2.5 min-w-0">
-              <img
-                src="/images/yaxshi_bola.jpg"
-                alt="Yaxshi Bola"
-                className="w-9 h-9 rounded-xl object-cover border border-slate-100 flex-shrink-0"
-              />
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-[#0f172a] block truncate">
-                  Yaxshi Bola
-                </span>
-                <span className="text-[10px] text-[#64748b] truncate block">
-                  @yomonboia
-                </span>
-              </div>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-[#2563eb] flex-shrink-0" />
-          </a>
-
-          <a
-            href="https://t.me/sokin_notalar"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => haptic.impact('light')}
-            className="p-3 bg-white border border-slate-100 rounded-2xl shadow-soft flex items-center justify-between hover:border-[#2563eb]/40 active:scale-[0.98] transition-all"
-          >
-            <div className="flex items-center space-x-2.5 min-w-0">
-              <img
-                src="/images/zuhra_olimova.jpg"
-                alt="Zuhra Olimova"
-                className="w-9 h-9 rounded-xl object-cover border border-slate-100 flex-shrink-0"
-              />
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-[#0f172a] block truncate">
-                  Zuhra Olimova
-                </span>
-                <span className="text-[10px] text-[#64748b] truncate block">
-                  @sokin_notalar
-                </span>
-              </div>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-[#2563eb] flex-shrink-0" />
-          </a>
-        </div>
-      </div>
-
-      {/* Sertifikatlar Modali */}
-      {showCertModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-2">
-                <Award className="w-5 h-5 text-[#2563eb]" />
-                <h3 className="text-sm font-bold text-[#0f172a]">Mening Sertifikatlarim</h3>
-              </div>
-              <button
-                onClick={() => setShowCertModal(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-[#64748b] flex items-center justify-center font-bold text-xs"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 bg-[#eff6ff] rounded-2xl border border-[#dbeafe] text-center space-y-2">
-              <Award className="w-10 h-10 mx-auto text-[#2563eb]" />
-              <h4 className="text-xs font-bold text-[#0f172a]">Course Academy Sertifikati</h4>
-              <p className="text-[11px] text-[#64748b] leading-relaxed">
-                Kurs darslarini 100% yakunlaganingizdan so‘ng rasmiy QR-kodli, raqamli tekshiriladigan sertifikat bu yerda ochiladi.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowCertModal(false)}
-              className="w-full py-3 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold rounded-xl text-xs shadow-md shadow-blue-500/20"
+          {[
+            { name: 'Yaxshi Bola', tag: '@yomonboia', avatar: '/images/yaxshi_bola.jpg' },
+            { name: 'Zuhra Olimova', tag: '@sokin_notalar', avatar: '/images/zuhra_olimova.jpg' },
+          ].map((mentor) => (
+            <a
+              key={mentor.tag}
+              href={`https://t.me/${mentor.tag.slice(1)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => haptic.impact('light')}
+              className="glass !rounded-[20px] p-3 flex items-center justify-between pressable"
             >
-              Tushundim
-            </button>
-          </div>
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <img
+                  src={mentor.avatar}
+                  alt={mentor.name}
+                  className="w-9 h-9 rounded-xl object-cover border border-white/10 flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <span className="text-[11px] font-bold text-ink block truncate">{mentor.name}</span>
+                  <span className="text-[9px] text-ink-muted truncate block">{mentor.tag}</span>
+                </div>
+              </div>
+              <ExternalLink className="w-3.5 h-3.5 text-cyan flex-shrink-0" />
+            </a>
+          ))}
         </div>
+      </motion.div>
+
+      {/* Oxirgi bildirishnomalar — real vaqt bilan */}
+      {notifications.length > 0 && (
+        <motion.div variants={item} className="space-y-2">
+          <h2 className="text-sm font-bold text-ink px-1">Oxirgi bildirishnomalar</h2>
+          <div className="glass rounded-[22px] divide-y divide-white/[0.05] overflow-hidden">
+            {notifications.slice(0, 3).map((n) => (
+              <div key={n.id} className="p-3 flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <b className="text-[11px] font-bold text-ink block clamp-1">{n.title}</b>
+                  <p className="text-[10px] text-ink-muted clamp-1">{n.message}</p>
+                </div>
+                <span className="text-[9px] text-ink-muted flex-shrink-0 mt-0.5">{relativeTime(n.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       )}
 
-      {/* Superadmin Dashboard Modal */}
+      {/* Sertifikatlar modali */}
+      <AnimatePresence>
+        {showCertModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in" onClick={() => setShowCertModal(false)}>
+            <motion.div
+              initial={{ scale: 0.94, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.94, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+              className="glass-deep !rounded-[26px] p-5 max-w-sm w-full shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07]">
+                <div className="flex items-center space-x-2">
+                  <Award className="w-[18px] h-[18px] text-cyan" strokeWidth={2.2} />
+                  <h3 className="text-sm font-extrabold text-ink">Mening sertifikatlarim</h3>
+                </div>
+                <button
+                  onClick={() => setShowCertModal(false)}
+                  className="w-7 h-7 rounded-full glass-chip text-ink-secondary flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {certificates.length === 0 ? (
+                <div className="p-5 glass-chip rounded-[20px] text-center space-y-2.5">
+                  <div className="w-12 h-12 rounded-2xl bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center mx-auto">
+                    <Award className="w-6 h-6" strokeWidth={1.8} />
+                  </div>
+                  <h4 className="text-xs font-bold text-ink">Sertifikatlar shu yerda ochiladi</h4>
+                  <p className="text-[11px] text-ink-muted leading-relaxed">
+                    Kurs darslarini 100% yakunlaganingizdan so‘ng rasmiy QR-kodli, raqamli tekshiriladigan sertifikat automatic tarzda qo‘shiladi.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {certificates.map((cert) => (
+                    <div key={cert.id} className="p-3 glass-chip rounded-[18px] flex items-center justify-between">
+                      <div className="min-w-0">
+                        <b className="text-[11px] text-ink block clamp-1">{cert.course_title}</b>
+                        <span className="text-[9px] text-ink-muted font-mono">{cert.certificate_code}</span>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-cyan flex-shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowCertModal(false)}
+                className="w-full py-3 bg-gradient-to-r from-cyan to-cyan-light text-[#05070A] font-extrabold rounded-2xl text-xs shadow-cyanGlowSm"
+              >
+                Tushundim
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Superadmin */}
       {isAdminOpen && (
         <AdminDashboardModal
           isOpen={isAdminOpen}
@@ -236,6 +294,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           adminName={displayName}
         />
       )}
-    </div>
+    </motion.div>
   );
 };

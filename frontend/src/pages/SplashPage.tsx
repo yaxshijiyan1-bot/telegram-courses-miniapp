@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowRight, ShieldCheck, Zap, BookOpen } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, ShieldCheck, Zap, GraduationCap } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 
 interface SplashPageProps {
@@ -15,62 +16,98 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
   };
 
   return (
-    <div className="min-h-screen flex-1 flex flex-col justify-between p-6 bg-[#f8fafc] text-[#0f172a] select-none relative overflow-hidden">
-      {/* Top Brand Pill Tag */}
-      <div className="pt-safe flex justify-center relative z-10">
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-[#2563eb]">
-          <div className="w-2 h-2 rounded-full bg-[#2563eb]" />
-          <span className="text-[10px] font-bold tracking-[0.15em] uppercase">
-            COURSE ACADEMY
+    <div className="min-h-screen flex-1 flex flex-col justify-between p-6 bg-darkBg text-ink select-none relative overflow-hidden">
+      {/* Ambient glows */}
+      <div className="absolute -top-32 -left-24 w-80 h-80 rounded-full bg-cyan/[0.09] blur-[100px] pointer-events-none" />
+      <div className="absolute -bottom-36 -right-24 w-96 h-96 rounded-full bg-violet/[0.08] blur-[110px] pointer-events-none" />
+
+      {/* Top brand pill */}
+      <motion.div
+        initial={{ opacity: 0, y: -14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="pt-safe flex justify-center relative z-10"
+      >
+        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full glass-chip text-cyan">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse-glow" />
+          <span className="text-[10px] font-extrabold tracking-[0.18em] uppercase">
+            Course Academy
           </span>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Center Hero Identity */}
-      <div className="my-auto flex flex-col items-center text-center space-y-6 relative z-10 max-w-xs mx-auto">
-        {/* Blue Squircle Logo */}
-        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
-          <BookOpen className="w-8 h-8" strokeWidth={2.2} />
-        </div>
+      {/* Center hero */}
+      <div className="my-auto flex flex-col items-center text-center space-y-7 relative z-10 max-w-xs mx-auto">
+        {/* Yuklangan 3D artwork */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 24 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 160, damping: 20, delay: 0.15 }}
+          className="relative w-56 h-44 flex items-center justify-center"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(34,211,238,0.16),transparent_65%)]" />
+          <motion.img
+            src="/images/hero_grad.webp"
+            alt=""
+            draggable={false}
+            className="relative z-10 w-full h-full object-contain animate-floaty pointer-events-none"
+            style={{ maskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 60%, transparent 98%)', WebkitMaskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 60%, transparent 98%)' }}
+          />
+        </motion.div>
 
-        {/* Headlines */}
-        <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0f172a] leading-tight tracking-tight">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-2.5"
+        >
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-ink leading-tight tracking-tight">
             Bilimingizni<br />
-            <em className="font-serif italic font-normal text-[#2563eb]">o‘stiring.</em>
+            <em className="serif-accent">oshiring.</em>
           </h1>
-          <p className="text-xs text-[#64748b] leading-relaxed font-medium">
-            Professional amaliy kurslar, o‘quv yo‘li va Telegram uchun moslashtirilgan qulay muhit.
+          <p className="text-xs text-ink-secondary leading-relaxed font-medium">
+            Professional amaliy kurslar, tizimli o‘quv yo‘li va Telegram uchun moslashtirilgan qulay muhit.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Feature Badges */}
-        <div className="flex items-center space-x-2 text-xs font-bold pt-1">
-          <span className="flex items-center space-x-1.5 bg-white text-[#1e293b] px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-            <ShieldCheck className="w-4 h-4 text-[#2563eb]" />
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-center space-x-2 text-[11px] font-bold"
+        >
+          <span className="flex items-center space-x-1.5 glass-chip text-ink px-3 py-1.5 rounded-full">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan" strokeWidth={2.2} />
             <span>Sertifikatli</span>
           </span>
-          <span className="flex items-center space-x-1.5 bg-white text-[#1e293b] px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-            <Zap className="w-4 h-4 text-[#2563eb]" />
+          <span className="flex items-center space-x-1.5 glass-chip text-ink px-3 py-1.5 rounded-full">
+            <Zap className="w-3.5 h-3.5 text-cyan" strokeWidth={2.2} />
             <span>Telegramga mos</span>
           </span>
-        </div>
+        </motion.div>
       </div>
 
       {/* Bottom CTA */}
-      <div className="pb-safe w-full space-y-3 relative z-10">
-        <button
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="pb-safe w-full space-y-3 relative z-10"
+      >
+        <motion.button
           type="button"
           onClick={handleStart}
-          className="w-full py-3.5 px-4 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold rounded-2xl text-sm flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 active:scale-[0.98] transition-all"
+          whileTap={{ scale: 0.97 }}
+          className="w-full py-3.5 px-4 bg-gradient-to-r from-cyan to-cyan-light text-[#05070A] font-extrabold rounded-2xl text-sm flex items-center justify-center space-x-2 shadow-cyanGlow"
         >
+          <GraduationCap className="w-[18px] h-[18px]" strokeWidth={2.4} />
           <span>Boshlash</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-        <p className="text-[10px] text-center text-[#94a3b8] font-medium">
+          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+        </motion.button>
+        <p className="text-[10px] text-center text-ink-muted font-medium">
           bilim qiymatga aylanadi · Course Academy 2026
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 };

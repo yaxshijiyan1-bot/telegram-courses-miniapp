@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Lock, User, Send, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Lock, User, Send, ArrowRight, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
 import { InlineLoader } from 'generative-loaders';
@@ -62,52 +63,69 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   return (
-    <div className="flex-1 pb-24 px-6 pt-6 flex flex-col justify-between text-white animate-fade-up">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="flex-1 pb-28 px-6 pt-10 flex flex-col justify-between text-ink"
+    >
       <div className="space-y-6 max-w-sm mx-auto w-full">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-3xl bg-[#0D1117] border border-cyan/40 text-cyan flex items-center justify-center mx-auto shadow-cyanGlowSm">
-            <Lock className="w-6 h-6 stroke-cyan" />
+        <div className="text-center space-y-3">
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}
+            className="w-16 h-16 rounded-[20px] mx-auto glass border border-cyan/25 text-cyan flex items-center justify-center shadow-cyanGlowSm"
+          >
+            <GraduationCap className="w-7 h-7" strokeWidth={2} />
+          </motion.div>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-extrabold text-ink tracking-tight">Xush kelibsiz!</h1>
+            <p className="text-xs text-ink-secondary leading-relaxed">
+              Darslaringizga kirish uchun Telegram orqali avtorizatsiyadan o‘ting yoki login bilan kiring.
+            </p>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Xush kelibsiz!</h1>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Darslaringizga kirish uchun Telegram orqali avtorizatsiyadan o‘ting yoki login bilan kiring.
-          </p>
         </div>
 
-        {/* Telegram Fast Login Button */}
-        <button
+        {/* Telegram login */}
+        <motion.button
           onClick={handleTelegramAuth}
           disabled={isSubmitting}
-          className="w-full py-3.5 bg-[#24A1DE] text-white font-bold rounded-2xl shadow-soft hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm"
+          whileTap={{ scale: 0.97 }}
+          className="w-full py-3.5 bg-[#24A1DE] text-white font-bold rounded-2xl shadow-soft hover:opacity-90 transition-all flex items-center justify-center space-x-2 text-sm"
         >
           <Send className="w-4 h-4" />
           <span>Telegram orqali tezkor kirish</span>
-        </button>
+        </motion.button>
 
         {/* Divider */}
         <div className="flex items-center space-x-3">
-          <div className="flex-1 h-px bg-white/[0.08]" />
-          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+          <div className="flex-1 h-px bg-white/[0.07]" />
+          <span className="text-[10px] text-ink-muted uppercase font-bold tracking-wider">
             yoki login bilan
           </span>
-          <div className="flex-1 h-px bg-white/[0.08]" />
+          <div className="flex-1 h-px bg-white/[0.07]" />
         </div>
 
-        {/* Error Message */}
+        {/* Error */}
         {errorMsg && (
-          <div className="flex items-center space-x-2 p-3 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-xs">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center space-x-2 p-3 bg-red-500/10 border border-red-500/25 text-red-300 rounded-2xl text-[11px]"
+          >
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errorMsg}</span>
-          </div>
+          </motion.div>
         )}
 
-        {/* Direct Login Form */}
+        {/* Login form */}
         <form onSubmit={handleDirectLogin} className="space-y-3.5">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-400">Login yoki Telefon</label>
+            <label className="text-[11px] font-bold text-ink-secondary">Login yoki telefon</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-muted">
                 <User className="w-4 h-4" />
               </div>
               <input
@@ -115,15 +133,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 placeholder="Login yoki @username"
-                className="w-full pl-10 pr-3.5 py-3 bg-[#0D1117] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan transition-all"
+                className="field !pl-11"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-400">Parol</label>
+            <label className="text-[11px] font-bold text-ink-secondary">Parol</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-muted">
                 <Lock className="w-4 h-4" />
               </div>
               <input
@@ -131,31 +149,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-3.5 py-3 bg-[#0D1117] border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan transition-all"
+                className="field !pl-11"
               />
             </div>
           </div>
 
-          <button
+          <motion.button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3.5 bg-cyan text-black font-black rounded-2xl shadow-cyanGlow hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm tracking-wide disabled:opacity-50"
+            whileTap={{ scale: 0.97 }}
+            className="w-full py-3.5 bg-gradient-to-r from-cyan to-cyan-light text-[#05070A] font-extrabold rounded-2xl shadow-cyanGlow flex items-center justify-center space-x-2 text-sm disabled:opacity-50"
           >
             {isSubmitting ? (
-              <InlineLoader variant="orbit" size={16} color="#000000" />
+              <InlineLoader variant="orbit" size={16} color="#05070A" />
             ) : (
               <>
                 <span>Kirish</span>
                 <ArrowRight className="w-4 h-4 stroke-[3]" />
               </>
             )}
-          </button>
+          </motion.button>
         </form>
       </div>
 
-      {/* Bottom CTA */}
+      {/* Bottom */}
       <div className="pt-6 text-center space-y-2">
-        <p className="text-xs text-slate-500">Hali kurs xarid qilmadingizmi?</p>
+        <p className="text-xs text-ink-muted">Hali kurs xarid qilmadingizmi?</p>
         <button
           onClick={() => {
             haptic.impact('light');
@@ -166,6 +185,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           Kurslar katalogini ko‘rish →
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };

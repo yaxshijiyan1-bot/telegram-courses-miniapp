@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smartphone, BookOpen, Sparkles } from 'lucide-react';
+import { Smartphone, GraduationCap } from 'lucide-react';
 
 interface DesktopWrapperProps {
   children: React.ReactNode;
@@ -9,25 +9,36 @@ export const DesktopWrapper: React.FC<DesktopWrapperProps> = ({ children }) => {
   return (
     <div className="app-canvas">
       {/* Desktop Left Info Column */}
-      <div className="hidden lg:flex flex-col justify-center max-w-sm mr-12 text-[#0f172a] space-y-4">
-        <div className="inline-flex items-center space-x-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200 w-max shadow-sm text-[#2563eb]">
-          <div className="w-2 h-2 rounded-full bg-[#2563eb]" />
-          <span className="text-[10px] font-bold tracking-[0.15em] uppercase">
-            COURSE ACADEMY
+      <div className="hidden lg:flex flex-col justify-center max-w-sm mr-12 text-ink space-y-5">
+        <div className="inline-flex items-center space-x-2 glass-chip px-3.5 py-1.5 rounded-full w-max text-cyan">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan" />
+          <span className="text-[10px] font-extrabold tracking-[0.18em] uppercase">
+            Course Academy
           </span>
         </div>
 
-        <h2 className="text-3xl font-extrabold text-[#0f172a] leading-tight">
-          O‘quv Studiyasi
+        <h2 className="text-4xl font-extrabold text-ink leading-tight tracking-tight">
+          O‘quv studiyasi —<br />
+          <em className="serif-accent">suyuq shisha.</em>
         </h2>
 
-        <p className="text-xs text-[#64748b] leading-relaxed font-medium">
-          Telegram Mini App uchun optimallashtirilgan eng qulay, tezkor va professional ta'lim platformasi.
+        <p className="text-xs text-ink-secondary leading-relaxed font-medium max-w-xs">
+          Telegram Mini App uchun optimallashtirilgan eng qulay, tezkor va professional ta'lim platformasi. 2026 standartlari: OLED qora fon, Liquid Glass qatlamlar va spring animatsiyalar.
         </p>
 
-        <div className="flex items-center space-x-2 text-xs text-[#2563eb] font-semibold">
+        <div className="flex items-center space-x-2 text-xs text-cyan font-semibold">
           <Smartphone className="w-4 h-4" />
           <span>Telegram WebView & mobil qurilmalarga to‘liq moslangan</span>
+        </div>
+
+        <div className="flex items-center space-x-2.5 pt-2">
+          <div className="w-11 h-11 rounded-2xl glass flex items-center justify-center text-cyan">
+            <GraduationCap className="w-5 h-5" strokeWidth={2} />
+          </div>
+          <div className="text-[11px] text-ink-muted leading-relaxed">
+            Sertifikatli kurslar · Xavfsiz to‘lov<br />
+            Chek tasdiqlash · Real statistika
+          </div>
         </div>
       </div>
 

@@ -314,21 +314,32 @@ class ApiService {
     next_lesson_id: string | null;
     completed: boolean;
   }> {
+    let res: Response | null = null;
     try {
-      const res = await fetch(`${API_BASE_URL}/student/courses/${courseId}/lessons/${lessonId}`, {
+      res = await fetch(`${API_BASE_URL}/student/courses/${courseId}/lessons/${lessonId}`, {
         headers: this.getHeaders()
       });
       if (res.ok) return await res.json();
     } catch {
-      // Fallback
+      res = null; // tarmoq xatosi — offline fallback
     }
 
-    const course = MOCK_COURSES.find(c => c.id === courseId) || MOCK_COURSES[0];
-    let foundLesson: Lesson | null = null;
-    let moduleTitle = '01. Kirish va LLM Asoslari';
-    let allLessons: Lesson[] = [];
+    // Server javob berdi lekin rad etdi (403 ruxsat yo'q / 404 topilmadi) — sun'iy ma'lumot ko'rsatmaymiz
+    if (res) {
+      throw new Error('Darsga kirish ruxsati yo‘q yoki dars topilmadi.');
+    }
 
-    course.modules?.forEach(m => {
+    // Faqat offline holatda kursning o'z ma'lumotiga qaytamiz
+    const course = MOCK_COURSES.find(c => c.id === courseId);
+    if (!course?.modules) {
+      throw new Error('Internet aloqasi yo‘q. Keyinroq qayta urinib ko‘ring.');
+    }
+
+    let foundLesson: Lesson | null = null;
+    let moduleTitle = '';
+    const allLessons: Lesson[] = [];
+
+    course.modules.forEach(m => {
       m.lessons.forEach(l => {
         allLessons.push(l);
         if (l.id === lessonId) {
@@ -344,20 +355,16 @@ class ApiService {
     const prev = currentIdx > 0 ? allLessons[currentIdx - 1].id : null;
     const next = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1].id : null;
 
+    if (!foundLesson) {
+      throw new Error('Dars topilmadi.');
+    }
+
     return {
-      lesson: foundLesson || {
-        id: lessonId,
-        title: "Sun'iy Intellekt Asoslari",
-        duration: '14:20',
-        order: 1,
-        description: "Ushbu darsda zamonaviy sun'iy intellekt texnologiyalari va ularning ishlash mexanizmi o'rganiladi.",
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        resources: [{ name: 'Dars_slaydlari.pdf', size: '2.8 MB', url: '#' }]
-      },
+      lesson: foundLesson,
       module_title: moduleTitle,
       prev_lesson_id: prev,
       next_lesson_id: next,
-      completed: true
+      completed: false
     };
   }
 

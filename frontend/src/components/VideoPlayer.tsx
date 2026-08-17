@@ -119,9 +119,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       />
 
       {/* Dynamic Watermark / Anti-Leak Overlay */}
-      <div className="absolute top-2.5 right-3 pointer-events-none opacity-40 bg-black/40 px-2 py-0.5 rounded text-[9px] font-mono text-white/90 flex items-center space-x-1 border border-white/10">
-        <Lock className="w-2.5 h-2.5 text-amber-400" />
-        <span>ID: {user?.id || '8544023815'} • {user?.first_name || 'Talaba'}</span>
+      <div className="absolute top-2.5 right-3 pointer-events-none opacity-45 bg-black/45 px-2 py-0.5 rounded text-[9px] font-mono text-white/90 flex items-center space-x-1 border border-white/10">
+        <Lock className="w-2.5 h-2.5 text-cyan" />
+        <span>
+          {user?.first_name
+            ? `${user.first_name} · ID: ${user.id}`
+            : 'Mualliflik huquqi bilan himoyalangan'}
+        </span>
       </div>
 
       <div className="absolute bottom-12 left-3 pointer-events-none opacity-30 text-[8px] text-white/70 font-sans tracking-wide">
@@ -134,8 +138,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onClick={togglePlay}
           className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer backdrop-blur-[2px] transition-all"
         >
-          <div className="w-14 h-14 rounded-full bg-brand-emerald text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 active:scale-95 transition-all">
-            <Play className="w-6 h-6 fill-white translate-x-0.5" />
+          <div className="w-14 h-14 rounded-full bg-cyan text-[#05070A] flex items-center justify-center shadow-cyanGlow transform group-hover:scale-110 active:scale-95 transition-all">
+            <Play className="w-6 h-6 fill-[#05070A] translate-x-0.5" />
           </div>
         </div>
       )}
@@ -149,13 +153,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           max={duration || 100}
           value={currentTime}
           onChange={handleSeek}
-          className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer accent-brand-emerald"
+          className="vslider w-full"
+          style={{ ['--fill' as any]: `${duration ? (currentTime / duration) * 100 : 0}%` }}
         />
 
         {/* Controls row */}
         <div className="flex items-center justify-between text-white text-xs">
           <div className="flex items-center space-x-3">
-            <button onClick={togglePlay} className="p-1 hover:text-brand-emerald transition-colors">
+            <button onClick={togglePlay} className="p-1 hover:text-cyan transition-colors">
               {isPlaying ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
             </button>
 

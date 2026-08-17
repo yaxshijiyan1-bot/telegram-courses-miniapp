@@ -1,7 +1,9 @@
 import React from 'react';
-import { Bookmark, Play, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Play, Check, Star } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { formatPrice } from '../utils/format';
 
 interface CourseCardProps {
   course: Course;
@@ -21,81 +23,87 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     onClick();
   };
 
-  const formatPrice = (price: number) => {
-    return price.toLocaleString('uz-UZ') + " so'm";
-  };
-
   return (
-    <div
+    <motion.div
+      whileTap={{ scale: 0.96 }}
       onClick={handleClick}
-      className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-soft active:scale-[0.98] transition-all cursor-pointer group flex flex-col justify-between"
+      className="glass !rounded-[22px] overflow-hidden pressable group flex flex-col justify-between"
     >
-      {/* 3D Image Cover Container */}
-      <div className="relative aspect-[4/3] bg-slate-50 overflow-hidden">
+      {/* Cover */}
+      <div className="relative aspect-[4/3] bg-[#0A0D13] overflow-hidden">
         <img
           src={course.cover_url}
           alt={course.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
           loading="lazy"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#05070A]/85 via-transparent to-transparent" />
 
-        {/* TOP Badge */}
         {showTopBadge && (
-          <div className="absolute top-0 left-0 bg-[#2563eb] text-white text-[9px] font-extrabold px-2.5 py-1 rounded-br-xl shadow-sm tracking-wider uppercase">
+          <div className="absolute top-0 left-0 bg-cyan text-[#05070A] text-[9px] font-extrabold px-2.5 py-1 rounded-br-xl tracking-wider uppercase flex items-center gap-1">
+            <Star className="w-2.5 h-2.5 fill-[#05070A]" />
             TOP
           </div>
         )}
 
-        {/* Bookmark Icon */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            haptic.impact('light');
-          }}
-          className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-[#0f172a] hover:text-[#2563eb] transition-colors"
-          aria-label="Saqlash"
-        >
-          <Bookmark className="w-3.5 h-3.5" />
-        </button>
+        {course.discount_percent ? (
+          <div className="absolute top-2 right-2 bg-red-500/90 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-lg tracking-wide">
+            −{course.discount_percent}%
+          </div>
+        ) : null}
 
-        {/* Enrolled Play Overlay */}
         {course.is_enrolled && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-            <span className="w-8 h-8 rounded-full bg-[#2563eb] text-white flex items-center justify-center shadow-lg">
-              <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
+          <div className="absolute inset-0 bg-[#05070A]/45 backdrop-blur-[1px] flex items-center justify-center">
+            <span className="w-9 h-9 rounded-full bg-cyan text-[#05070A] flex items-center justify-center shadow-cyanGlowSm">
+              <Play className="w-4 h-4 fill-[#05070A] ml-0.5" />
             </span>
           </div>
         )}
+
+        {/* Bottom info overlay on image */}
+        <div className="absolute bottom-1.5 left-2.5 right-2.5 flex items-center justify-between">
+          <span className="text-[9px] font-bold text-white/85 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10">
+            {course.lesson_count || 0} dars
+          </span>
+          {course.rating ? (
+            <span className="text-[9px] font-bold text-gold bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded-md border border-white/10 flex items-center gap-0.5">
+              <Star className="w-2.5 h-2.5 fill-gold" />
+              {course.rating.toFixed(1)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      {/* Card Content */}
+      {/* Content */}
       <div className="p-3 space-y-1">
-        <span className="text-[10px] font-bold text-[#2563eb] uppercase tracking-wider block">
-          {course.category || 'DIZAYN'}
+        <span className="text-[9px] font-extrabold text-cyan uppercase tracking-[0.14em] block">
+          {course.category || 'Kurs'}
         </span>
 
-        <h3 className="text-xs sm:text-[13px] font-bold text-[#0f172a] leading-snug line-clamp-1 group-hover:text-[#2563eb] transition-colors">
+        <h3 className="text-xs sm:text-[13px] font-bold text-ink leading-snug clamp-2 group-hover:text-cyan transition-colors">
           {course.title}
         </h3>
 
         <div className="flex items-center justify-between pt-1">
-          <span className="text-[10px] text-[#64748b] font-medium">
-            {course.lesson_count || 12} dars · {course.level || "Boshlang'ich"}
+          <span className="text-[10px] text-ink-muted font-medium truncate">
+            {course.instructor_name}
           </span>
 
-          <span className="text-xs font-bold text-[#2563eb]">
-            {course.is_enrolled ? (
-              <span className="text-[#10b981] flex items-center space-x-0.5">
-                <Check className="w-3 h-3 stroke-[2.5]" />
-                <span className="text-[10px] font-bold">Faol</span>
-              </span>
-            ) : (
-              formatPrice(course.price)
-            )}
-          </span>
+          {course.is_enrolled ? (
+            <span className="text-emerald-400 flex items-center gap-0.5 text-[10px] font-extrabold">
+              <Check className="w-3 h-3 stroke-[3]" />
+              Faol
+            </span>
+          ) : course.old_price ? (
+            <span className="text-right leading-none">
+              <s className="text-[9px] text-ink-muted block">{formatPrice(course.old_price)}</s>
+              <b className="text-[11px] font-extrabold text-cyan">{formatPrice(course.price)}</b>
+            </span>
+          ) : (
+            <b className="text-[11px] font-extrabold text-cyan">{formatPrice(course.price)}</b>
+          )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

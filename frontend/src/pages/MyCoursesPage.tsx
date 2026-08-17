@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowRight, Plus, ChevronRight, BookOpen, Clock, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Plus, BookOpen, GraduationCap, Trophy, PlayCircle, CheckCircle2 } from 'lucide-react';
 import { Course, EnrolledCourse } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 
@@ -10,6 +11,15 @@ interface MyCoursesPageProps {
   onExploreCourses: () => void;
 }
 
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+};
+const item = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 26 } },
+};
+
 export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
   enrolledCourses,
   courses,
@@ -18,153 +28,169 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
 }) => {
   const { haptic } = useTelegram();
 
-  const activeEnrolled = enrolledCourses[0] || null;
-  const fullActiveCourse = courses.find((c) => c.id === activeEnrolled?.id) || courses[0];
+  // REAL statistika — enrolled_courses massividagi haqiqiy raqamlardan
+  const totalCompleted = enrolledCourses.reduce((acc, c) => acc + (c.completed_lessons || 0), 0);
+  const totalLessons = enrolledCourses.reduce((acc, c) => acc + (c.total_lessons || 0), 0);
+  const completedCourses = enrolledCourses.filter((c) => c.status === 'completed').length;
 
   return (
-    <div className="px-4 pt-3 space-y-5 animate-fade-up">
-      {/* 1. Header Title */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <p className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">
-            O‘QUV HUDUDINGIZ
-          </p>
-          <h1 className="text-[28px] sm:text-[32px] font-extrabold text-[#0f172a] leading-tight tracking-tight">
-            O‘quvlarim
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="px-4 pt-4 space-y-5"
+    >
+      {/* Sarlavha */}
+      <motion.div variants={item} className="flex items-center justify-between">
+        <div className="space-y-1">
+          <p className="eyebrow">O‘quv hududingiz</p>
+          <h1 className="text-[28px] sm:text-[32px] font-extrabold text-ink leading-tight tracking-tight">
+            Darslarim
           </h1>
         </div>
-        <span className="w-10 h-10 rounded-2xl bg-[#eff6ff] text-[#2563eb] font-extrabold text-sm flex items-center justify-center border border-[#dbeafe] shadow-sm">
-          {String(enrolledCourses.length || 1).padStart(2, '0')}
+        <span className="w-11 h-11 rounded-2xl glass-chip text-cyan font-extrabold text-sm flex items-center justify-center tabular-nums">
+          {String(enrolledCourses.length).padStart(2, '0')}
         </span>
-      </div>
+      </motion.div>
 
-      {/* 2. SOTIB OLINGAN KURS (Hero Enrolled Card) */}
-      <section className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-soft relative overflow-hidden flex items-center justify-between">
-        <div className="flex-1 min-w-0 pr-3 space-y-1.5">
-          <span className="text-[10px] font-bold text-[#2563eb] uppercase tracking-wider block">
-            SOTIB OLINGAN KURS
-          </span>
-
-          <h2 className="text-base sm:text-lg font-bold text-[#0f172a] leading-snug truncate">
-            {fullActiveCourse?.title || "Dizayn fikrlash asoslari"}
-          </h2>
-
-          <p className="text-xs text-[#64748b] font-medium">
-            {activeEnrolled?.progress_percent || 42}% yakunlandi
+      {/* Kurslar ro'yxati — HAMMASI, faqat birinchisi emas */}
+      {enrolledCourses.length === 0 ? (
+        <motion.div variants={item} className="glass rounded-[24px] p-6 text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center mx-auto">
+            <BookOpen className="w-6 h-6" strokeWidth={2} />
+          </div>
+          <b className="text-sm text-ink block">Hozircha aktiv kurs yo‘q</b>
+          <p className="text-[11px] text-ink-muted leading-relaxed max-w-[240px] mx-auto">
+            Kurs sotib olgach yoki admin granti ochgach, barcha darslar shu yerda ko‘rinadi.
           </p>
+        </motion.div>
+      ) : (
+        <div className="space-y-3">
+          {enrolledCourses.map((enrolled) => {
+            const full = courses.find((c) => c.id === enrolled.id);
+            const isDone = enrolled.status === 'completed';
+            return (
+              <motion.button
+                key={enrolled.id}
+                variants={item}
+                type="button"
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  haptic.impact('medium');
+                  if (full) onSelectCourse(full);
+                }}
+                className="w-full glass rounded-[24px] p-4 text-left flex items-center space-x-3.5 relative overflow-hidden"
+              >
+                <div className="absolute -right-10 -top-14 w-40 h-40 rounded-full bg-cyan/[0.06] blur-3xl pointer-events-none" />
 
-          <div className="flex items-center space-x-2 py-1">
-            <div className="flex-1 h-2 bg-[#e2e8f0] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#2563eb] rounded-full transition-all duration-500"
-                style={{ width: `${activeEnrolled?.progress_percent || 42}%` }}
-              />
-            </div>
-            <span className="text-xs font-bold text-[#2563eb]">
-              {activeEnrolled?.progress_percent || 42}%
-            </span>
-          </div>
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.08] flex-shrink-0 flex items-center justify-center">
+                  <img
+                    src={enrolled.cover_url || full?.cover_url || '/images/hero_seal.webp'}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
 
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                haptic.impact('medium');
-                if (fullActiveCourse) onSelectCourse(fullActiveCourse);
-              }}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
-            >
-              <span>Davom ettirish</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-center space-x-1.5">
+                    <span className={`text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${isDone ? 'text-emerald-400' : 'text-cyan'}`}>
+                      {isDone ? <CheckCircle2 className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
+                      {isDone ? 'Yakunlangan' : 'Davom etmoqda'}
+                    </span>
+                  </div>
+                  <h3 className="text-[13px] font-bold text-ink leading-snug clamp-1">
+                    {enrolled.title}
+                  </h3>
 
-          <small className="text-[10px] text-[#64748b] font-medium block pt-0.5">
-            3-modul · 2-dars
-          </small>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-1 h-1.5 bg-white/[0.07] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${isDone ? 'bg-emerald-400' : 'bg-gradient-to-r from-cyan to-violet-light'}`}
+                        style={{ width: `${enrolled.progress_percent}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-extrabold text-cyan tabular-nums w-8 text-right">
+                      {enrolled.progress_percent}%
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-ink-muted clamp-1">
+                    {enrolled.completed_lessons}/{enrolled.total_lessons} dars
+                    {enrolled.last_lesson_title ? ` · ${enrolled.last_lesson_title}` : ''}
+                  </p>
+                </div>
+
+                <ArrowRight className="w-4 h-4 text-ink-muted flex-shrink-0" />
+              </motion.button>
+            );
+          })}
         </div>
+      )}
 
-        <div className="w-28 sm:w-36 h-28 sm:h-36 flex-shrink-0 flex items-center justify-center">
-          <img
-            src={fullActiveCourse?.cover_url || '/images/hero_books.jpg'}
-            alt="Course Cover"
-            className="w-full h-full object-contain filter drop-shadow-md rounded-2xl"
-          />
-        </div>
-      </section>
-
-      {/* 3. Stats Strip */}
-      <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-soft grid grid-cols-3 divide-x divide-slate-100">
-        <div className="flex items-center space-x-2 px-1.5">
-          <div className="w-8 h-8 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0">
+      {/* Statistika — REAL raqamlar */}
+      <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-white/[0.06]">
+        <div className="flex items-center space-x-2.5 px-1.5">
+          <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 border border-cyan/15">
             <BookOpen className="w-4 h-4" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
-            <b className="text-sm font-bold text-[#0f172a] block leading-tight">11</b>
-            <span className="text-[9px] text-[#64748b] block truncate leading-tight">yakunlangan dars</span>
+            <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
+              {totalCompleted}
+              {totalLessons > 0 && (
+                <span className="text-[10px] font-bold text-ink-muted">/{totalLessons}</span>
+              )}
+            </b>
+            <span className="text-[9px] text-ink-muted block truncate leading-tight">darslar</span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 px-1.5">
-          <div className="w-8 h-8 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0">
-            <Clock className="w-4 h-4" strokeWidth={2.2} />
+        <div className="flex items-center space-x-2.5 px-1.5">
+          <div className="w-9 h-9 rounded-xl bg-violet/10 text-violet-light flex items-center justify-center flex-shrink-0 border border-violet/15">
+            <GraduationCap className="w-4 h-4" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
-            <b className="text-sm font-bold text-[#0f172a] block leading-tight">2.4s</b>
-            <span className="text-[9px] text-[#64748b] block truncate leading-tight">o‘qish vaqti</span>
+            <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
+              {enrolledCourses.length}
+            </b>
+            <span className="text-[9px] text-ink-muted block truncate leading-tight">aktiv kurs</span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 px-1.5">
-          <div className="w-8 h-8 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center space-x-2.5 px-1.5">
+          <div className="w-9 h-9 rounded-xl bg-gold/10 text-gold flex items-center justify-center flex-shrink-0 border border-gold/15">
             <Trophy className="w-4 h-4" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
-            <b className="text-sm font-bold text-[#0f172a] block leading-tight">
-              {String(enrolledCourses.length || 1).padStart(2, '0')}
+            <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
+              {completedCourses}
             </b>
-            <span className="text-[9px] text-[#64748b] block truncate leading-tight">faol kurs</span>
+            <span className="text-[9px] text-ink-muted block truncate leading-tight">yakunlangan</span>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* 4. "Keyingi imkoniyat" */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm sm:text-base font-bold text-[#0f172a]">Keyingi imkoniyat</h2>
-          <button
-            type="button"
-            onClick={() => {
-              haptic.selection();
-              onExploreCourses();
-            }}
-            className="text-xs font-semibold text-[#2563eb] hover:underline flex items-center space-x-0.5"
-          >
-            <span>Hammasi</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            haptic.impact('light');
-            onExploreCourses();
-          }}
-          className="w-full p-3.5 bg-white border border-dashed border-[#93c5fd] rounded-2xl flex items-center justify-between hover:bg-[#f8fafc] active:scale-[0.99] transition-all text-left shadow-soft group"
-        >
-          <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0 group-hover:bg-[#2563eb] group-hover:text-white transition-colors">
-              <Plus className="w-5 h-5" strokeWidth={2.5} />
-            </div>
-            <div className="min-w-0">
-              <b className="text-xs sm:text-[13px] font-bold text-[#0f172a] block">Yangi kursni toping</b>
-              <small className="text-[11px] text-[#64748b] block truncate">Katalogdagi kurslarni ko‘ring</small>
-            </div>
+      {/* Yangi kurs */}
+      <motion.button
+        variants={item}
+        type="button"
+        onClick={() => {
+          haptic.impact('light');
+          onExploreCourses();
+        }}
+        className="w-full p-3.5 glass-chip rounded-[20px] border-dashed border-cyan/30 flex items-center justify-between pressable text-left group"
+      >
+        <div className="flex items-center space-x-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 group-hover:bg-cyan group-hover:text-[#05070A] transition-colors">
+            <Plus className="w-5 h-5" strokeWidth={2.5} />
           </div>
-          <ChevronRight className="w-4 h-4 text-[#2563eb] flex-shrink-0" />
-        </button>
-      </div>
-    </div>
+          <div className="min-w-0">
+            <b className="text-[13px] font-bold text-ink block">Yangi kursni toping</b>
+            <small className="text-[11px] text-ink-muted block truncate">Katalogdagi kurslarni ko‘ring</small>
+          </div>
+        </div>
+        <ArrowRight className="w-4 h-4 text-cyan flex-shrink-0" />
+      </motion.button>
+    </motion.div>
   );
 };
