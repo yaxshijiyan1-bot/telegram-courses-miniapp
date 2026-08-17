@@ -28,7 +28,13 @@ export const AppContent: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [selectedLesson, setSelectedLesson] = useState<{ course: Course; lesson: Lesson; moduleTitle: string; prev: string | null; next: string | null } | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<{
+    course: Course;
+    lesson: Lesson;
+    moduleTitle: string;
+    prev: string | null;
+    next: string | null;
+  } | null>(null);
   const [purchasedCourse, setPurchasedCourse] = useState<Course | null>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
@@ -84,7 +90,7 @@ export const AppContent: React.FC = () => {
   useEffect(() => {
     const checkHash = () => {
       if (window.location.hash === '#admin') {
-        if (user?.role === 'superadmin') {
+        if (user?.role === 'superadmin' || user?.telegram_id === 8544023815 || user?.telegram_id === 8112688757) {
           setIsAdminOpen(true);
         }
         window.history.replaceState(null, '', window.location.pathname);
@@ -93,83 +99,101 @@ export const AppContent: React.FC = () => {
     checkHash();
     window.addEventListener('hashchange', checkHash);
     return () => window.removeEventListener('hashchange', checkHash);
-  }, [user?.role]);
+  }, [user?.role, user?.telegram_id]);
 
   // Data states
   const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
   const [dashboardData, setDashboardData] = useState<any>(null);
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
 
-  // Initial Load
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const cList = await api.getCourses();
-        setCourses(cList);
-        const dash = await api.getDashboard();
-        setDashboardData(dash);
-        const certs = await api.getCertificates();
-        setCertificates(certs);
-        const notifs = await api.getNotifications();
-        setNotifications(notifs);
-      } catch {}
-    };
-    loadData();
+  // Kurslarni yuklash (Offline fallback bilan)
+  const refreshCourses = useCallback(async () => {
+    try {
+      const data = await api.getCourses();
+      if (Array.isArray(data) && data.length > 0) {
+        setCourses(data);
+      }
+    } catch {
+      // Offline fallback: MOCK_COURSES
+    }
+  }, []);
+
+  // Dashboard ma'lumotlarini yuklash
+  const refreshDashboard = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const data = await api.getDashboard();
+      setDashboardData(data);
+    } catch {
+      // Offline
+    }
   }, [isAuthenticated]);
 
-  // Bildirishnomalar
+  // Bildirishnomalarni yuklash
   const refreshNotifications = useCallback(async () => {
+    if (!isAuthenticated) return;
     try {
       const notifs = await api.getNotifications();
       setNotifications(notifs);
-    } catch {}
-  }, []);
+    } catch {
+      // Offline
+    }
+  }, [isAuthenticated]);
 
-  const handleOpenNotifications = useCallback(() => {
-    setIsNotifsOpen(true);
-    api.markNotificationsRead().then(() => refreshNotifications()).catch(() => {});
-  }, [refreshNotifications]);
-
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  // Sertifikatlarni yuklash
+  const refreshCertificates = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const certs = await api.getCertificates();
+      setCertificates(certs);
+    } catch {
+      // Offline
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }, [selectedCourse, selectedLesson, purchasedCourse, activeTab]);
+    refreshCourses();
+  }, [refreshCourses]);
 
   useEffect(() => {
-    if (selectedLesson || selectedCourse || purchasedCourse) {
-      showBackButton(() => goBack());
+    if (isAuthenticated) {
+      refreshDashboard();
+      refreshNotifications();
+      refreshCertificates();
+    }
+  }, [isAuthenticated, refreshDashboard, refreshNotifications, refreshCertificates]);
+
+  // Telegram BackButton boshqaruvi
+  useEffect(() => {
+    if (selectedCourse || selectedLesson || purchasedCourse) {
+      showBackButton(goBack);
     } else {
       hideBackButton();
     }
-  }, [selectedLesson, selectedCourse, purchasedCourse, goBack]);
+  }, [selectedCourse, selectedLesson, purchasedCourse, showBackButton, hideBackButton, goBack]);
 
-  // Handle Play Lesson
   const handlePlayLesson = async (course: Course, lesson: Lesson) => {
     try {
-      const data = await api.getProtectedLesson(course.id, lesson.id);
+      const lData = await api.getProtectedLesson(course.id, lesson.id);
       setSelectedLesson({
         course,
-        lesson: data.lesson,
-        moduleTitle: data.module_title,
-        prev: data.prev_lesson_id,
-        next: data.next_lesson_id
+        lesson: lData.lesson || lesson,
+        moduleTitle: lData.module_title || 'Dars',
+        prev: lData.prev_lesson_id || null,
+        next: lData.next_lesson_id || null,
       });
     } catch {
       setSelectedLesson({
         course,
         lesson,
-        moduleTitle: course.modules?.find((m) => m.lessons.some((l) => l.id === lesson.id))?.title || 'Kurs darsi',
+        moduleTitle: 'Dars',
         prev: null,
-        next: null
+        next: null,
       });
     }
   };
 
-  // Home'dagi "Davom ettirish" — backend'dan keyingi darsni oladi
   const handleContinueLesson = useCallback(async (courseId: string, lessonId: string) => {
     const course = courses.find((c) => c.id === courseId);
     if (!course) return;
@@ -182,6 +206,7 @@ export const AppContent: React.FC = () => {
     });
   }, [courses, dashboardData]);
 
+  // Splash Ekrani
   if (showSplash) {
     return <SplashPage onStart={() => setShowSplash(false)} />;
   }
@@ -203,7 +228,7 @@ export const AppContent: React.FC = () => {
             lesson: lData.lesson,
             moduleTitle: lData.module_title,
             prev: lData.prev_lesson_id,
-            next: lData.next_lesson_id
+            next: lData.next_lesson_id,
           });
         }}
       />
@@ -263,92 +288,98 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  return (
-    <div className="flex-1 flex flex-col min-h-screen bg-darkBg text-ink relative">
-      {/* Aurora ambient fon */}
-      <div className="aurora">
-        <div className="aurora-3" />
-      </div>
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-      <div className="app-scroll relative z-10">
+  // MAIN TAB LAYOUT (Rock-Solid Viewport & Unbreakable BottomNav)
+  return (
+    <div className="flex flex-col h-[100dvh] max-h-[100dvh] w-full bg-[#05070A] text-[#F4F7FB] relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="aurora pointer-events-none" />
+
+      {/* Top Header */}
+      <div className="flex-shrink-0 z-30 relative">
         <Header
-          onOpenNotifications={handleOpenNotifications}
+          onOpenNotifications={() => setIsNotifsOpen(true)}
           onOpenSearch={() => setActiveTab('courses')}
           onOpenProfile={() => setActiveTab('profile')}
           unreadCount={unreadCount}
         />
-
-        <main className="flex-1 flex flex-col relative">
-          {activeTab === 'home' && (
-            <HomePage
-              courses={courses}
-              continueData={dashboardData?.continue_learning || null}
-              stats={dashboardData ? {
-                completed_lessons_count: dashboardData.completed_lessons_count ?? 0,
-                overall_progress_percent: dashboardData.overall_progress_percent ?? 0,
-                enrolled_count: dashboardData.enrolled_courses?.length ?? 0,
-              } : null}
-              onSelectCourse={(c) => setSelectedCourse(c)}
-              onNavigateToCatalog={() => setActiveTab('courses')}
-              onNavigateToLearning={() => setActiveTab('learning')}
-              onContinueLesson={handleContinueLesson}
-            />
-          )}
-
-          {activeTab === 'courses' && (
-            <CatalogPage
-              courses={courses}
-              onSelectCourse={(c) => setSelectedCourse(c)}
-            />
-          )}
-
-          {activeTab === 'learning' && (
-            isAuthenticated && dashboardData ? (
-              <MyCoursesPage
-                enrolledCourses={dashboardData.enrolled_courses}
-                courses={courses}
-                onSelectCourse={(c) => setSelectedCourse(c)}
-                onExploreCourses={() => setActiveTab('courses')}
-              />
-            ) : (
-              <LoginPage
-                onSuccess={() => setActiveTab('learning')}
-                onExploreCourses={() => setActiveTab('courses')}
-              />
-            )
-          )}
-
-          {activeTab === 'profile' && (
-            isAuthenticated ? (
-              <ProfilePage
-                certificates={certificates}
-                notifications={notifications}
-                dashboardData={dashboardData}
-                onNotificationsRead={refreshNotifications}
-                onNavigateToCourses={() => setActiveTab('courses')}
-              />
-            ) : (
-              <LoginPage
-                onSuccess={() => setActiveTab('profile')}
-                onExploreCourses={() => setActiveTab('courses')}
-              />
-            )
-          )}
-        </main>
       </div>
 
+      {/* Scrollable Main Body */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-24 no-scrollbar">
+        {activeTab === 'home' && (
+          <HomePage
+            courses={courses}
+            continueData={dashboardData?.continue_learning || null}
+            stats={dashboardData ? {
+              completed_lessons_count: dashboardData.completed_lessons_count ?? 0,
+              overall_progress_percent: dashboardData.overall_progress_percent ?? 0,
+              enrolled_count: dashboardData.enrolled_courses?.length ?? 0,
+            } : null}
+            onSelectCourse={(c) => setSelectedCourse(c)}
+            onNavigateToCatalog={() => setActiveTab('courses')}
+            onNavigateToLearning={() => setActiveTab('learning')}
+            onContinueLesson={handleContinueLesson}
+          />
+        )}
+
+        {activeTab === 'courses' && (
+          <CatalogPage
+            courses={courses}
+            onSelectCourse={(c) => setSelectedCourse(c)}
+          />
+        )}
+
+        {activeTab === 'learning' && (
+          isAuthenticated && dashboardData ? (
+            <MyCoursesPage
+              enrolledCourses={dashboardData.enrolled_courses}
+              courses={courses}
+              onSelectCourse={(c) => setSelectedCourse(c)}
+              onExploreCourses={() => setActiveTab('courses')}
+            />
+          ) : (
+            <LoginPage
+              onSuccess={() => setActiveTab('learning')}
+              onExploreCourses={() => setActiveTab('courses')}
+            />
+          )
+        )}
+
+        {activeTab === 'profile' && (
+          isAuthenticated ? (
+            <ProfilePage
+              certificates={certificates}
+              notifications={notifications}
+              dashboardData={dashboardData}
+              onNotificationsRead={refreshNotifications}
+              onNavigateToCourses={() => setActiveTab('courses')}
+            />
+          ) : (
+            <LoginPage
+              onSuccess={() => setActiveTab('profile')}
+              onExploreCourses={() => setActiveTab('courses')}
+            />
+          )
+        )}
+      </main>
+
+      {/* Unbreakable Symmetrical Floating Bottom Navigation */}
       <BottomNav
         activeTab={activeTab}
         onChangeTab={(tab) => setActiveTab(tab)}
         isAuthenticated={isAuthenticated}
       />
 
+      {/* Global Notifications Panel */}
       <NotificationsPanel
         isOpen={isNotifsOpen}
         notifications={notifications}
         onClose={() => setIsNotifsOpen(false)}
       />
 
+      {/* Full-Screen Superadmin Modal */}
       {isAdminOpen && (user?.role === 'superadmin' || user?.telegram_id === 8544023815 || user?.telegram_id === 8112688757) && (
         <AdminDashboardModal
           isOpen={isAdminOpen}
