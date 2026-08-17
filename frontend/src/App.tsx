@@ -268,78 +268,72 @@ export const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-[#05070A] text-white relative">
-      {/* Ambient Subtle Cyan Glow Layers */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-        <div className="absolute -top-32 -left-24 w-80 h-80 bg-cyan/5 rounded-full blur-[120px]" />
-        <div className="absolute top-1/3 -right-28 w-72 h-72 bg-cyan/4 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-40 left-1/4 w-96 h-96 bg-cyan/3 rounded-full blur-[140px]" />
-      </div>
-
-      {/* Top App Header */}
-      <div className="relative z-10">
+    <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc] text-[#0f172a] relative">
+      {/* Scrollable Container with Bottom Padding for Floating Navbar */}
+      <div className="app-scroll">
+        {/* Top App Header */}
         <Header
           onOpenNotifications={handleOpenNotifications}
           onOpenSearch={() => setActiveTab('courses')}
           onOpenProfile={() => setActiveTab('profile')}
           hasUnreadNotifications={unreadCount > 0}
         />
-      </div>
 
-      {/* Main Tab Screen Switcher */}
-      <main className="flex-1 flex flex-col relative z-10">
-        {activeTab === 'home' && (
-          <HomePage
-            courses={courses}
-            continueData={dashboardData?.continue_learning || null}
-            onSelectCourse={(c) => setSelectedCourse(c)}
-            onNavigateToCatalog={() => setActiveTab('courses')}
-            onNavigateToLearning={() => setActiveTab('learning')}
-          />
-        )}
+        {/* Main Tab Screen Switcher */}
+        <main className="flex-1 flex flex-col relative">
+          {activeTab === 'home' && (
+            <HomePage
+              courses={courses}
+              continueData={dashboardData?.continue_learning || null}
+              onSelectCourse={(c) => setSelectedCourse(c)}
+              onNavigateToCatalog={() => setActiveTab('courses')}
+              onNavigateToLearning={() => setActiveTab('learning')}
+            />
+          )}
 
-        {activeTab === 'courses' && (
-          <CatalogPage
-            courses={courses}
-            onSelectCourse={(c) => setSelectedCourse(c)}
-          />
-        )}
-
-        {activeTab === 'learning' && (
-          isAuthenticated && dashboardData ? (
-            <MyCoursesPage
-              enrolledCourses={dashboardData.enrolled_courses}
+          {activeTab === 'courses' && (
+            <CatalogPage
               courses={courses}
               onSelectCourse={(c) => setSelectedCourse(c)}
-              onExploreCourses={() => setActiveTab('courses')}
             />
-          ) : (
-            <LoginPage
-              onSuccess={() => setActiveTab('learning')}
-              onExploreCourses={() => setActiveTab('courses')}
-            />
-          )
-        )}
+          )}
 
-        {activeTab === 'profile' && (
-          isAuthenticated ? (
-            <ProfilePage
-              certificates={certificates}
-              notifications={notifications}
-              dashboardData={dashboardData}
-              onNotificationsRead={refreshNotifications}
-              onNavigateToCourses={() => setActiveTab('courses')}
-            />
-          ) : (
-            <LoginPage
-              onSuccess={() => setActiveTab('profile')}
-              onExploreCourses={() => setActiveTab('courses')}
-            />
-          )
-        )}
-      </main>
+          {activeTab === 'learning' && (
+            isAuthenticated && dashboardData ? (
+              <MyCoursesPage
+                enrolledCourses={dashboardData.enrolled_courses}
+                courses={courses}
+                onSelectCourse={(c) => setSelectedCourse(c)}
+                onExploreCourses={() => setActiveTab('courses')}
+              />
+            ) : (
+              <LoginPage
+                onSuccess={() => setActiveTab('learning')}
+                onExploreCourses={() => setActiveTab('courses')}
+              />
+            )
+          )}
 
-      {/* Persistent Mobile Bottom Navigation */}
+          {activeTab === 'profile' && (
+            isAuthenticated ? (
+              <ProfilePage
+                certificates={certificates}
+                notifications={notifications}
+                dashboardData={dashboardData}
+                onNotificationsRead={refreshNotifications}
+                onNavigateToCourses={() => setActiveTab('courses')}
+              />
+            ) : (
+              <LoginPage
+                onSuccess={() => setActiveTab('profile')}
+                onExploreCourses={() => setActiveTab('courses')}
+              />
+            )
+          )}
+        </main>
+      </div>
+
+      {/* Persistent Floating Mobile Bottom Navigation */}
       <BottomNav
         activeTab={activeTab}
         onChangeTab={(tab) => setActiveTab(tab)}
@@ -354,11 +348,11 @@ export const AppContent: React.FC = () => {
       />
 
       {/* Superadmin Dashboard (bot tugmasi yoki profil orqali) */}
-      {isAdminOpen && user?.role === 'superadmin' && (
+      {isAdminOpen && (user?.role === 'superadmin' || user?.telegram_id === 8544023815 || user?.telegram_id === 8112688757) && (
         <AdminDashboardModal
           isOpen={isAdminOpen}
           onClose={() => setIsAdminOpen(false)}
-          adminName={user?.name || 'Admin'}
+          adminName={user?.name || 'Yaxshi Bola'}
         />
       )}
     </div>

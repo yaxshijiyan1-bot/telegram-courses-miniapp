@@ -1,28 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   ArrowRight,
-  Sparkles,
-  Palette,
-  Code2,
-  TrendingUp,
-  Layers,
+  BookOpen,
+  Clock,
+  Trophy,
+  Plus,
   ChevronRight,
-  Play,
-  CheckCircle2,
-  ShieldCheck
 } from 'lucide-react';
 import { Course, ContinueLearningData } from '../types';
 import { CourseCard } from '../components/CourseCard';
 import { useTelegram } from '../context/TelegramContext';
-import { useAuth } from '../context/AuthContext';
 
 interface HomePageProps {
   courses: Course[];
-  continueData: ContinueLearningData | null;
+  continueData?: ContinueLearningData | null;
   onSelectCourse: (course: Course) => void;
   onNavigateToCatalog: () => void;
   onNavigateToLearning: () => void;
-  isLoading?: boolean;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -31,264 +25,223 @@ export const HomePage: React.FC<HomePageProps> = ({
   onSelectCourse,
   onNavigateToCatalog,
   onNavigateToLearning,
-  isLoading = false
 }) => {
   const { haptic } = useTelegram();
-  const { user } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState('Barchasi');
 
-  const categories = [
-    { id: 'Barchasi', label: 'Barchasi', icon: Layers },
-    { id: 'AI', label: 'AI & Data', icon: Sparkles },
-    { id: 'Dizayn', label: 'Dizayn', icon: Palette },
-    { id: 'Dasturlash', label: 'Dasturlash', icon: Code2 },
-    { id: 'Marketing', label: 'Marketing', icon: TrendingUp },
-  ];
-
-  // Active enrolled course for "Davom ettirish"
-  const activeEnrolledCourse = courses.find(c => c.is_enrolled) || courses[0];
-
-  const filteredCourses = selectedCategory === 'Barchasi'
-    ? courses
-    : courses.filter(c => c.category.toLowerCase() === selectedCategory.toLowerCase());
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 px-4 py-4 space-y-5 animate-pulse">
-        <div className="h-44 rounded-3xl shimmer-skeleton" />
-        <div className="h-28 rounded-3xl shimmer-skeleton" />
-        <div className="grid grid-cols-2 gap-3">
-          <div className="h-48 rounded-2xl shimmer-skeleton" />
-          <div className="h-48 rounded-2xl shimmer-skeleton" />
-        </div>
-      </div>
-    );
-  }
+  const activeEnrolledCourse = courses.find((c) => c.is_enrolled) || courses[0];
+  const recommendedCourses = courses.filter((c) => c.id !== activeEnrolledCourse?.id);
 
   return (
-    <div className="flex-1 pb-24 px-4 pt-3 space-y-6 text-white animate-fade-up">
-      
-      {/* 1. HERO SECTION: VisionOS Portal Background + Clean Typography */}
-      <div className="relative rounded-3xl overflow-hidden glass-panel border border-white/[0.08] p-5 sm:p-6">
-        {/* Subtle Ambient Artwork Behind Glass */}
-        <div className="absolute inset-0 z-0 opacity-25">
-          <img
-            src="/images/hero_portal.jpg"
-            alt="Hero Portal"
-            className="w-full h-full object-cover filter blur-[2px]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#05070A] via-[#05070A]/80 to-transparent" />
+    <div className="px-4 pt-3 space-y-5 animate-fade-up">
+      {/* 1. Hero Title & Date Widget */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-0.5">
+          <p className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">
+            SIZNING O‘QUV HUDUDINGIZ
+          </p>
+          <h1 className="text-[30px] sm:text-[34px] font-extrabold text-[#0f172a] leading-tight tracking-tight">
+            Bilimingizni<br />
+            <em className="font-serif italic font-normal text-[#2563eb]">o‘stiring.</em>
+          </h1>
         </div>
 
-        <div className="relative z-10 space-y-3">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-cyan/30 text-cyan text-[10px] font-bold tracking-widest uppercase">
-            <Sparkles className="w-3 h-3 stroke-cyan" />
-            <span>2026 EDTECH PLATFORM</span>
-          </div>
-
-          <div className="space-y-1">
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
-              Bugun nimani o‘rganamiz?
-            </h1>
-            <p className="text-xs text-slate-300 leading-relaxed max-w-xs font-normal">
-              Yangi bilimlar sari har bir qadam — kelajak sari yangi imkoniyat.
-            </p>
-          </div>
+        {/* Date Widget Pill */}
+        <div className="bg-[#eef4ff] rounded-2xl p-2.5 text-center min-w-[76px] border border-[#dbeafe] shadow-sm">
+          <span className="text-[20px] font-extrabold text-[#2563eb] block leading-none">
+            01
+          </span>
+          <span className="text-[11px] font-bold text-[#1e293b] block mt-0.5">
+            May
+          </span>
+          <span className="text-[9px] text-[#64748b] font-medium block">
+            Payshanba
+          </span>
         </div>
       </div>
 
-      {/* 2. DAVOM ETTIRISH HERO CARD (Primary Interactive Progress Module) */}
-      {activeEnrolledCourse && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              Davom ettirish
+      {/* 2. SOTIB OLINGAN KURS (Featured Hero Card) */}
+      <section className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-soft relative overflow-hidden flex items-center justify-between">
+        {/* Left Copy & Actions */}
+        <div className="flex-1 min-w-0 pr-3 space-y-1.5">
+          <span className="text-[10px] font-bold text-[#2563eb] uppercase tracking-wider block">
+            SOTIB OLINGAN KURS
+          </span>
+
+          <h2 className="text-base sm:text-lg font-bold text-[#0f172a] leading-snug truncate">
+            {activeEnrolledCourse ? activeEnrolledCourse.title : "Dizayn fikrlash asoslari"}
+          </h2>
+
+          <p className="text-xs text-[#64748b] font-medium">
+            {activeEnrolledCourse?.progress_percent || 42}% yakunlandi
+          </p>
+
+          {/* Clean Progress Bar */}
+          <div className="flex items-center space-x-2 py-1">
+            <div className="flex-1 h-2 bg-[#e2e8f0] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#2563eb] rounded-full transition-all duration-500"
+                style={{ width: `${activeEnrolledCourse?.progress_percent || 42}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-[#2563eb]">
+              {activeEnrolledCourse?.progress_percent || 42}%
             </span>
+          </div>
+
+          {/* Action Button */}
+          <div className="pt-1">
             <button
+              type="button"
               onClick={() => {
-                haptic.impact('light');
-                onNavigateToLearning();
+                haptic.impact('medium');
+                if (activeEnrolledCourse) onSelectCourse(activeEnrolledCourse);
               }}
-              className="text-[11px] font-semibold text-cyan hover:underline flex items-center space-x-0.5"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
             >
-              <span>Mening darslarim</span>
-              <ChevronRight className="w-3 h-3" />
+              <span>Davom ettirish</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div
-            onClick={() => {
-              haptic.impact('medium');
-              onSelectCourse(activeEnrolledCourse);
-            }}
-            className="glass-panel-elevated p-4 rounded-3xl border border-white/[0.1] hover:border-cyan/40 card-interactive cursor-pointer relative overflow-hidden group shadow-soft"
-          >
-            {/* Subtle Cyan Glow on Card Corner */}
-            <div className="absolute -right-8 -top-8 w-28 h-28 bg-cyan/10 rounded-full blur-2xl pointer-events-none" />
+          <small className="text-[10px] text-[#64748b] font-medium block pt-0.5">
+            3-modul · 2-dars
+          </small>
+        </div>
 
-            <div className="flex space-x-3.5 items-center">
-              {/* Course Artwork Thumbnail */}
-              <div className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-[#05070A] border border-white/10">
-                <img
-                  src={activeEnrolledCourse.cover_url}
-                  alt={activeEnrolledCourse.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-cyan text-black flex items-center justify-center shadow-cyanGlowSm">
-                    <Play className="w-3.5 h-3.5 fill-black ml-0.5" />
-                  </div>
-                </div>
-              </div>
+        {/* Right 3D Books Artwork */}
+        <div className="w-28 sm:w-36 h-28 sm:h-36 flex-shrink-0 flex items-center justify-center">
+          <img
+            src="/images/hero_books.jpg"
+            alt="Dizayn fikrlash asoslari"
+            className="w-full h-full object-contain filter drop-shadow-md rounded-2xl"
+          />
+        </div>
+      </section>
 
-              {/* Course Details & Progress */}
-              <div className="flex-1 min-w-0 space-y-2">
-                <div>
-                  <span className="text-[10px] font-bold text-cyan uppercase tracking-wider block">
-                    {activeEnrolledCourse.category}
-                  </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-white leading-snug truncate group-hover:text-cyan transition-colors">
-                    {activeEnrolledCourse.title}
-                  </h3>
-                </div>
-
-                {/* Progress Bar & Percentage */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[10px] font-semibold text-slate-300">
-                    <span>{activeEnrolledCourse.progress_percent || 68}% tugallandi</span>
-                    <span className="text-slate-400">9 ta dars qoldi</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-cyan-deep to-cyan rounded-full animate-progress shadow-cyanGlowSm"
-                      style={{ width: `${activeEnrolledCourse.progress_percent || 68}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom CTA Row */}
-            <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">
-                02-modul • Master Prompt Arxitekturasi
-              </span>
-              <div className="inline-flex items-center space-x-1 text-xs font-bold text-cyan group-hover:translate-x-0.5 transition-transform">
-                <span>Davom ettirish</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </div>
+      {/* 3. Stats Strip (3 Columns) */}
+      <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-soft grid grid-cols-3 divide-x divide-slate-100">
+        {/* Stat 1 */}
+        <div className="flex items-center space-x-2.5 px-1.5 sm:px-2">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-4 h-4" strokeWidth={2.2} />
+          </div>
+          <div className="min-w-0">
+            <b className="text-sm sm:text-base font-bold text-[#0f172a] block leading-tight">
+              11
+            </b>
+            <span className="text-[9px] sm:text-[10px] text-[#64748b] block truncate leading-tight">
+              yakunlangan dars
+            </span>
           </div>
         </div>
-      )}
 
-      {/* 3. CATEGORIES FILTER (Minimalist Glass Pills with SVG Icons) */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-            Yo‘nalishlar
-          </span>
+        {/* Stat 2 */}
+        <div className="flex items-center space-x-2.5 px-1.5 sm:px-2">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0">
+            <Clock className="w-4 h-4" strokeWidth={2.2} />
+          </div>
+          <div className="min-w-0">
+            <b className="text-sm sm:text-base font-bold text-[#0f172a] block leading-tight">
+              2.4s
+            </b>
+            <span className="text-[9px] sm:text-[10px] text-[#64748b] block truncate leading-tight">
+              o‘qish vaqti
+            </span>
+          </div>
         </div>
 
-        <div className="flex space-x-2 overflow-x-auto no-scrollbar py-0.5">
-          {categories.map((cat) => {
-            const Icon = cat.icon;
-            const isSelected = selectedCategory === cat.id;
-
-            return (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  haptic.selection();
-                  setSelectedCategory(cat.id);
-                }}
-                className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 card-interactive ${
-                  isSelected
-                    ? 'glass-pill-active font-bold'
-                    : 'glass-pill text-slate-300 hover:text-white hover:border-white/20'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'stroke-cyan' : 'stroke-slate-400'}`} />
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
+        {/* Stat 3 */}
+        <div className="flex items-center space-x-2.5 px-1.5 sm:px-2">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0">
+            <Trophy className="w-4 h-4" strokeWidth={2.2} />
+          </div>
+          <div className="min-w-0">
+            <b className="text-sm sm:text-base font-bold text-[#0f172a] block leading-tight">
+              01
+            </b>
+            <span className="text-[9px] sm:text-[10px] text-[#64748b] block truncate leading-tight">
+              faol kurs
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 4. FEATURED / ALL COURSES GRID */}
-      <div className="space-y-3">
+      {/* 4. "Keyingi imkoniyat" Section */}
+      <div className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-            Barcha Kurslar ({filteredCourses.length})
-          </span>
+          <h2 className="text-sm sm:text-base font-bold text-[#0f172a]">
+            Keyingi imkoniyat
+          </h2>
           <button
+            type="button"
             onClick={() => {
-              haptic.impact('light');
+              haptic.selection();
               onNavigateToCatalog();
             }}
-            className="text-[11px] font-semibold text-cyan hover:underline flex items-center space-x-0.5"
+            className="text-xs font-semibold text-[#2563eb] hover:underline flex items-center space-x-0.5"
           >
-            <span>Katalog</span>
-            <ChevronRight className="w-3 h-3" />
+            <span>Hammasi</span>
+            <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {filteredCourses.map((course) => (
+        {/* Dashed Find Course Card */}
+        <button
+          type="button"
+          onClick={() => {
+            haptic.impact('light');
+            onNavigateToCatalog();
+          }}
+          className="w-full p-3.5 bg-white border border-dashed border-[#93c5fd] rounded-2xl flex items-center justify-between hover:bg-[#f8fafc] active:scale-[0.99] transition-all text-left shadow-soft group"
+        >
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center flex-shrink-0 group-hover:bg-[#2563eb] group-hover:text-white transition-colors">
+              <Plus className="w-5 h-5" strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <b className="text-xs sm:text-[13px] font-bold text-[#0f172a] block">
+                Yangi kursni toping
+              </b>
+              <small className="text-[11px] text-[#64748b] block truncate">
+                Katalogdagi kurslarni ko‘ring
+              </small>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-[#2563eb] flex-shrink-0" />
+        </button>
+      </div>
+
+      {/* 5. "Sizga mos kurslar" Section */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-sm sm:text-base font-bold text-[#0f172a]">
+            Sizga mos kurslar
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              haptic.selection();
+              onNavigateToCatalog();
+            }}
+            className="text-xs font-semibold text-[#2563eb] hover:underline flex items-center space-x-0.5"
+          >
+            <span>Hammasi</span>
+            <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+          </button>
+        </div>
+
+        {/* 3 Horizontal Course Cards / Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {recommendedCourses.map((course, idx) => (
             <CourseCard
               key={course.id}
               course={course}
               onClick={() => onSelectCourse(course)}
-              layout="grid"
+              showTopBadge={idx === 0}
             />
           ))}
         </div>
       </div>
-
-      {/* 5. USTOZLAR (Lead Instructors in VisionOS Style) */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-            Platforma Ustozlari
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {/* Ustoz 1: Yaxshi Bola */}
-          <div className="glass-panel p-3.5 rounded-2xl border border-white/[0.06] flex flex-col space-y-2.5">
-            <div className="flex items-center space-x-2.5">
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-cyan/40 flex-shrink-0">
-                <img src="/images/yaxshi_bola.jpg" alt="Yaxshi Bola" className="w-full h-full object-cover" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-xs font-bold text-white truncate">Yaxshi Bola</h4>
-                <span className="text-[10px] text-cyan block truncate">AI & Fullstack</span>
-              </div>
-            </div>
-            <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-2">
-              LLM arxitekturasi va Telegram ekotizimi bo‘yicha yetakchi mutaxassis.
-            </p>
-          </div>
-
-          {/* Ustoz 2: Zuhra Olimova */}
-          <div className="glass-panel p-3.5 rounded-2xl border border-white/[0.06] flex flex-col space-y-2.5">
-            <div className="flex items-center space-x-2.5">
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-cyan/40 flex-shrink-0">
-                <img src="/images/zuhra_olimova.jpg" alt="Zuhra Olimova" className="w-full h-full object-cover" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-xs font-bold text-white truncate">Zuhra Olimova</h4>
-                <span className="text-[10px] text-cyan block truncate">Product Design</span>
-              </div>
-            </div>
-            <p className="text-[10px] text-slate-400 leading-relaxed line-clamp-2">
-              Fintech va EdTech interfeyslari bo‘yicha tajribali Art Director.
-            </p>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 };

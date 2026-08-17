@@ -1,12 +1,12 @@
 import React from 'react';
-import { Bell, Search, User as UserIcon } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { Search, Bell, BookOpen } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
-  onOpenNotifications?: () => void;
-  onOpenSearch?: () => void;
-  onOpenProfile?: () => void;
+  onOpenNotifications: () => void;
+  onOpenSearch: () => void;
+  onOpenProfile: () => void;
   hasUnreadNotifications?: boolean;
 }
 
@@ -14,74 +14,84 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
   onOpenSearch,
   onOpenProfile,
-  hasUnreadNotifications = true
+  hasUnreadNotifications = true,
 }) => {
+  const { haptic, user: tgUser } = useTelegram();
   const { user } = useAuth();
-  const { haptic } = useTelegram();
+
+  const displayName = tgUser?.first_name || user?.name || 'A';
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 bg-[#05070A]/85 backdrop-blur-2xl px-4 py-3 border-b border-white/[0.06] transition-all duration-300">
-      <div className="max-w-md mx-auto flex items-center justify-between">
-        
-        {/* Minimalist Geometric Wordmark Logo */}
-        <div className="flex items-center space-x-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#0D1117] border border-cyan/30 flex items-center justify-center shadow-cyanGlowSm">
-            <div className="w-2.5 h-2.5 bg-cyan rounded-sm rotate-45" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[11px] font-black tracking-[0.2em] text-white uppercase font-sans">
-              COURSE<span className="text-cyan font-light ml-1">ACADEMY</span>
+    <header className="sticky top-0 z-30 bg-[#f8fafc]/90 backdrop-blur-md px-4 py-3 border-b border-slate-200/60 flex items-center justify-between">
+      {/* Brand Lockup */}
+      <button
+        type="button"
+        onClick={() => {
+          haptic.selection();
+          onOpenProfile();
+        }}
+        className="flex items-center space-x-2.5 text-left active:scale-[0.98] transition-transform"
+      >
+        {/* Blue Book Squircle Logo */}
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center text-white shadow-md shadow-blue-500/20 flex-shrink-0">
+          <BookOpen className="w-5 h-5" strokeWidth={2.2} />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[15px] font-bold text-[#0f172a] leading-tight tracking-tight">
+            Course Academy
+          </span>
+          <span className="text-[11px] font-medium text-[#64748b]">
+            bilim qiymatga aylanadi
+          </span>
+        </div>
+      </button>
+
+      {/* Header Actions */}
+      <div className="flex items-center space-x-2">
+        {/* Search */}
+        <button
+          type="button"
+          onClick={() => {
+            haptic.impact('light');
+            onOpenSearch();
+          }}
+          className="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-[#475569] hover:text-[#0f172a] active:scale-95 transition-all"
+          aria-label="Qidiruv"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+
+        {/* Notifications */}
+        <button
+          type="button"
+          onClick={() => {
+            haptic.impact('light');
+            onOpenNotifications();
+          }}
+          className="relative w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-[#475569] hover:text-[#0f172a] active:scale-95 transition-all"
+          aria-label="Xabarnomalar"
+        >
+          <Bell className="w-4 h-4" />
+          {hasUnreadNotifications && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#2563eb] text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
+              1
             </span>
-          </div>
-        </div>
-
-        {/* Right Action Icons: Search, Notifications & Profile Avatar */}
-        <div className="flex items-center space-x-1.5">
-          {onOpenSearch && (
-            <button
-              onClick={() => {
-                haptic.impact('light');
-                onOpenSearch();
-              }}
-              className="w-8 h-8 rounded-full bg-[#0D1117] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white active:scale-95 transition-all"
-              aria-label="Qidiruv"
-            >
-              <Search className="w-3.5 h-3.5" />
-            </button>
           )}
+        </button>
 
-          <button
-            onClick={() => {
-              haptic.impact('light');
-              onOpenNotifications?.();
-            }}
-            className="relative w-8 h-8 rounded-full bg-[#0D1117] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white active:scale-95 transition-all"
-            aria-label="Xabarnomalar"
-          >
-            <Bell className="w-3.5 h-3.5" />
-            {hasUnreadNotifications && (
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-cyan rounded-full shadow-cyanGlowSm animate-cyan-pulse" />
-            )}
-          </button>
-
-          {onOpenProfile && (
-            <button
-              onClick={() => {
-                haptic.impact('light');
-                onOpenProfile();
-              }}
-              className="w-8 h-8 rounded-full bg-[#0D1117] border border-white/[0.08] hover:border-cyan/40 p-0.5 flex items-center justify-center active:scale-95 transition-all"
-              aria-label="Profil"
-            >
-              {user?.telegram_id === 8112688757 ? (
-                <img src="/images/zuhra_olimova.jpg" alt="Avatar" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                <img src="/images/yaxshi_bola.jpg" alt="Avatar" className="w-full h-full rounded-full object-cover" />
-              )}
-            </button>
-          )}
-        </div>
-
+        {/* User Avatar */}
+        <button
+          type="button"
+          onClick={() => {
+            haptic.selection();
+            onOpenProfile();
+          }}
+          className="w-9 h-9 rounded-xl bg-[#334155] text-white font-bold text-xs flex items-center justify-center shadow-sm active:scale-95 transition-transform overflow-hidden"
+          aria-label="Profil"
+        >
+          {initial}
+        </button>
       </div>
     </header>
   );

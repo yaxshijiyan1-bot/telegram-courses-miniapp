@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, BookOpen } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 
 interface SplashPageProps {
@@ -15,62 +15,43 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
   };
 
   return (
-    <div className="min-h-full flex-1 flex flex-col justify-between p-6 bg-[#05070A] text-white select-none relative overflow-hidden">
-      {/* Background 3D Portal Ambience */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <img
-          src="/images/hero_portal.jpg"
-          alt="Portal Ambience"
-          className="w-full h-full object-cover filter blur-[3px]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#05070A] via-[#05070A]/80 to-transparent" />
-      </div>
-
-      {/* Subtle Cyan Glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 bg-cyan/10 rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Top Brand Tag */}
+    <div className="min-h-screen flex-1 flex flex-col justify-between p-6 bg-[#f8fafc] text-[#0f172a] select-none relative overflow-hidden">
+      {/* Top Brand Pill Tag */}
       <div className="pt-safe flex justify-center relative z-10">
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full glass-panel border border-cyan/30 text-cyan shadow-cyanGlowSm">
-          <div className="w-2 h-2 rounded-full bg-cyan shadow-cyanGlowSm" />
-          <span className="text-[10px] font-bold tracking-[0.2em] uppercase font-sans">
+        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-[#2563eb]">
+          <div className="w-2 h-2 rounded-full bg-[#2563eb]" />
+          <span className="text-[10px] font-bold tracking-[0.15em] uppercase">
             COURSE ACADEMY
           </span>
         </div>
       </div>
 
       {/* Center Hero Identity */}
-      <div className="my-auto flex flex-col items-center text-center space-y-6 relative z-10">
-        {/* Animated Brand Geometric Logo Symbol */}
-        <div className="relative">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#0D1117] to-[#11161D] border border-cyan/40 text-cyan flex items-center justify-center shadow-cyanGlow transform hover:scale-105 transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-cyan/20 border border-cyan flex items-center justify-center rotate-45">
-              <div className="w-3.5 h-3.5 bg-cyan rounded-sm" />
-            </div>
-          </div>
-          <div className="absolute -bottom-2 -right-2 bg-[#05070A] px-2 py-0.5 rounded-full border border-cyan/50 text-[9px] font-black text-cyan">
-            PRO
-          </div>
+      <div className="my-auto flex flex-col items-center text-center space-y-6 relative z-10 max-w-xs mx-auto">
+        {/* Blue Squircle Logo */}
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#1d4ed8] to-[#3b82f6] flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
+          <BookOpen className="w-8 h-8" strokeWidth={2.2} />
         </div>
 
         {/* Headlines */}
-        <div className="space-y-2 max-w-xs">
-          <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight tracking-tight">
-            Bilimingizni yangi bosqichga olib chiqing.
+        <div className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0f172a] leading-tight tracking-tight">
+            Bilimingizni<br />
+            <em className="font-serif italic font-normal text-[#2563eb]">o‘stiring.</em>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-            Professional kurslar, amaliy topshiriqlar va o‘rganishingiz uchun qulay shaxsiy kabinet.
+          <p className="text-xs text-[#64748b] leading-relaxed font-medium">
+            Professional amaliy kurslar, o‘quv yo‘li va Telegram uchun moslashtirilgan qulay muhit.
           </p>
         </div>
 
         {/* Feature Badges */}
-        <div className="flex items-center space-x-2.5 text-xs font-semibold pt-1">
-          <span className="flex items-center space-x-1.5 glass-panel text-slate-200 px-3 py-1.5 rounded-xl border border-white/[0.08]">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan" />
-            <span>Sertifikatli ta'lim</span>
+        <div className="flex items-center space-x-2 text-xs font-bold pt-1">
+          <span className="flex items-center space-x-1.5 bg-white text-[#1e293b] px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+            <ShieldCheck className="w-4 h-4 text-[#2563eb]" />
+            <span>Sertifikatli</span>
           </span>
-          <span className="flex items-center space-x-1.5 glass-panel text-slate-200 px-3 py-1.5 rounded-xl border border-white/[0.08]">
-            <Zap className="w-3.5 h-3.5 text-cyan" />
+          <span className="flex items-center space-x-1.5 bg-white text-[#1e293b] px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+            <Zap className="w-4 h-4 text-[#2563eb]" />
             <span>Telegramga mos</span>
           </span>
         </div>
@@ -79,14 +60,15 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
       {/* Bottom CTA */}
       <div className="pb-safe w-full space-y-3 relative z-10">
         <button
+          type="button"
           onClick={handleStart}
-          className="w-full py-4 bg-cyan text-black font-black rounded-2xl shadow-cyanGlow hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-sm tracking-wide"
+          className="w-full py-3.5 px-4 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold rounded-2xl text-sm flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 active:scale-[0.98] transition-all"
         >
           <span>Boshlash</span>
-          <ArrowRight className="w-4 h-4 stroke-[3]" />
+          <ArrowRight className="w-4 h-4" />
         </button>
-        <p className="text-[11px] text-center text-slate-500 font-medium">
-          Platformadan foydalanish orqali barcha qoidalarga rozilik bildirasiz
+        <p className="text-[10px] text-center text-[#94a3b8] font-medium">
+          bilim qiymatga aylanadi · Course Academy 2026
         </p>
       </div>
     </div>
