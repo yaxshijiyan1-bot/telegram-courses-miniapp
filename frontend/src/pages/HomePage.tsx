@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowRight,
   BookOpen,
@@ -175,7 +175,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     haptic.impact('medium');
                     slide.action();
                   }}
-                  className="mt-1 inline-flex items-center space-x-1.5 px-4 py-2 bg-cyan text-[#05070A] rounded-xl text-[11px] font-extrabold shadow-cyanGlowSm active:scale-95 transition-transform"
+                  className="mt-1 inline-flex items-center space-x-1.5 px-4 py-2 bg-cyan text-white rounded-xl text-[11px] font-extrabold shadow-cyanGlowSm active:scale-95 transition-transform"
                 >
                   <span>{slide.cta}</span>
                   <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -186,7 +186,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* 3D artwork — foyydalanuvchi yuklagan rasmlar */}
           <div className="w-[44%] relative flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_45%,rgba(34,211,238,0.14),transparent_65%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_45%,rgba(2,132,199,0.12),transparent_65%)]" />
             <AnimatePresence mode="popLayout">
               <motion.img
                 key={slide.id}
@@ -210,8 +210,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             <button
               key={s.id}
               type="button"
-              onClick={() => { haptic.selection(); setSlideIdx(i); }}
-              className="h-1 rounded-full overflow-hidden bg-white/10 transition-all duration-500"
+              onClick={() => { haptic?.selection?.(); setSlideIdx(i); }}
+              className="h-1 rounded-full overflow-hidden bg-slate-200 transition-all duration-500"
               style={{ width: i === slideIdx ? 28 : 10 }}
               aria-label={`Banner ${i + 1}`}
             >
@@ -248,7 +248,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
 
           <div className="flex items-center space-x-2.5 py-2.5">
-            <div className="flex-1 h-1.5 bg-white/[0.07] rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-cyan to-violet-light"
                 initial={{ width: 0 }}
@@ -264,7 +264,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <button
             type="button"
             onClick={() => {
-              haptic.impact('medium');
+              haptic?.impact?.('medium');
               if (onContinueLesson && continueData.lesson_id) {
                 onContinueLesson(continueData.course_id, continueData.lesson_id);
               } else if (continueCourse) {
@@ -273,7 +273,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onNavigateToLearning();
               }
             }}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 bg-cyan text-[#05070A] rounded-xl text-[11px] font-extrabold shadow-cyanGlowSm active:scale-95 transition-transform"
+            className="inline-flex items-center space-x-1.5 px-4 py-2 bg-cyan text-white rounded-xl text-[11px] font-extrabold shadow-cyanGlowSm active:scale-95 transition-transform"
           >
             <span>Darsni davom ettirish</span>
             <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -282,7 +282,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       )}
 
       {/* ==== 4. Statistika (REAL — backend'dan) ==== */}
-      <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-white/[0.06]">
+      <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-slate-200/80">
         <div className="flex items-center space-x-2.5 px-1.5">
           <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 border border-cyan/15">
             <BookOpen className="w-4 h-4" strokeWidth={2.2} />
@@ -298,7 +298,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
 
         <div className="flex items-center space-x-2.5 px-1.5">
-          <div className="w-9 h-9 rounded-xl bg-violet/10 text-violet-light flex items-center justify-center flex-shrink-0 border border-violet/15">
+          <div className="w-9 h-9 rounded-xl bg-violet/10 text-violet flex items-center justify-center flex-shrink-0 border border-violet/15">
             <GraduationCap className="w-4 h-4" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
@@ -332,13 +332,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           variants={item}
           type="button"
           onClick={() => {
-            haptic.impact('light');
+            haptic?.impact?.('light');
             onNavigateToCatalog();
           }}
           className="w-full p-3.5 glass-chip rounded-[20px] border-dashed border-cyan/30 flex items-center justify-between pressable text-left group"
         >
           <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 group-hover:bg-cyan group-hover:text-[#05070A] transition-colors">
+            <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 group-hover:bg-cyan group-hover:text-white transition-colors">
               <Plus className="w-5 h-5" strokeWidth={2.5} />
             </div>
             <div className="min-w-0">

@@ -7,39 +7,39 @@ export default {
   theme: {
     extend: {
       colors: {
-        darkBg: '#05070A',
-        darkBgSecondary: '#0A0D13',
-        darkCard: '#0D1117',
-        darkCardElevated: '#11161D',
+        darkBg: '#FFFFFF',
+        darkBgSecondary: '#F8FAFC',
+        darkCard: '#FFFFFF',
+        darkCardElevated: '#F8FAFC',
         cyan: {
-          DEFAULT: '#22D3EE',
-          light: '#67E8F9',
-          deep: '#0891B2',
-          glow: 'rgba(34, 211, 238, 0.15)',
+          DEFAULT: '#0284C7',
+          light: '#38BDF8',
+          deep: '#0369A1',
+          glow: 'rgba(2, 132, 199, 0.15)',
         },
         violet: {
-          DEFAULT: '#8B5CF6',
-          light: '#A78BFA',
+          DEFAULT: '#7C3AED',
+          light: '#8B5CF6',
         },
-        gold: '#F5C66B',
+        gold: '#D97706',
         ink: {
-          DEFAULT: '#F4F7FB',
-          secondary: '#A7B4C7',
-          muted: '#66738A',
+          DEFAULT: '#0F172A',
+          secondary: '#475569',
+          muted: '#64748B',
         },
         text: {
-          primary: '#F4F7FB',
-          secondary: '#A7B4C7',
-          muted: '#66738A',
+          primary: '#0F172A',
+          secondary: '#475569',
+          muted: '#64748B',
         },
         brand: {
-          emerald: '#22D3EE',
-          deep: '#0891B2',
-          text: '#F4F7FB',
-          secondary: '#A7B4C7',
-          muted: '#66738A',
-          gold: '#F5C66B',
-          border: 'rgba(255, 255, 255, 0.08)'
+          emerald: '#0284C7',
+          deep: '#0369A1',
+          text: '#0F172A',
+          secondary: '#475569',
+          muted: '#64748B',
+          gold: '#D97706',
+          border: 'rgba(226, 232, 240, 0.9)'
         }
       },
       fontFamily: {
@@ -58,12 +58,12 @@ export default {
         'btn': '16px',
       },
       boxShadow: {
-        'soft': '0 18px 44px -18px rgba(0, 0, 0, 0.65)',
-        'elevated': '0 24px 60px -20px rgba(0, 0, 0, 0.8)',
-        'cyanGlow': '0 8px 36px -6px rgba(34, 211, 238, 0.35)',
-        'cyanGlowSm': '0 4px 20px -4px rgba(34, 211, 238, 0.28)',
-        'glass': '0 18px 44px -18px rgba(0, 0, 0, 0.65)',
-        'nav': '0 20px 50px -12px rgba(0, 0, 0, 0.85), 0 0 40px -18px rgba(34, 211, 238, 0.18)',
+        'soft': '0 8px 30px -10px rgba(15, 23, 42, 0.08)',
+        'elevated': '0 12px 36px -12px rgba(15, 23, 42, 0.12)',
+        'cyanGlow': '0 8px 24px -4px rgba(2, 132, 199, 0.35)',
+        'cyanGlowSm': '0 4px 16px -3px rgba(2, 132, 199, 0.25)',
+        'glass': '0 8px 30px -10px rgba(15, 23, 42, 0.08)',
+        'nav': '0 10px 40px -10px rgba(15, 23, 42, 0.1), 0 0 20px -5px rgba(2, 132, 199, 0.08)',
       }
     },
   },

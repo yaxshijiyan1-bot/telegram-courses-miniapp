@@ -25,7 +25,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <div className="fixed bottom-3 left-3 right-3 max-w-[420px] mx-auto z-[99] pointer-events-auto">
-      <nav className="bg-[#0B0E14]/92 backdrop-blur-2xl rounded-[26px] p-1.5 shadow-2xl border border-white/10 flex items-center justify-between">
+      <nav className="bg-white/92 backdrop-blur-2xl rounded-[26px] p-1.5 shadow-xl border border-slate-200/90 flex items-center justify-between">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -44,8 +44,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               <div
                 className={`w-11 h-7 sm:w-12 sm:h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
                   isActive
-                    ? 'bg-[#22D3EE]/15 border border-[#22D3EE]/35 text-[#22D3EE] shadow-sm shadow-[#22D3EE]/20'
-                    : 'text-[#64748B] hover:text-[#94A3B8]'
+                    ? 'bg-cyan-500/15 border border-cyan-500/35 text-cyan shadow-sm shadow-cyan-500/10'
+                    : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
                 <Icon
@@ -58,8 +58,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               <span
                 className={`text-[9.5px] tracking-tight mt-0.5 transition-colors duration-200 ${
                   isActive
-                    ? 'font-bold text-[#22D3EE]'
-                    : 'font-medium text-[#64748B]'
+                    ? 'font-bold text-cyan'
+                    : 'font-medium text-slate-400'
                 }`}
               >
                 {tab.label}

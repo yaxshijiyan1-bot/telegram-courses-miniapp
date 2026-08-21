@@ -23,7 +23,7 @@ export const DesktopWrapper: React.FC<DesktopWrapperProps> = ({ children }) => {
         </h2>
 
         <p className="text-xs text-ink-secondary leading-relaxed font-medium max-w-xs">
-          Telegram Mini App uchun optimallashtirilgan eng qulay, tezkor va professional ta'lim platformasi. 2026 standartlari: OLED qora fon, Liquid Glass qatlamlar va spring animatsiyalar.
+          Telegram Mini App uchun optimallashtirilgan eng qulay, tezkor va professional ta'lim platformasi. 2026 standartlari: Toza oq fon, Liquid Glass qatlamlar va silliq spring animatsiyalar.
         </p>
 
         <div className="flex items-center space-x-2 text-xs text-cyan font-semibold">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
   X,
   Bell,
@@ -20,10 +20,10 @@ interface NotificationsPanelProps {
 }
 
 const typeConfig: Record<string, { icon: React.ReactNode; accent: string; bg: string }> = {
-  success: { icon: <CheckCircle2 className="w-4 h-4 text-[#22D3EE]" />, accent: 'text-[#22D3EE]', bg: 'bg-[#22D3EE]/[0.08] border-[#22D3EE]/25' },
-  warning: { icon: <AlertTriangle className="w-4 h-4 text-amber-400" />, accent: 'text-amber-400', bg: 'bg-amber-400/[0.08] border-amber-400/25' },
-  course: { icon: <Award className="w-4 h-4 text-[#22D3EE]" />, accent: 'text-[#22D3EE]', bg: 'bg-[#22D3EE]/[0.08] border-[#22D3EE]/25' },
-  info: { icon: <Info className="w-4 h-4 text-[#94A3B8]" />, accent: 'text-[#94A3B8]', bg: 'bg-white/[0.04] border-white/[0.08]' }
+  success: { icon: <CheckCircle2 className="w-4 h-4 text-cyan" />, accent: 'text-cyan', bg: 'bg-sky-50 border-sky-200' },
+  warning: { icon: <AlertTriangle className="w-4 h-4 text-amber-500" />, accent: 'text-amber-500', bg: 'bg-amber-50 border-amber-200' },
+  course: { icon: <Award className="w-4 h-4 text-cyan" />, accent: 'text-cyan', bg: 'bg-sky-50 border-sky-200' },
+  info: { icon: <Info className="w-4 h-4 text-slate-500" />, accent: 'text-slate-500', bg: 'bg-slate-50 border-slate-200' }
 };
 
 export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
@@ -39,22 +39,22 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-up"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-fade-up"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-[#0B0E14] border border-white/10 rounded-t-[32px] sm:rounded-[32px] text-[#F4F7FB] shadow-2xl max-h-[85vh] flex flex-col overflow-hidden pb-6 sm:pb-4"
+        className="w-full max-w-md bg-white border border-slate-200 rounded-t-[32px] sm:rounded-[32px] text-slate-900 shadow-2xl max-h-[85vh] flex flex-col overflow-hidden pb-6 sm:pb-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.08] flex-shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#22D3EE]/10 border border-[#22D3EE]/25 text-[#22D3EE] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-200 text-cyan flex items-center justify-center">
               <Bell className="w-4 h-4" strokeWidth={2.2} />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-white leading-tight">Bildirishnomalar</h3>
-              <span className="text-[10px] text-[#94A3B8]">
+              <h3 className="text-sm font-extrabold text-slate-900 leading-tight">Bildirishnomalar</h3>
+              <span className="text-[10px] text-slate-500 font-medium">
                 {unread > 0 ? `${unread} ta yangi xabar` : `${notifications.length} ta xabar`}
               </span>
             </div>
@@ -62,10 +62,10 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
           <button
             type="button"
             onClick={() => {
-              haptic.impact('light');
+              haptic?.impact?.('light');
               onClose();
             }}
-            className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#94A3B8] hover:text-white active:scale-90 transition-all"
+            className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 active:scale-90 transition-all"
             aria-label="Yopish"
           >
             <X className="w-4 h-4" />
@@ -73,16 +73,16 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 space-y-2.5">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-3.5 space-y-2.5 bg-slate-50/50">
           {notifications.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto text-[#64748B]">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
                 <Sparkles className="w-5 h-5" strokeWidth={2} />
               </div>
-              <p className="text-xs text-[#94A3B8] font-medium">
+              <p className="text-xs text-slate-600 font-medium">
                 Hozircha yangi bildirishnomalar yo‘q
               </p>
-              <p className="text-[10px] text-[#64748B] max-w-[220px] mx-auto leading-relaxed">
+              <p className="text-[10px] text-slate-400 max-w-[220px] mx-auto leading-relaxed">
                 Kurs tasdiqlanishi, yangi darslar va sertifikatlar shu yerda ko‘rinadi
               </p>
             </div>
@@ -95,22 +95,27 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04, duration: 0.25 }}
-                  className={`flex items-start space-x-3 p-3.5 rounded-2xl border ${cfg.bg}`}
+                  className={`flex items-start space-x-3 p-3.5 rounded-2xl border ${cfg.bg} shadow-sm`}
                 >
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-xl bg-black/50 flex items-center justify-center ${cfg.accent}`}>
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center ${cfg.accent}`}>
                     {cfg.icon}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <h4 className="text-xs font-bold text-white truncate">{n.title}</h4>
-                      <span className="text-[9px] text-[#64748B] font-mono flex-shrink-0 ml-2">
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-slate-900 leading-snug truncate pr-2">
+                        {n.title}
+                      </h4>
+                      <span className="text-[9px] text-slate-400 font-medium flex-shrink-0">
                         {relativeTime(n.created_at)}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#94A3B8] leading-relaxed line-clamp-3">
+                    <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
                       {n.message}
                     </p>
                   </div>
+                  {!n.is_read && (
+                    <span className="w-2 h-2 rounded-full bg-cyan flex-shrink-0 mt-1" />
+                  )}
                 </motion.div>
               );
             })

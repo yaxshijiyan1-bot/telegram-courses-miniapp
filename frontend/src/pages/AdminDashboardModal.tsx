@@ -21,7 +21,12 @@ import {
   Image as ImageIcon,
   Upload,
   Maximize2,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Bot,
+  Search,
+  Zap,
+  CheckCheck
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 import { api } from '../services/api';
@@ -74,6 +79,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [students, setStudents] = useState<AdminStudent[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
 
+  // AI Course Generator States
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiCategory, setAiCategory] = useState('AI');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+
+  // Student Search Filter
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+
   // Course Form States
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [courseTitle, setCourseTitle] = useState('');
@@ -85,7 +98,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [courseLevel, setCourseLevel] = useState("Boshlang'ich va Professional");
   const [courseCoverUrl, setCourseCoverUrl] = useState('/images/hero_books.jpg');
   const [courseDesc, setCourseDesc] = useState('');
-  const [courseOutcomes, setCourseOutcomes] = useState('');
 
   // Other States
   const [broadcastText, setBroadcastText] = useState('');
@@ -103,7 +115,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setSuccessMsg(msg);
     setIsSuccess(true);
     setErrorMsg('');
-    haptic.notification('success');
+    haptic?.notification?.('success');
     setTimeout(() => {
       setIsSuccess(false);
       setSuccessMsg('');
@@ -113,7 +125,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const showError = (msg: string) => {
     setErrorMsg(msg);
     setIsSuccess(false);
-    haptic.notification('error');
+    haptic?.notification?.('error');
     setTimeout(() => setErrorMsg(''), 5000);
   };
 
@@ -155,7 +167,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const pendingCount = receipts.filter(r => r.status === 'pending').length;
 
   const handleApprove = async (orderId: string) => {
-    haptic.impact('heavy');
+    haptic?.impact?.('heavy');
     setIsActionLoading(orderId);
     try {
       const res = await api.approveReceipt(orderId);
@@ -170,7 +182,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   const handleReject = async (orderId: string) => {
-    haptic.impact('medium');
+    haptic?.impact?.('medium');
     setIsActionLoading(orderId);
     try {
       const res = await api.rejectReceipt(orderId);
@@ -181,6 +193,45 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       showError(e?.message || 'Rad etishda xatolik yuz berdi');
     } finally {
       setIsActionLoading(null);
+    }
+  };
+
+  // AI Bilan Kurs Yaratish Funksiyasi (OpenRouter stealth/ox-alpha)
+  const handleGenerateCourseWithAI = async () => {
+    if (!aiTopic.trim()) {
+      showError('Iltimos, yaratmoqchi bo‘lgan kurs mavzusini kiriting!');
+      return;
+    }
+
+    haptic?.impact?.('heavy');
+    setIsAiGenerating(true);
+    try {
+      const result = await api.generateCourseWithAI(aiTopic.trim(), aiCategory);
+      if (result && result.data) {
+        const d = result.data;
+        setCourseTitle(d.title || aiTopic);
+        setCourseCategory(d.category || aiCategory);
+        setCoursePrice(String(d.price || 490000));
+        setCourseOldPrice(String(d.old_price || 890000));
+        setCourseDuration(d.duration || '24 soat');
+        setCourseLessonsCount(String(d.lesson_count || 18));
+        setCourseLevel(d.level || "Boshlang'ich va Professional");
+        setCourseDesc(d.description || d.short_description || '');
+        
+        // Category bo'yicha muqova tanlaymiz
+        if (d.category === 'Dizayn') setCourseCoverUrl('/images/course_design.jpg');
+        else if (d.category === 'Biznes') setCourseCoverUrl('/images/course_biz.jpg');
+        else if (d.category === 'Marketing') setCourseCoverUrl('/images/course_marketing.jpg');
+        else if (d.category === 'Dasturlash') setCourseCoverUrl('/images/code_course.jpg');
+        else setCourseCoverUrl('/images/ai_course.jpg');
+
+        showNotification(`✨ stealth/ox-alpha kurs tuzilmasini yaratdi! Quyida tekshirib saqlang.`);
+        setAiTopic('');
+      }
+    } catch (e: any) {
+      showError(e?.message || 'AI orqali yaratishda xatolik');
+    } finally {
+      setIsAiGenerating(false);
     }
   };
 
@@ -195,9 +246,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseLevel(c.level || "Boshlang'ich va Professional");
     setCourseCoverUrl(c.cover_url || '/images/hero_books.jpg');
     setCourseDesc(c.description || c.short_description || '');
-    setCourseOutcomes('');
     setActiveTab('courses');
-    haptic.selection();
+    haptic?.selection?.();
   };
 
   const resetCourseForm = () => {
@@ -209,12 +259,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseLessonsCount('24');
     setCourseCoverUrl('/images/hero_books.jpg');
     setCourseDesc('');
-    setCourseOutcomes('');
   };
 
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    haptic.impact('heavy');
+    haptic?.impact?.('heavy');
     setIsActionLoading('course_form');
     try {
       let res;
@@ -251,8 +300,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           cover_url: courseCoverUrl,
           description: courseDesc || courseTitle,
           short_description: courseDesc.slice(0, 120) || courseTitle,
-          instructor_name: 'Yaxshi Bola',
-          instructor_title: 'Course Academy Ustoz'
+          instructor_name: 'Course Academy',
+          instructor_title: 'Katta Ekspert'
         } as Partial<Course>);
       }
       showNotification(res.message || 'Kurs muvaffaqiyatli saqlandi!');
@@ -267,7 +316,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   const handleDeleteCourse = async (courseId: string) => {
     if (!confirm('Rostan ham bu kursni o‘chirmoqchimisiz?')) return;
-    haptic.impact('heavy');
+    haptic?.impact?.('heavy');
     setIsActionLoading(`del_${courseId}`);
     try {
       const res = await api.deleteCourse(courseId);
@@ -286,7 +335,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setCourseCoverUrl(reader.result as string);
-        haptic.notification('success');
+        haptic?.notification?.('success');
       };
       reader.readAsDataURL(file);
     }
@@ -295,7 +344,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastText.trim()) return;
-    haptic.impact('heavy');
+    haptic?.impact?.('heavy');
     setIsActionLoading('broadcast');
     try {
       const res = await api.sendBroadcast(broadcastText.trim());
@@ -313,7 +362,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       showError('Iltimos, avval ochiladigan kursni tanlang!');
       return;
     }
-    haptic.impact('heavy');
+    haptic?.impact?.('heavy');
     setIsActionLoading(`enroll_${studentId}`);
     try {
       const res = await api.manualEnroll(studentId, courseId);
@@ -328,7 +377,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   const handleSaveCardSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    haptic.impact('heavy');
+    haptic?.impact?.('heavy');
     setIsActionLoading('settings');
     try {
       await api.savePaymentSettings(cardNumber, cardHolder, bankName);
@@ -340,21 +389,30 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  const filteredStudents = students.filter(st => {
+    const q = studentSearchQuery.toLowerCase();
+    return (
+      (st.name || '').toLowerCase().includes(q) ||
+      (st.username || '').toLowerCase().includes(q) ||
+      String(st.telegram_id || '').includes(q)
+    );
+  });
+
   return (
-    <div className="fixed inset-0 z-50 bg-[#05070A] text-[#F4F7FB] flex flex-col w-full h-full min-h-screen overflow-hidden animate-fade-up">
-      {/* 1. Full-Screen Admin Header */}
-      <header className="px-4 py-3 bg-[#0B0E14] border-b border-white/[0.08] flex items-center justify-between flex-shrink-0">
+    <div className="fixed inset-0 z-50 bg-slate-50 text-slate-900 flex flex-col w-full h-full min-h-screen overflow-hidden animate-fade-up">
+      {/* 1. iOS 27 Top Header */}
+      <header className="px-4 py-3 bg-white/95 backdrop-blur-2xl border-b border-slate-200/90 flex items-center justify-between flex-shrink-0 shadow-sm">
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-[#22D3EE]/10 border border-[#22D3EE]/25 text-[#22D3EE] flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-cyan-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
-              <h2 className="text-sm font-extrabold text-white">Superadmin Paneli</h2>
-              <span className="badge-cyan text-[9px] py-0.5 px-2">LIVE</span>
+              <h2 className="text-sm font-extrabold text-slate-900">Superadmin Paneli</h2>
+              <span className="badge-cyan text-[9px] py-0.5 px-2 font-black">2026 LIVE</span>
             </div>
-            <span className="text-[10px] text-[#94A3B8]">
-              Admin: <b className="text-[#22D3EE]">{stats?.admin_name || adminName}</b>
+            <span className="text-[11px] text-slate-500">
+              Admin: <b className="text-sky-600">{stats?.admin_name || adminName}</b>
             </span>
           </div>
         </div>
@@ -362,8 +420,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         <div className="flex items-center space-x-1.5">
           <button
             type="button"
-            onClick={() => { haptic.selection(); loadData(); }}
-            className="w-8 h-8 rounded-full glass-chip flex items-center justify-center text-[#94A3B8] hover:text-white"
+            onClick={() => { haptic?.selection?.(); loadData(); }}
+            className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
             title="Yangilash"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -371,10 +429,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              haptic.impact('light');
+              haptic?.impact?.('light');
               onClose();
             }}
-            className="w-8 h-8 rounded-full glass-chip flex items-center justify-center text-[#94A3B8] hover:text-white"
+            className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
             aria-label="Yopish"
           >
             <X className="w-4 h-4" />
@@ -382,8 +440,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         </div>
       </header>
 
-      {/* 2. Horizontal Scroll Tabs Navigation */}
-      <div className="px-3 py-2 bg-[#0B0E14]/60 border-b border-white/[0.06] flex space-x-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+      {/* 2. Horizontal Navigation Tabs */}
+      <div className="px-3 py-2 bg-white border-b border-slate-200/80 flex space-x-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -393,13 +451,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               key={tab.id}
               type="button"
               onClick={() => {
-                haptic.selection();
+                haptic?.selection?.();
                 setActiveTab(tab.id);
               }}
-              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border ${
                 isActive
-                  ? 'bg-[#22D3EE] text-[#05070A] shadow-md shadow-[#22D3EE]/20'
-                  : 'bg-white/[0.04] text-[#94A3B8] hover:text-white'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-500/25 border-sky-600'
+                  : 'bg-slate-50 text-slate-600 hover:text-slate-900 border-slate-200/80 hover:bg-slate-100'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -412,26 +470,26 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         })}
       </div>
 
-      {/* 3. Global Toast / Notifications */}
+      {/* 3. Global Toast Notifications */}
       {isSuccess && (
-        <div className="mx-4 mt-2 p-3 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded-2xl text-xs font-bold flex items-center space-x-2 flex-shrink-0 animate-fade-up">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+        <div className="mx-4 mt-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold flex items-center space-x-2 flex-shrink-0 animate-fade-up shadow-sm">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="mx-4 mt-2 p-3 bg-red-500/15 border border-red-500/30 text-red-300 rounded-2xl text-xs font-semibold flex items-center space-x-2 flex-shrink-0 animate-fade-up">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+        <div className="mx-4 mt-2 p-3 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-xs font-semibold flex items-center space-x-2 flex-shrink-0 animate-fade-up shadow-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* 4. Scrollable Content Area */}
+      {/* 4. Main Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center space-y-2 text-[#94A3B8]">
-            <InlineLoader variant="orbit" size={28} color="#22D3EE" />
+          <div className="py-20 flex flex-col items-center justify-center space-y-2 text-slate-400">
+            <InlineLoader variant="orbit" size={28} color="#0284C7" />
             <span className="text-xs font-medium">Ma'lumotlar yuklanmoqda...</span>
           </div>
         ) : (
@@ -440,78 +498,78 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'receipts' && (
               <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
-                  <h3 className="text-xs font-extrabold text-white uppercase tracking-wider">
+                  <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
                     To‘lov Cheklari ({receipts.length})
                   </h3>
                   {pendingCount > 0 && (
-                    <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 font-bold px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 font-bold px-2 py-0.5 rounded-full">
                       {pendingCount} ta kutilmoqda
                     </span>
                   )}
                 </div>
 
                 {receipts.length === 0 ? (
-                  <div className="p-8 text-center glass rounded-3xl space-y-2">
-                    <CheckCircle2 className="w-8 h-8 text-[#22D3EE] mx-auto" />
-                    <b className="text-xs text-white block">Barcha cheklar ko‘rib chiqilgan</b>
-                    <p className="text-[11px] text-[#64748B]">Yangi to‘lovlar shu yerda paydo bo‘ladi.</p>
+                  <div className="p-8 text-center bg-white border border-slate-200/90 rounded-3xl space-y-2 shadow-sm">
+                    <CheckCircle2 className="w-8 h-8 text-sky-500 mx-auto" />
+                    <b className="text-xs text-slate-800 block font-bold">Barcha cheklar ko‘rib chiqilgan</b>
+                    <p className="text-[11px] text-slate-500">Yangi to‘lovlar shu yerda paydo bo‘ladi.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {receipts.map((receipt) => (
                       <div
                         key={receipt.order_id}
-                        className="glass p-3.5 rounded-2xl space-y-2.5 text-xs"
+                        className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-3 text-xs shadow-sm"
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <strong className="text-white text-xs block">{receipt.student_name}</strong>
-                            <span className="text-[10px] text-[#94A3B8]">
-                              @{receipt.username} • ID: <code className="text-[#22D3EE] font-bold">{receipt.telegram_id}</code>
+                            <strong className="text-slate-900 text-xs block font-bold">{receipt.student_name}</strong>
+                            <span className="text-[11px] text-slate-500">
+                              @{receipt.username} • ID: <code className="text-sky-600 font-bold">{receipt.telegram_id}</code>
                             </span>
                           </div>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                               receipt.status === 'approved'
-                                ? 'bg-emerald-400/15 text-emerald-400 border border-emerald-400/30'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                 : receipt.status === 'rejected'
-                                ? 'bg-red-400/15 text-red-400 border border-red-400/30'
-                                : 'bg-amber-400/15 text-amber-400 border border-amber-400/30'
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
                             }`}
                           >
                             {receipt.status === 'approved' ? 'Tasdiqlangan' : receipt.status === 'rejected' ? 'Rad etilgan' : 'Kutilmoqda'}
                           </span>
                         </div>
 
-                        <div className="p-2.5 bg-black/40 rounded-xl space-y-1 text-[11px] border border-white/[0.06]">
+                        <div className="p-3 bg-slate-50 rounded-2xl space-y-1.5 text-[11px] border border-slate-100">
                           <div className="flex justify-between">
-                            <span className="text-[#64748B]">Kurs:</span>
-                            <b className="text-white truncate max-w-[200px]">{receipt.course_title}</b>
+                            <span className="text-slate-500">Kurs:</span>
+                            <b className="text-slate-900 truncate max-w-[200px]">{receipt.course_title}</b>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-[#64748B]">Summa:</span>
-                            <b className="text-[#22D3EE]">{formatPrice(receipt.amount)}</b>
+                            <span className="text-slate-500">Summa:</span>
+                            <b className="text-sky-600">{formatPrice(receipt.amount)}</b>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-[#64748B]">To‘lov usuli:</span>
-                            <span className="text-white uppercase font-mono">{receipt.payment_method}</span>
+                            <span className="text-slate-500">To‘lov usuli:</span>
+                            <span className="text-slate-900 uppercase font-mono">{receipt.payment_method}</span>
                           </div>
                         </div>
 
-                        {/* Receipt Screenshot Preview & Zoom Trigger */}
+                        {/* Receipt Screenshot Preview */}
                         {receipt.receipt_image && (
                           <div
                             onClick={() => setZoomedReceipt(receipt)}
-                            className="relative rounded-xl overflow-hidden border border-white/10 max-h-36 bg-black cursor-pointer group"
+                            className="relative rounded-2xl overflow-hidden border border-slate-200 max-h-36 bg-slate-100 cursor-pointer group"
                           >
                             <img
                               src={receipt.receipt_image}
                               alt="To'lov cheki"
                               className="w-full object-contain max-h-36 transition-transform group-hover:scale-105"
                             />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold space-x-1">
+                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold space-x-1">
                               <Maximize2 className="w-4 h-4" />
-                              <span>Kattalashtirib ko‘rish</span>
+                              <span>Kattalashtirish</span>
                             </div>
                           </div>
                         )}
@@ -525,7 +583,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                               className="btn-primary py-2.5 text-xs font-bold flex items-center justify-center space-x-1"
                             >
                               {isActionLoading === receipt.order_id ? (
-                                <InlineLoader variant="orbit" size={14} color="#05070A" />
+                                <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
                               ) : (
                                 <>
                                   <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -537,7 +595,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                               type="button"
                               onClick={() => handleReject(receipt.order_id)}
                               disabled={isActionLoading === receipt.order_id}
-                              className="py-2.5 bg-red-500/10 text-red-400 border border-red-500/25 rounded-2xl text-xs font-bold flex items-center justify-center space-x-1 hover:bg-red-500/20 active:scale-95 transition-all"
+                              className="py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-2xl text-xs font-bold flex items-center justify-center space-x-1 hover:bg-red-100 active:scale-95 transition-all"
                             >
                               <Ban className="w-3.5 h-3.5" />
                               <span>Rad etish</span>
@@ -551,30 +609,91 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               </div>
             )}
 
-            {/* TAB 2: COURSES MANAGEMENT & IMAGE CHANGER */}
+            {/* TAB 2: COURSES MANAGEMENT & AI BUILDER */}
             {activeTab === 'courses' && (
               <div className="space-y-4">
+                {/* 1-Click AI Course Creator */}
+                <div className="bg-gradient-to-br from-sky-50 via-cyan-50/50 to-blue-50 border border-sky-200/90 p-4 rounded-3xl space-y-3 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-sm">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                        <span>AI Bilan 1-Bosishda Kurs Yaratish</span>
+                        <span className="text-[9px] bg-sky-600 text-white px-2 py-0.5 rounded-full font-bold">stealth/ox-alpha</span>
+                      </h4>
+                      <p className="text-[10px] text-slate-500">Mavzuni yozing, AI to'liq darslar rejasini tuzib beradi</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={aiTopic}
+                      onChange={(e) => setAiTopic(e.target.value)}
+                      placeholder="Masalan: Next.js 15 Fullstack Dasturlash yoki AI SMM..."
+                      className="glass-input w-full bg-white text-xs"
+                      disabled={isAiGenerating}
+                    />
+
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={aiCategory}
+                        onChange={(e) => setAiCategory(e.target.value)}
+                        className="glass-input bg-white text-xs py-2"
+                        disabled={isAiGenerating}
+                      >
+                        <option value="AI">AI</option>
+                        <option value="Dasturlash">Dasturlash</option>
+                        <option value="Dizayn">Dizayn</option>
+                        <option value="Biznes">Biznes</option>
+                        <option value="Marketing">Marketing</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={handleGenerateCourseWithAI}
+                        disabled={isAiGenerating || !aiTopic.trim()}
+                        className="flex-1 btn-primary py-2.5 text-xs font-bold flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                      >
+                        {isAiGenerating ? (
+                          <div className="flex items-center space-x-1.5">
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>ox-alpha o'ylamoqda...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Bot className="w-3.5 h-3.5" />
+                            <span>AI Yordamida Yaratish</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Course Edit/Create Form */}
-                <form onSubmit={handleSaveCourse} className="glass p-4 rounded-3xl space-y-3.5">
+                <form onSubmit={handleSaveCourse} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-3.5 shadow-sm">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <BookOpen className="w-4 h-4 text-[#22D3EE]" />
-                      <span>{editingCourseId ? 'Kursni Tahrirlash' : 'Yangi Kurs Yaratish'}</span>
+                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4 text-sky-600" />
+                      <span>{editingCourseId ? 'Kursni Tahrirlash' : 'Kurs Tafsilotlari'}</span>
                     </h4>
                     {editingCourseId && (
                       <button
                         type="button"
                         onClick={resetCourseForm}
-                        className="text-[10px] text-[#22D3EE] font-bold hover:underline"
+                        className="text-[11px] text-sky-600 font-bold hover:underline"
                       >
-                        + Yangi kurs formasi
+                        + Yangi forma
                       </button>
                     )}
                   </div>
 
                   {/* Course Title */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#94A3B8] block">Kurs Nomi</label>
+                    <label className="text-xs font-bold text-slate-700 block">Kurs Nomi</label>
                     <input
                       type="text"
                       required
@@ -588,11 +707,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   {/* Category & Prices */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-[#94A3B8] block">Kategoriya</label>
+                      <label className="text-[11px] font-bold text-slate-600 block">Kategoriya</label>
                       <select
                         value={courseCategory}
                         onChange={(e) => setCourseCategory(e.target.value)}
-                        className="glass-input w-full"
+                        className="glass-input w-full text-xs"
                       >
                         <option value="AI">AI</option>
                         <option value="Dizayn">Dizayn</option>
@@ -603,25 +722,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-[#94A3B8] block">Narxi (so'm)</label>
+                      <label className="text-[11px] font-bold text-slate-600 block">Narxi (so'm)</label>
                       <input
                         type="number"
                         required
                         value={coursePrice}
                         onChange={(e) => setCoursePrice(e.target.value)}
                         placeholder="490000"
-                        className="glass-input w-full font-mono"
+                        className="glass-input w-full font-mono text-xs"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-[#94A3B8] block">Eski narxi</label>
+                      <label className="text-[11px] font-bold text-slate-600 block">Eski narxi</label>
                       <input
                         type="number"
                         value={courseOldPrice}
                         onChange={(e) => setCourseOldPrice(e.target.value)}
                         placeholder="890000"
-                        className="glass-input w-full font-mono"
+                        className="glass-input w-full font-mono text-xs"
                       />
                     </div>
                   </div>
@@ -629,47 +748,47 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   {/* Duration & Lessons Count & Level */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-[#94A3B8] block">Davomiyligi</label>
+                      <label className="text-[11px] font-bold text-slate-600 block">Davomiyligi</label>
                       <input
                         type="text"
                         value={courseDuration}
                         onChange={(e) => setCourseDuration(e.target.value)}
                         placeholder="24 soat"
-                        className="glass-input w-full"
+                        className="glass-input w-full text-xs"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-[#94A3B8] block">Darslar soni</label>
+                      <label className="text-[11px] font-bold text-slate-600 block">Darslar soni</label>
                       <input
                         type="number"
                         value={courseLessonsCount}
                         onChange={(e) => setCourseLessonsCount(e.target.value)}
                         placeholder="28"
-                        className="glass-input w-full font-mono"
+                        className="glass-input w-full font-mono text-xs"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-[#94A3B8] block">Daraja</label>
+                      <label className="text-[11px] font-bold text-slate-600 block">Daraja</label>
                       <input
                         type="text"
                         value={courseLevel}
                         onChange={(e) => setCourseLevel(e.target.value)}
                         placeholder="Boshlang'ich"
-                        className="glass-input w-full"
+                        className="glass-input w-full text-xs"
                       />
                     </div>
                   </div>
 
-                  {/* 3D Cover Image Selector & Changer */}
-                  <div className="space-y-2 pt-1 border-t border-white/[0.06]">
+                  {/* 3D Cover Image Selector */}
+                  <div className="space-y-2 pt-1 border-t border-slate-100">
                     <div className="flex justify-between items-center">
-                      <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <ImageIcon className="w-4 h-4 text-[#22D3EE]" />
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4 text-sky-600" />
                         <span>Kurs Muqovasi (3D Rasm)</span>
                       </label>
-                      <label className="text-[10px] text-[#22D3EE] font-bold cursor-pointer hover:underline flex items-center gap-1">
+                      <label className="text-[10px] text-sky-600 font-bold cursor-pointer hover:underline flex items-center gap-1">
                         <Upload className="w-3 h-3" />
                         <span>Fayl yuklash</span>
                         <input
@@ -682,43 +801,43 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
 
                     {/* Active Selected Image Preview */}
-                    <div className="flex items-center space-x-3 p-2 bg-black/50 rounded-2xl border border-white/[0.08]">
-                      <div className="w-16 h-12 rounded-xl overflow-hidden bg-black flex-shrink-0 border border-white/10">
+                    <div className="flex items-center space-x-3 p-2 bg-slate-50 rounded-2xl border border-slate-200">
+                      <div className="w-16 h-12 rounded-xl overflow-hidden bg-white flex-shrink-0 border border-slate-200">
                         <img src={courseCoverUrl} alt="Cover Preview" className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-[#64748B] block">Joriy rasm manzili:</span>
+                        <span className="text-[10px] text-slate-500 block">Joriy rasm manzili:</span>
                         <input
                           type="text"
                           value={courseCoverUrl}
                           onChange={(e) => setCourseCoverUrl(e.target.value)}
-                          className="w-full bg-transparent text-[11px] text-white font-mono outline-none truncate"
+                          className="w-full bg-transparent text-[11px] text-slate-900 font-mono outline-none truncate"
                         />
                       </div>
                     </div>
 
                     {/* Preset 3D Gallery Chips */}
                     <div className="space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] block font-semibold">
-                        Tayyor 3D modellardan tanlang (1 marta bosing):
+                      <span className="text-[10px] text-slate-500 block font-medium">
+                        Tayyor 3D modellardan tanlang:
                       </span>
-                      <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto p-1 bg-black/30 rounded-xl">
+                      <div className="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
                         {PRESET_COVERS.map((preset, idx) => (
                           <button
                             key={idx}
                             type="button"
                             onClick={() => {
-                              haptic.selection();
+                              haptic?.selection?.();
                               setCourseCoverUrl(preset.url);
                             }}
-                            className={`p-1 rounded-xl border text-left flex items-center space-x-1.5 transition-all ${
+                            className={`p-1.5 rounded-xl border text-left flex items-center space-x-1.5 transition-all ${
                               courseCoverUrl === preset.url
-                                ? 'border-[#22D3EE] bg-[#22D3EE]/15 text-[#22D3EE]'
-                                : 'border-white/5 bg-white/[0.02] text-[#94A3B8] hover:border-white/20'
+                                ? 'border-sky-500 bg-sky-50 text-sky-700 font-bold shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                             }`}
                           >
-                            <img src={preset.url} alt={preset.label} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
-                            <span className="text-[9px] font-bold truncate">{preset.label}</span>
+                            <img src={preset.url} alt={preset.label} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+                            <span className="text-[9px] truncate font-medium">{preset.label}</span>
                           </button>
                         ))}
                       </div>
@@ -727,7 +846,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                   {/* Course Full Description */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#94A3B8] block">Kurs Haqida To‘liq Ma'lumot</label>
+                    <label className="text-xs font-bold text-slate-700 block">Kurs Haqida To‘liq Ma'lumot</label>
                     <textarea
                       rows={3}
                       required
@@ -745,7 +864,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     className="btn-primary w-full py-3 text-xs font-extrabold flex items-center justify-center space-x-1.5"
                   >
                     {isActionLoading === 'course_form' ? (
-                      <InlineLoader variant="orbit" size={14} color="#05070A" />
+                      <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
                     ) : (
                       <>
                         <Check className="w-4 h-4 stroke-[3]" />
@@ -755,9 +874,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </button>
                 </form>
 
-                {/* Existing Courses List for Quick Edit/Delete */}
+                {/* Existing Courses List */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-extrabold text-white uppercase tracking-wider px-1">
+                  <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider px-1">
                     Mavjud Kurslar ({courses.length})
                   </h4>
 
@@ -765,18 +884,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     {courses.map((c) => (
                       <div
                         key={c.id}
-                        className="glass p-3 rounded-2xl flex items-center justify-between space-x-3"
+                        className="bg-white border border-slate-200/90 p-3 rounded-2xl flex items-center justify-between space-x-3 shadow-sm"
                       >
                         <div className="flex items-center space-x-3 min-w-0">
                           <img
                             src={c.cover_url}
                             alt={c.title}
-                            className="w-12 h-12 rounded-xl object-cover border border-white/10 flex-shrink-0"
+                            className="w-12 h-12 rounded-xl object-cover border border-slate-200 flex-shrink-0"
                           />
                           <div className="min-w-0">
-                            <span className="badge-cyan text-[8px] py-0 px-1.5">{c.category}</span>
-                            <h5 className="text-xs font-bold text-white truncate mt-0.5">{c.title}</h5>
-                            <span className="text-[10px] text-[#22D3EE] font-bold block">{formatPrice(c.price)}</span>
+                            <span className="badge-cyan text-[8px] py-0 px-1.5 font-bold">{c.category}</span>
+                            <h5 className="text-xs font-bold text-slate-900 truncate mt-0.5">{c.title}</h5>
+                            <span className="text-[10px] text-sky-600 font-extrabold block">{formatPrice(c.price)}</span>
                           </div>
                         </div>
 
@@ -784,7 +903,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           <button
                             type="button"
                             onClick={() => startEditCourse(c)}
-                            className="p-2 rounded-xl bg-white/5 hover:bg-[#22D3EE]/20 hover:text-[#22D3EE] transition-colors"
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 transition-colors"
                             title="Tahrirlash"
                           >
                             <Pencil className="w-4 h-4" />
@@ -793,7 +912,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             type="button"
                             onClick={() => handleDeleteCourse(c.id)}
                             disabled={isActionLoading === `del_${c.id}`}
-                            className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                            className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                             title="O‘chirish"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -809,41 +928,54 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* TAB 3: STATS */}
             {activeTab === 'stats' && stats && (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="glass p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] text-[#94A3B8] font-bold uppercase block">Jami Tushum</span>
-                    <b className="text-lg font-extrabold text-[#22D3EE] block">{formatPrice(stats.total_revenue)}</b>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-1 shadow-sm">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Jami Tushum</span>
+                    <b className="text-lg font-extrabold text-sky-600 block">{formatPrice(stats.total_revenue)}</b>
                   </div>
 
-                  <div className="glass p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] text-[#94A3B8] font-bold uppercase block">Shu Oydagi Tushum</span>
-                    <b className="text-lg font-extrabold text-[#22D3EE] block">{formatPrice(stats.monthly_revenue)}</b>
+                  <div className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-1 shadow-sm">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Shu Oydagi Tushum</span>
+                    <b className="text-lg font-extrabold text-sky-600 block">{formatPrice(stats.monthly_revenue)}</b>
                   </div>
 
-                  <div className="glass p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] text-[#94A3B8] font-bold uppercase block">Jami Talabalar</span>
-                    <b className="text-lg font-extrabold text-white block">{stats.total_students} ta</b>
+                  <div className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-1 shadow-sm">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Jami Talabalar</span>
+                    <b className="text-lg font-extrabold text-slate-900 block">{stats.total_students} ta</b>
                   </div>
 
-                  <div className="glass p-4 rounded-2xl space-y-1">
-                    <span className="text-[10px] text-[#94A3B8] font-bold uppercase block">Faol Kurslar</span>
-                    <b className="text-lg font-extrabold text-white block">{stats.active_courses_count} ta</b>
+                  <div className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-1 shadow-sm">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Faol Kurslar</span>
+                    <b className="text-lg font-extrabold text-slate-900 block">{stats.active_courses_count} ta</b>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TAB 4: STUDENTS CRM */}
+            {/* TAB 4: STUDENTS CRM & SEARCH */}
             {activeTab === 'students' && (
               <div className="space-y-3">
-                <div className="glass p-3 rounded-2xl space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#22D3EE] uppercase tracking-wider block">
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    value={studentSearchQuery}
+                    onChange={(e) => setStudentSearchQuery(e.target.value)}
+                    placeholder="Talabani ism, @username yoki ID bo'yicha qidirish..."
+                    className="glass-input w-full pl-9 bg-white text-xs"
+                  />
+                </div>
+
+                {/* Grant Assignment Selector */}
+                <div className="bg-white border border-slate-200/90 p-3 rounded-2xl space-y-1.5 shadow-sm">
+                  <label className="text-[10px] font-bold text-sky-600 uppercase tracking-wider block">
                     Grant / Kurs biriktirish uchun kurs tanlang:
                   </label>
                   <select
                     value={enrollCourseId}
                     onChange={(e) => setEnrollCourseId(e.target.value)}
-                    className="glass-input w-full"
+                    className="glass-input w-full text-xs"
                   >
                     <option value="">— Kursni tanlang —</option>
                     {courses.map(c => (
@@ -852,42 +984,49 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </select>
                 </div>
 
+                {/* Students List */}
                 <div className="space-y-2">
-                  {students.map((st) => (
-                    <div key={st.id} className="glass p-3.5 rounded-2xl space-y-2 text-xs">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <strong className="text-white block">{st.name}</strong>
-                          <span className="text-[10px] text-[#94A3B8]">
-                            @{st.username} • ID: <code className="text-[#22D3EE]">{st.telegram_id}</code>
-                          </span>
-                        </div>
-                        <span className="badge-cyan text-[9px] py-0 px-2">{st.overall_progress || '0%'}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
-                        <span className="text-[10px] text-[#64748B]">
-                          Kurs: <b className="text-white">{st.enrolled_courses || '— Yangi'}</b>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleManualEnroll(st.id, enrollCourseId)}
-                          disabled={isActionLoading === `enroll_${st.id}`}
-                          className="px-3 py-1 bg-[#22D3EE] text-[#05070A] font-extrabold rounded-lg text-[10px]"
-                        >
-                          + Grant Ochish
-                        </button>
-                      </div>
+                  {filteredStudents.length === 0 ? (
+                    <div className="p-8 text-center bg-white border border-slate-200/90 rounded-2xl text-xs text-slate-500">
+                      Talabalar topilmadi.
                     </div>
-                  ))}
+                  ) : (
+                    filteredStudents.map((st) => (
+                      <div key={st.id} className="bg-white border border-slate-200/90 p-3.5 rounded-2xl space-y-2 text-xs shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <strong className="text-slate-900 block font-bold">{st.name}</strong>
+                            <span className="text-[10px] text-slate-500">
+                              @{st.username || 'noma\'lum'} • ID: <code className="text-sky-600 font-bold">{st.telegram_id}</code>
+                            </span>
+                          </div>
+                          <span className="badge-cyan text-[9px] py-0.5 px-2">{st.overall_progress || '0%'}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                          <span className="text-[11px] text-slate-500">
+                            Kurs: <b className="text-slate-900">{st.enrolled_courses || '— Yangi'}</b>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleManualEnroll(st.id, enrollCourseId)}
+                            disabled={isActionLoading === `enroll_${st.id}`}
+                            className="px-3 py-1.5 bg-sky-600 text-white font-extrabold rounded-xl text-[10px] hover:bg-sky-700 active:scale-95 transition-transform"
+                          >
+                            + Grant Ochish
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
 
             {/* TAB 5: BROADCAST */}
             {activeTab === 'broadcast' && (
-              <form onSubmit={handleSendBroadcast} className="glass p-4 rounded-3xl space-y-3">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              <form onSubmit={handleSendBroadcast} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-3 shadow-sm">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Barcha Bot Talabalariga Xabar Yuborish
                 </h4>
                 <textarea
@@ -911,12 +1050,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* TAB 6: SETTINGS (PAYMENT CARDS) */}
             {activeTab === 'settings' && (
-              <form onSubmit={handleSaveCardSettings} className="glass p-4 rounded-3xl space-y-3">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              <form onSubmit={handleSaveCardSettings} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-3 shadow-sm">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   To‘lov Rekvizitlari Sozlamalari
                 </h4>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#94A3B8] block">Karta Raqami</label>
+                  <label className="text-xs font-bold text-slate-700 block">Karta Raqami</label>
                   <input
                     type="text"
                     required
@@ -926,7 +1065,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#94A3B8] block">Karta Egasi</label>
+                  <label className="text-xs font-bold text-slate-700 block">Karta Egasi</label>
                   <input
                     type="text"
                     required
@@ -936,7 +1075,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#94A3B8] block">Bank Nomi</label>
+                  <label className="text-xs font-bold text-slate-700 block">Bank Nomi</label>
                   <input
                     type="text"
                     value={bankName}
@@ -959,20 +1098,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
       {/* 5. Receipt Zoom Modal */}
       {zoomedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-fade-up">
-          <div className="bg-[#0B0E14] border border-white/10 rounded-3xl p-4 max-w-sm w-full space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+          <div className="bg-white border border-slate-200 rounded-3xl p-4 max-w-sm w-full space-y-3 shadow-2xl">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-white">{zoomedReceipt.student_name} cheki</span>
+              <span className="text-xs font-bold text-slate-900">{zoomedReceipt.student_name} cheki</span>
               <button
                 type="button"
                 onClick={() => setZoomedReceipt(null)}
-                className="w-7 h-7 rounded-full bg-white/10 text-white flex items-center justify-center"
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
 
-            <div className="max-h-96 overflow-y-auto rounded-2xl bg-black border border-white/10">
+            <div className="max-h-96 overflow-y-auto rounded-2xl bg-slate-900 border border-slate-200">
               <img
                 src={zoomedReceipt.receipt_image}
                 alt="Chek Full"
@@ -992,7 +1131,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleReject(zoomedReceipt.order_id)}
-                  className="py-2 bg-red-500/20 text-red-300 rounded-2xl text-xs font-bold"
+                  className="py-2 bg-red-50 text-red-600 rounded-2xl text-xs font-bold"
                 >
                   Rad etish
                 </button>

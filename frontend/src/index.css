@@ -5,20 +5,26 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Roboto, sans-serif;
   --font-serif: 'DM Serif Display', Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* OLED Deep Palette */
-  --bg-base: #05070A;
-  --bg-elevated: #0B0E14;
-  --ink: #F4F7FB;
-  --ink-secondary: #94A3B8;
+  /* iOS 27 State-of-the-Art Crisp Light Palette */
+  --bg-base: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  
+  --ink: #0F172A;
+  --ink-secondary: #475569;
   --ink-muted: #64748B;
-  --accent: #22D3EE;
-  --accent-soft: rgba(34, 211, 238, 0.12);
-  --violet: #8B5CF6;
-  --gold: #F5C66B;
+  
+  --accent-cyan: #0284C7;
+  --accent-cyan-light: #38BDF8;
+  --accent-cyan-soft: rgba(2, 132, 199, 0.08);
+  --accent-violet: #7C3AED;
+  --accent-gold: #D97706;
+  --accent-emerald: #059669;
 }
 
 * {
@@ -27,7 +33,8 @@
 }
 
 html {
-  background: var(--bg-base);
+  background: #F1F5F9;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
 body {
@@ -52,7 +59,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: stretch;
-  background-color: #020304;
+  background-color: #F1F5F9;
 }
 
 @media (min-width: 640px) {
@@ -78,13 +85,13 @@ body {
     max-height: 940px;
     border-radius: 36px;
     box-shadow:
-      0 40px 100px -20px rgba(0, 0, 0, 0.9),
-      0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 0 80px -25px rgba(34, 211, 238, 0.15);
+      0 25px 60px -15px rgba(15, 23, 42, 0.14),
+      0 0 0 1px rgba(226, 232, 240, 0.9),
+      0 0 50px -15px rgba(2, 132, 199, 0.12);
   }
 }
 
-/* ============ STATIC LIGHTWEIGHT AMBIENT BACKDROP (Zero Lag) ============ */
+/* ============ STATIC LIGHTWEIGHT AMBIENT BACKDROP ============ */
 .aurora {
   position: fixed;
   inset: 0;
@@ -92,55 +99,73 @@ body {
   z-index: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 10% 0%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 85%, rgba(139, 92, 246, 0.07) 0%, transparent 45%),
-    radial-gradient(circle at 50% 40%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
+    radial-gradient(circle at 10% 0%, rgba(2, 132, 199, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 90% 85%, rgba(124, 58, 237, 0.04) 0%, transparent 45%),
+    radial-gradient(circle at 50% 40%, rgba(59, 130, 246, 0.03) 0%, transparent 50%);
   transform: translateZ(0);
 }
 
-/* ============ OPTIMIZED GLASS SURFACES ============ */
+/* ============ iOS 27 FROSTED GLASS SURFACES ============ */
 .glass {
   position: relative;
-  background: rgba(15, 20, 28, 0.72);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 24px;
   box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-    0 12px 30px -10px rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+    0 1px 0 0 rgba(255, 255, 255, 0.95) inset,
+    0 10px 30px -8px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.85);
   transform: translateZ(0);
 }
 
 .glass-deep {
-  background: rgba(11, 14, 20, 0.92);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(248, 250, 252, 0.94);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.05);
+  border-radius: 24px;
   transform: translateZ(0);
 }
 
 .glass-chip {
-  background: rgba(255, 255, 255, 0.06);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(241, 245, 249, 0.85);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
 }
 
-/* Pressable glass */
+/* ============ iOS 27 DYNAMIC ISLAND ============ */
+.dynamic-island {
+  background: rgba(15, 23, 42, 0.96);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(24px) saturate(200%);
+  color: #FFFFFF;
+  border-radius: 28px;
+  box-shadow: 
+    0 12px 32px -6px rgba(15, 23, 42, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  transition: all 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  transform: translateZ(0);
+}
+
+/* Pressable with Apple physical spring feel */
 .pressable {
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.18s ease, box-shadow 0.18s ease;
   cursor: pointer;
   user-select: none;
   transform: translateZ(0);
 }
 .pressable:active {
-  transform: scale(0.97);
+  transform: scale(0.968);
 }
 
 @media (hover: hover) {
   .pressable:hover {
-    border-color: rgba(34, 211, 238, 0.3);
+    border-color: rgba(2, 132, 199, 0.35);
+    box-shadow: 0 12px 32px -8px rgba(2, 132, 199, 0.14);
   }
 }
 
@@ -161,9 +186,9 @@ body {
 
 /* ============ BADGES & PILLS ============ */
 .badge-cyan {
-  background: rgba(34, 211, 238, 0.12);
-  color: #22D3EE;
-  border: 1px solid rgba(34, 211, 238, 0.28);
+  background: rgba(2, 132, 199, 0.08);
+  color: #0284C7;
+  border: 1px solid rgba(2, 132, 199, 0.22);
   font-weight: 800;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -173,9 +198,21 @@ body {
 }
 
 .badge-gold {
-  background: rgba(245, 198, 107, 0.12);
-  color: #F5C66B;
-  border: 1px solid rgba(245, 198, 107, 0.28);
+  background: rgba(217, 119, 6, 0.08);
+  color: #D97706;
+  border: 1px solid rgba(217, 119, 6, 0.22);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  padding: 3px 10px;
+}
+
+.badge-emerald {
+  background: rgba(5, 150, 105, 0.08);
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.22);
   font-weight: 800;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -186,48 +223,96 @@ body {
 
 /* ============ PRIMARY GRADIENT BUTTONS ============ */
 .btn-primary {
-  background: linear-gradient(135deg, #22D3EE 0%, #0284C7 100%);
-  color: #05070A;
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+  color: #FFFFFF;
   font-weight: 800;
   border-radius: 18px;
-  box-shadow: 0 10px 24px -6px rgba(34, 211, 238, 0.35);
-  transition: transform 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 8px 22px -4px rgba(2, 132, 199, 0.38);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.18s ease;
   transform: translateZ(0);
 }
 .btn-primary:active {
-  transform: scale(0.97);
+  transform: scale(0.965);
   filter: brightness(0.95);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.07);
-  color: #F4F7FB;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #F1F5F9;
+  color: #0F172A;
+  border: 1px solid #E2E8F0;
   font-weight: 700;
   border-radius: 18px;
-  transition: transform 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .btn-secondary:active {
-  transform: scale(0.97);
+  transform: scale(0.965);
 }
 
 /* ============ INPUT FIELDS ============ */
 .glass-input {
-  background: rgba(15, 20, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
   border-radius: 16px;
-  color: #F4F7FB;
-  padding: 10px 14px;
+  color: #0F172A;
+  padding: 11px 15px;
   font-size: 13px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
   outline: none;
 }
 .glass-input:focus {
-  border-color: #22D3EE;
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+  border-color: #0284C7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
 }
 
-/* ============ UTILITY ============ */
+/* Segmented Control */
+.segmented {
+  display: flex;
+  background: #F1F5F9;
+  padding: 3.5px;
+  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+}
+.segmented-pill {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748B;
+  border-radius: 13px;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.segmented-pill.active {
+  background: #FFFFFF;
+  color: #0F172A;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  font-weight: 700;
+}
+
+/* Typography styles */
+.serif-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: #0284C7;
+}
+.eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0284C7;
+}
+
+/* Utility Clamps */
 .clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Float animation for 3D hero */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
+}
+.animate-floaty {
+  animation: floaty 4.5s ease-in-out infinite;
+}

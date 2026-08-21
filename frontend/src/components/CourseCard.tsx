@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Play, Check, Star } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
@@ -19,7 +19,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   const { haptic } = useTelegram();
 
   const handleClick = () => {
-    haptic.impact('light');
+    haptic?.impact?.('light');
     onClick();
   };
 
@@ -30,32 +30,32 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       className="glass !rounded-[22px] overflow-hidden pressable group flex flex-col justify-between"
     >
       {/* Cover */}
-      <div className="relative aspect-[4/3] bg-[#0A0D13] overflow-hidden">
+      <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
         <img
           src={course.cover_url}
           alt={course.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#05070A]/85 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
 
         {showTopBadge && (
-          <div className="absolute top-0 left-0 bg-cyan text-[#05070A] text-[9px] font-extrabold px-2.5 py-1 rounded-br-xl tracking-wider uppercase flex items-center gap-1">
-            <Star className="w-2.5 h-2.5 fill-[#05070A]" />
+          <div className="absolute top-0 left-0 bg-cyan text-white text-[9px] font-extrabold px-2.5 py-1 rounded-br-xl tracking-wider uppercase flex items-center gap-1 shadow-sm">
+            <Star className="w-2.5 h-2.5 fill-white" />
             TOP
           </div>
         )}
 
         {course.discount_percent ? (
-          <div className="absolute top-2 right-2 bg-red-500/90 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-lg tracking-wide">
+          <div className="absolute top-2 right-2 bg-red-500/90 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-lg tracking-wide shadow-sm">
             −{course.discount_percent}%
           </div>
         ) : null}
 
         {course.is_enrolled && (
-          <div className="absolute inset-0 bg-[#05070A]/45 backdrop-blur-[1px] flex items-center justify-center">
-            <span className="w-9 h-9 rounded-full bg-cyan text-[#05070A] flex items-center justify-center shadow-cyanGlowSm">
-              <Play className="w-4 h-4 fill-[#05070A] ml-0.5" />
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-center justify-center">
+            <span className="w-9 h-9 rounded-full bg-cyan text-white flex items-center justify-center shadow-cyanGlowSm">
+              <Play className="w-4 h-4 fill-white ml-0.5" />
             </span>
           </div>
         )}

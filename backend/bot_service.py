@@ -2,7 +2,9 @@ import asyncio
 import logging
 import httpx
 from app.core.config import settings
+from app.storage import get_store
 from app.services.purchases import approve_purchase, reject_purchase
+from app.api.ai import call_openrouter_api, call_groq_api, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +19,15 @@ async def send_tg_message(client: httpx.AsyncClient, chat_id: int, text: str, re
     if reply_markup:
         payload["reply_markup"] = reply_markup
     try:
-        await client.post(f"{API_URL}/sendMessage", json=payload, timeout=10.0)
+        await client.post(f"{API_URL}/sendMessage", json=payload, timeout=12.0)
     except Exception as e:
         logger.error(f"Error sending message to {chat_id}: {e}")
+
+async def send_tg_chat_action(client: httpx.AsyncClient, chat_id: int, action: str = "typing"):
+    try:
+        await client.post(f"{API_URL}/sendChatAction", json={"chat_id": chat_id, "action": action}, timeout=6.0)
+    except Exception:
+        pass
 
 async def handle_callback_query(client: httpx.AsyncClient, callback_query: dict):
     """Adminlar tomonidan to'lov chekini tasdiqlash yoki rad etish tugmasi bosilganda"""
@@ -96,12 +104,17 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
 
     chat_id = message.get("chat", {}).get("id")
     user_id = message.get("from", {}).get("id")
-    text = message.get("text", "")
+    text = (message.get("text") or "").strip()
     first_name = message.get("from", {}).get("first_name", "Do'stim")
+    username = message.get("from", {}).get("username", "")
 
     is_admin = user_id in settings.ADMIN_IDS
     webapp_url = settings.WEBAPP_URL
 
+    if not text:
+        return
+
+    # 1. /start buyrug'i
     if text.startswith("/start"):
         admin_greeting = ""
         if user_id == 8544023815:
@@ -111,9 +124,11 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
 
         welcome_text = (
             f"Assalomu alaykum, <b>{first_name}</b>! 🎓\n\n"
-            f"<b>Premium Kurslar Platformasiga</b> xush kelibsiz!\n\n"
-            f"Bu yerda siz Sun'iy Intellekt (AI), Dizayn, Telegram Fullstack dasturlash va Marketing "
-            f"bo'yicha eng sara amaliy kurslarni o'rganishingiz mumkin.{admin_greeting}\n\n"
+            f"<b>Course Academy — Premium Kurslar Platformasiga</b> xush kelibsiz!\n\n"
+            f"🚀 <b>2026-yilgi eng yangi imkoniyatlar:</b>\n"
+            f"• 🤖 <b>stealth/ox-alpha AI Mentor</b> — darslar va kod bo'yicha savollaringizga bir zumda javob beradi.\n"
+            f"• 📱 <b>iOS 27 Dizayn</b> — qulay, chiroyli va o'ta tezkor Telegram Mini App.\n"
+            f"• 🏆 <b>Rasmiy Sertifikatlar</b> — har bir kurs yakunida raqamli tekshiriladigan sertifikat.{admin_greeting}\n\n"
             f"O'rganishni boshlash uchun quyidagi tugmani bosing 👇"
         )
 
@@ -129,6 +144,10 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
                     {
                         "text": "📚 Kurslar Katalogi",
                         "web_app": {"url": f"{webapp_url}#courses"}
+                    },
+                    {
+                        "text": "🤖 AI Mentor",
+                        "web_app": {"url": f"{webapp_url}#ai"}
                     }
                 ],
                 [
@@ -154,16 +173,87 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
 
         await send_tg_message(client, chat_id, welcome_text, keyboard)
 
+    # 2. /kurslar buyrug'i
+    elif text.startswith("/kurslar") or text.startswith("/courses"):
+        store = get_store()
+        courses = await store.list_courses(published_only=True)
+        if not courses:
+            await send_tg_message(client, chat_id, "📚 Hozirda kurslar tayyorlanmoqda. Mini App orqali kuzatib boring!")
+            return
+
+        lines = ["📚 <b>Course Academy — Mavjud Kurslar:</b>\n"]
+        inline_buttons = []
+
+        for idx, c in enumerate(courses[:6], 1):
+            price_formatted = f"{c.get('price', 0):,} so'm".replace(",", " ")
+            lines.append(
+                f"{idx}. <b>{c.get('title')}</b>\n"
+                f"   🏷 Kategoriya: <i>{c.get('category', 'AI')}</i> | ⏱ {c.get('duration', '20 soat')}\n"
+                f"   💰 Narxi: <b>{price_formatted}</b>\n"
+            )
+            inline_buttons.append([{
+                "text": f"👉 {c.get('title')[:30]}",
+                "web_app": {"url": f"{webapp_url}#course_{c.get('id')}"}
+            }])
+
+        inline_buttons.append([{
+            "text": "🚀 Barcha kurslarni ko'rish (Mini App)",
+            "web_app": {"url": f"{webapp_url}#courses"}
+        }])
+
+        await send_tg_message(client, chat_id, "\n".join(lines), {"inline_keyboard": inline_buttons})
+
+    # 3. /stats yoki /admin (faqat superadminlar uchun)
+    elif text.startswith("/stats") or text.startswith("/admin"):
+        if not is_admin:
+            await send_tg_message(client, chat_id, "❌ Ushbu buyruq faqat Superadminlar uchun mavjud.")
+            return
+
+        store = get_store()
+        stats = await store.revenue_stats()
+        total_students = await store.count_users()
+        courses = await store.list_courses(published_only=True)
+        pending = await store.list_purchases(status="pending_approval", limit=100)
+
+        admin_name = "Yaxshi Bola" if user_id == 8544023815 else "Zuhra Olimova"
+        rev_total = f"{stats.get('total_revenue', 0):,} so'm".replace(",", " ")
+        rev_month = f"{stats.get('monthly_revenue', 0):,} so'm".replace(",", " ")
+
+        report_text = (
+            f"📊 <b>Course Academy — Real Statistika Hisoboti</b>\n\n"
+            f"👤 <b>Admin:</b> {admin_name}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"💰 <b>Jami tushum:</b> {rev_total}\n"
+            f"📈 <b>Shu oylik tushum:</b> {rev_month}\n"
+            f"👥 <b>Jami talabalar:</b> {total_students} ta\n"
+            f"📚 <b>Faol kurslar:</b> {len(courses)} ta\n"
+            f"⏳ <b>Kutilayotgan cheklar:</b> {len(pending)} ta\n\n"
+            f"Boshqaruv paneliga to'liq kirish uchun 👇"
+        )
+
+        keyboard = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "📊 Superadmin Dashboardni ochish",
+                        "web_app": {"url": f"{webapp_url}#admin"}
+                    }
+                ]
+            ]
+        }
+        await send_tg_message(client, chat_id, report_text, keyboard)
+
+    # 4. /help yoki bog'lanish
     elif text in ["/help", "/contact", "Admin bilan bog'lanish", "Yordam", "Bog'lanish"]:
         contact_text = (
             f"🤝 <b>Admin bilan bog'lanish markazi</b>\n\n"
             f"Savollar, to'lovlar yoki takliflar bo'yicha quyidagi bo'limlardan birini tanlang:\n\n"
             f"🙋‍♂️ <b>Yigitlar (O'g'il bolalar) uchun:</b>\n"
             f"👤 Ustoz: <b>Yaxshi Bola</b>\n"
-            f"👉 Lichka: @yomonboia\n\n"
+            f"👉 Telegram: @yomonboia\n\n"
             f"🙋‍♀️ <b>Qizlar (Ayollar) uchun:</b>\n"
             f"👤 Ustoz: <b>Zuhra Olimova</b>\n"
-            f"👉 Lichka: @sokin_notalar"
+            f"👉 Telegram: @sokin_notalar"
         )
 
         contact_keyboard = {
@@ -190,31 +280,51 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
         }
         await send_tg_message(client, chat_id, contact_text, contact_keyboard)
 
-    elif text.startswith("/admin"):
-        if not is_admin:
-            await send_tg_message(client, chat_id, "❌ Kechirasiz, ushbu bo'lim faqat Administratorlar uchun.")
+    # 5. /ai yoki oddiy foydalanuvchi savoli — OpenRouter stealth/ox-alpha orqali javob berish!
+    else:
+        query = text.replace("/ai", "").strip() if text.startswith("/ai") else text
+        if len(query) < 2:
             return
 
-        admin_name = "Yaxshi Bola" if user_id == 8544023815 else "Zuhra Olimova"
-        admin_text = (
-            f"👑 <b>Admin Boshqaruv Markazi</b>\n\n"
-            f"Assalomu alaykum, <b>{admin_name}</b>!\n"
-            f"Sizda platformaning barcha kurslari, talabalari, tushumlari va to'lov cheklarini tasdiqlash "
-            f"bo'yicha to'liq Superadmin imkoniyatlari mavjud.\n\n"
-            f"Boshqaruv panelini ochish uchun tugmani bosing 👇"
+        # Typing action ko'rsatamiz
+        await send_tg_chat_action(client, chat_id, "typing")
+
+        ai_messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"Foydalanuvchi ismi: {first_name}. Savol: {query}"}
+        ]
+
+        # 1. OpenRouter stealth/ox-alpha
+        reply = call_openrouter_api(ai_messages)
+        if not reply:
+            reply = call_groq_api(ai_messages)
+        if not reply:
+            reply = f"Assalomu alaykum, {first_name}! Sizning savolingiz: '{query}'. Batafsil javob va video darslarni bizning Course Academy Mini Appimizda topishingiz mumkin! 🚀"
+
+        # HTML teglarga o'rab yuboramiz
+        escaped_reply = (
+            reply.replace("<", "&lt;")
+                 .replace(">", "&gt;")
+                 .replace("&lt;b&gt;", "<b>")
+                 .replace("&lt;/b&gt;", "</b>")
+                 .replace("&lt;code&gt;", "<code>")
+                 .replace("&lt;/code&gt;", "</code>")
+                 .replace("&lt;pre&gt;", "<pre>")
+                 .replace("&lt;/pre&gt;", "</pre>")
         )
 
-        admin_keyboard = {
+        ai_keyboard = {
             "inline_keyboard": [
                 [
                     {
-                        "text": "📊 Admin Dashboardni Ochish",
-                        "web_app": {"url": f"{webapp_url}#admin"}
+                        "text": "🚀 Darslarni Mini Appda ko'rish",
+                        "web_app": {"url": webapp_url}
                     }
                 ]
             ]
         }
-        await send_tg_message(client, chat_id, admin_text, admin_keyboard)
+
+        await send_tg_message(client, chat_id, f"🤖 <b>AI Mentor (stealth/ox-alpha):</b>\n\n{escaped_reply}", ai_keyboard)
 
 async def start_telegram_bot_polling():
     """FastAPI orqasida 24/7 avtomatik ishlovchi Telegram Bot polling xizmati"""
@@ -230,6 +340,8 @@ async def start_telegram_bot_polling():
             await client.post(f"{API_URL}/setMyCommands", json={
                 "commands": [
                     {"command": "start", "description": "Platformani ishga tushirish"},
+                    {"command": "kurslar", "description": "Mavjud kurslar ro'yxati"},
+                    {"command": "ai", "description": "AI Mentordan savol so'rash"},
                     {"command": "help", "description": "Admin bilan bog'lanish"},
                     {"command": "admin", "description": "Admin boshqaruv paneli"}
                 ]
@@ -237,7 +349,7 @@ async def start_telegram_bot_polling():
             await client.post(f"{API_URL}/setChatMenuButton", json={
                 "menu_button": {
                     "type": "web_app",
-                    "text": "🎓 Platformani ochish",
+                    "text": "🎓 Course Academy",
                     "web_app": {"url": settings.WEBAPP_URL}
                 }
             })
@@ -257,8 +369,8 @@ async def start_telegram_bot_polling():
                         except Exception as e:
                             logger.error(f"Update handling error: {e}")
                 elif res.status_code == 409:
-                    logger.warning("getUpdates 409: boshqa polling instansiyasi bor (eski deploy o'chishi kutilmoqda)...")
-                    await asyncio.sleep(10)
+                    logger.warning("getUpdates 409: boshqa polling instansiyasi bor...")
+                    await asyncio.sleep(8)
             except asyncio.CancelledError:
                 break
             except Exception as e:

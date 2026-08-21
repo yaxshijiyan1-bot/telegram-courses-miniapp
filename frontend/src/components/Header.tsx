@@ -7,6 +7,7 @@ interface HeaderProps {
   onOpenNotifications: () => void;
   onOpenSearch: () => void;
   onOpenProfile: () => void;
+  onOpenAIMentor?: () => void;
   unreadCount?: number;
 }
 
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
   onOpenSearch,
   onOpenProfile,
+  onOpenAIMentor,
   unreadCount = 0,
 }) => {
   const { haptic, user: tgUser } = useTelegram();
@@ -24,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   const photoUrl = tgUser?.photo_url;
 
   return (
-    <header className="sticky top-0 z-30 px-4 pt-3 pb-3 bg-[#05070A]/70 backdrop-blur-2xl border-b border-white/[0.06] flex items-center justify-between">
+    <header className="sticky top-0 z-30 px-4 pt-3 pb-3 bg-white/80 backdrop-blur-2xl border-b border-slate-200/80 flex items-center justify-between">
       {/* Brand */}
       <button
         type="button"
@@ -34,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
         }}
         className="flex items-center space-x-3 text-left pressable rounded-2xl pr-2"
       >
-        <div className="relative w-10 h-10 rounded-[14px] bg-gradient-to-br from-cyan/25 via-cyan/10 to-violet/20 border border-cyan/25 flex items-center justify-center flex-shrink-0 shadow-cyanGlowSm">
+        <div className="relative w-10 h-10 rounded-[14px] bg-gradient-to-br from-cyan-500/15 via-cyan-500/10 to-violet-500/15 border border-cyan-500/25 flex items-center justify-center flex-shrink-0 shadow-cyanGlowSm">
           <GraduationCap className="w-5 h-5 text-cyan" strokeWidth={2} />
         </div>
         <div className="flex flex-col">
@@ -49,6 +51,21 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Actions */}
       <div className="flex items-center space-x-2">
+        {onOpenAIMentor && (
+          <button
+            type="button"
+            onClick={() => {
+              haptic.impact('light');
+              onOpenAIMentor();
+            }}
+            className="px-2.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center gap-1.5 text-amber-700 hover:text-amber-800 active:scale-95 transition-all text-xs font-semibold shadow-sm shadow-amber-500/10"
+            aria-label="AI Yordamchi"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>AI Mentor</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => {
@@ -72,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Bell className="w-4 h-4" strokeWidth={2.2} />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-cyan text-[#05070A] text-[9px] font-extrabold flex items-center justify-center ring-2 ring-[#05070A] animate-pulse-glow">
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-cyan text-white text-[9px] font-extrabold flex items-center justify-center ring-2 ring-white animate-pulse-glow">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -84,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
             haptic.selection();
             onOpenProfile();
           }}
-          className="w-9 h-9 rounded-[14px] overflow-hidden bg-gradient-to-br from-cyan/40 to-violet/40 border border-white/10 flex items-center justify-center text-[#05070A] font-extrabold text-xs active:scale-90 transition-transform"
+          className="w-9 h-9 rounded-[14px] overflow-hidden bg-gradient-to-br from-cyan/40 to-violet/40 border border-slate-200 flex items-center justify-center text-white font-extrabold text-xs active:scale-90 transition-transform"
           aria-label="Profil"
         >
           {photoUrl ? (

@@ -43,12 +43,12 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUser(tg.initDataUnsafe.user);
       }
 
-      // Ranglarni sozlash — qora OLED tema
+      // Ranglarni sozlash — oq toza tema
       if (tg.setHeaderColor) {
-        try { tg.setHeaderColor('#05070A'); } catch {}
+        try { tg.setHeaderColor('#FFFFFF'); } catch {}
       }
       if (tg.setBackgroundColor) {
-        try { tg.setBackgroundColor('#05070A'); } catch {}
+        try { tg.setBackgroundColor('#FFFFFF'); } catch {}
       }
     }
   }, []);

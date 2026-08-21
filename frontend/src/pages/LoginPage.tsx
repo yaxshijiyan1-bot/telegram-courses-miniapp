@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Lock, User, Send, ArrowRight, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
@@ -158,10 +158,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             type="submit"
             disabled={isSubmitting}
             whileTap={{ scale: 0.97 }}
-            className="w-full py-3.5 bg-gradient-to-r from-cyan to-cyan-light text-[#05070A] font-extrabold rounded-2xl shadow-cyanGlow flex items-center justify-center space-x-2 text-sm disabled:opacity-50"
+            className="w-full py-3.5 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl shadow-cyanGlow flex items-center justify-center space-x-2 text-sm disabled:opacity-50"
           >
             {isSubmitting ? (
-              <InlineLoader variant="orbit" size={16} color="#05070A" />
+              <InlineLoader variant="orbit" size={16} color="#FFFFFF" />
             ) : (
               <>
                 <span>Kirish</span>

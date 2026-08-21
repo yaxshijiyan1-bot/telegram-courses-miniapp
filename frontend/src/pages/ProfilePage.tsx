@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Award,
   CircleHelp,
@@ -62,7 +62,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const metrics = [
     { icon: BookOpen, label: 'yakunlangan dars', value: completedLessons, accent: 'text-cyan bg-cyan/10 border-cyan/20' },
-    { icon: GraduationCap, label: 'aktiv kurs', value: enrolledCount, accent: 'text-violet-light bg-violet/10 border-violet/20' },
+    { icon: GraduationCap, label: 'aktiv kurs', value: enrolledCount, accent: 'text-violet bg-violet/10 border-violet/20' },
     { icon: Trophy, label: 'umumiy progress', value: `${overallProgress}%`, accent: 'text-gold bg-gold/10 border-gold/20' },
   ];
 
@@ -79,7 +79,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <div className="absolute -left-10 -bottom-16 w-40 h-40 rounded-full bg-violet/[0.06] blur-3xl pointer-events-none" />
 
         <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 rounded-[18px] overflow-hidden bg-gradient-to-br from-cyan/40 to-violet/40 border border-white/15 flex items-center justify-center text-[#05070A] font-extrabold text-lg flex-shrink-0 shadow-cyanGlowSm">
+          <div className="w-14 h-14 rounded-[18px] overflow-hidden bg-gradient-to-br from-cyan/40 to-violet/40 border border-slate-200 flex items-center justify-center text-white font-extrabold text-lg flex-shrink-0 shadow-cyanGlowSm">
             {photoUrl ? (
               <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
             ) : (
@@ -228,7 +228,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       {/* Sertifikatlar modali */}
       <AnimatePresence>
         {showCertModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in" onClick={() => setShowCertModal(false)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in" onClick={() => setShowCertModal(false)}>
             <motion.div
               initial={{ scale: 0.94, y: 20 }}
               animate={{ scale: 1, y: 0 }}
@@ -237,7 +237,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               className="glass-deep !rounded-[26px] p-5 max-w-sm w-full shadow-2xl space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07]">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
                 <div className="flex items-center space-x-2">
                   <Award className="w-[18px] h-[18px] text-cyan" strokeWidth={2.2} />
                   <h3 className="text-sm font-extrabold text-ink">Mening sertifikatlarim</h3>
@@ -277,7 +277,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCertModal(false)}
-                className="w-full py-3 bg-gradient-to-r from-cyan to-cyan-light text-[#05070A] font-extrabold rounded-2xl text-xs shadow-cyanGlowSm"
+                className="w-full py-3 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl text-xs shadow-cyanGlowSm"
               >
                 Tushundim
               </button>

@@ -90,6 +90,12 @@ class Settings(BaseSettings):
     CARD_HOLDER: str = os.getenv("CARD_HOLDER", "Yaxshi Bola / Zuhra Olimova")
     CARD_BANK: str = os.getenv("CARD_BANK", "Uzcard / Humo (Payme, Click, Uzum)")
 
+    # AI & OpenRouter sozlamalari
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "stealth/ox-alpha")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+
     class Config:
         case_sensitive = True
 

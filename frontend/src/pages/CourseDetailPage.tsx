@@ -72,7 +72,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
     },
     {
       q: "Savollarim bo‘lsa kimdan yordam olaman?",
-      a: "Har bir talaba uchun maxsus yopiq Telegram guruh mavjud bo‘lib, u yerda ustozlar va mentorlar barcha savollaringizga javob berishadi."
+      a: "Har bir talaba uchun AI Mentor va maxsus yopiq Telegram guruh mavjud bo‘lib, u yerda barcha savollaringizga javob olasiz."
     },
     {
       q: "Sertifikat qanday beriladi?",
@@ -85,16 +85,16 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-[#05070A] text-[#F4F7FB] pb-28 animate-fade-up">
+    <div className="min-h-screen bg-white text-slate-900 pb-28 animate-fade-up">
       {/* Top Floating Bar */}
-      <div className="sticky top-0 z-30 bg-[#05070A]/85 backdrop-blur-md px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
+      <div className="sticky top-0 z-30 bg-white/85 backdrop-blur-md px-4 py-3 border-b border-slate-200/80 flex items-center justify-between">
         <button
           type="button"
           onClick={() => {
-            haptic.impact('light');
+            haptic?.impact?.('light');
             onBack();
           }}
-          className="w-9 h-9 rounded-full glass-chip flex items-center justify-center text-[#94A3B8] hover:text-white active:scale-90 transition-all"
+          className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-90 transition-all"
           aria-label="Orqaga"
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={2.4} />
@@ -102,14 +102,14 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
         <div className="flex items-center gap-1.5">
           {course.is_enrolled ? (
-            <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-400/10 border border-emerald-400/25 px-3 py-1.5 rounded-full flex items-center gap-1">
+            <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full flex items-center gap-1">
               <Check className="w-3 h-3 stroke-[3]" />
               Sizga Ochiq
             </span>
           ) : (
-            <span className="text-[11px] font-extrabold text-[#22D3EE] bg-[#22D3EE]/10 border border-[#22D3EE]/25 px-3 py-1.5 rounded-full">
+            <span className="text-[11px] font-extrabold text-cyan-600 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-full">
               {course.old_price && (
-                <s className="text-[#64748B] mr-1.5 font-bold">{formatPrice(course.old_price)}</s>
+                <s className="text-slate-400 mr-1.5 font-bold">{formatPrice(course.old_price)}</s>
               )}
               {formatPrice(course.price)}
             </span>
@@ -119,29 +119,29 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
       <div className="px-4 pt-3 space-y-4">
         {/* Course Hero & Cover */}
-        <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-[#0B0E14] border border-white/10 shadow-lg">
+        <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm">
           <img
             src={course.cover_url}
             alt={course.title}
             className="w-full h-full object-cover"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#05070A] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
           
           <div className="absolute top-3 left-3">
-            <span className="badge-cyan">
+            <span className="bg-white/90 text-cyan-700 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
               {course.category || 'KURS'}
             </span>
           </div>
 
-          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-[#94A3B8] font-bold">
-            <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg">
-              <Clock className="w-3.5 h-3.5 text-[#22D3EE]" /> {course.duration}
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] text-white font-bold">
+            <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+              <Clock className="w-3.5 h-3.5 text-cyan-400" /> {course.duration}
             </span>
-            <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg">
-              <BookOpen className="w-3.5 h-3.5 text-[#22D3EE]" /> {totalLessons} dars
+            <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+              <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> {totalLessons} dars
             </span>
-            <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg text-amber-400">
+            <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-lg text-amber-400">
               <Star className="w-3.5 h-3.5 fill-amber-400" /> {course.rating?.toFixed(1) || '5.0'}
             </span>
           </div>
@@ -387,11 +387,11 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto bg-[#05070A]/95 backdrop-blur-xl p-3 border-t border-white/[0.08] z-40">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto bg-white/95 backdrop-blur-xl p-3 border-t border-slate-200/80 z-40">
         <button
           type="button"
           onClick={() => {
-            haptic.impact('medium');
+            haptic?.impact?.('medium');
             if (course.is_enrolled) {
               if (course.modules?.[0]?.lessons?.[0]) {
                 onPlayLesson(course, course.modules[0].lessons[0]);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowRight, Plus, BookOpen, GraduationCap, Trophy, PlayCircle, CheckCircle2 } from 'lucide-react';
 import { Course, EnrolledCourse } from '../types';
 import { useTelegram } from '../context/TelegramContext';
@@ -53,10 +53,10 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
         </span>
       </motion.div>
 
-      {/* Kurslar ro'yxati — HAMMASI, faqat birinchisi emas */}
+      {/* Kurslar ro'yxati */}
       {enrolledCourses.length === 0 ? (
         <motion.div variants={item} className="glass rounded-[24px] p-6 text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 text-cyan flex items-center justify-center mx-auto">
             <BookOpen className="w-6 h-6" strokeWidth={2} />
           </div>
           <b className="text-sm text-ink block">Hozircha aktiv kurs yo‘q</b>
@@ -76,14 +76,14 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                 type="button"
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
-                  haptic.impact('medium');
+                  haptic?.impact?.('medium');
                   if (full) onSelectCourse(full);
                 }}
                 className="w-full glass rounded-[24px] p-4 text-left flex items-center space-x-3.5 relative overflow-hidden"
               >
                 <div className="absolute -right-10 -top-14 w-40 h-40 rounded-full bg-cyan/[0.06] blur-3xl pointer-events-none" />
 
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.08] flex-shrink-0 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 flex items-center justify-center">
                   <img
                     src={enrolled.cover_url || full?.cover_url || '/images/hero_seal.webp'}
                     alt=""
@@ -94,7 +94,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
 
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center space-x-1.5">
-                    <span className={`text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${isDone ? 'text-emerald-400' : 'text-cyan'}`}>
+                    <span className={`text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${isDone ? 'text-emerald-600' : 'text-cyan'}`}>
                       {isDone ? <CheckCircle2 className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
                       {isDone ? 'Yakunlangan' : 'Davom etmoqda'}
                     </span>
@@ -104,9 +104,9 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                   </h3>
 
                   <div className="flex items-center space-x-2">
-                    <div className="flex-1 h-1.5 bg-white/[0.07] rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${isDone ? 'bg-emerald-400' : 'bg-gradient-to-r from-cyan to-violet-light'}`}
+                        className={`h-full rounded-full ${isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-cyan to-violet-light'}`}
                         style={{ width: `${enrolled.progress_percent}%` }}
                       />
                     </div>
@@ -129,7 +129,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
       )}
 
       {/* Statistika — REAL raqamlar */}
-      <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-white/[0.06]">
+      <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-slate-200/80">
         <div className="flex items-center space-x-2.5 px-1.5">
           <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 border border-cyan/15">
             <BookOpen className="w-4 h-4" strokeWidth={2.2} />
@@ -146,7 +146,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
         </div>
 
         <div className="flex items-center space-x-2.5 px-1.5">
-          <div className="w-9 h-9 rounded-xl bg-violet/10 text-violet-light flex items-center justify-center flex-shrink-0 border border-violet/15">
+          <div className="w-9 h-9 rounded-xl bg-violet/10 text-violet flex items-center justify-center flex-shrink-0 border border-violet/15">
             <GraduationCap className="w-4 h-4" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
@@ -175,13 +175,13 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
         variants={item}
         type="button"
         onClick={() => {
-          haptic.impact('light');
+          haptic?.impact?.('light');
           onExploreCourses();
         }}
         className="w-full p-3.5 glass-chip rounded-[20px] border-dashed border-cyan/30 flex items-center justify-between pressable text-left group"
       >
         <div className="flex items-center space-x-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 group-hover:bg-cyan group-hover:text-[#05070A] transition-colors">
+          <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 group-hover:bg-cyan group-hover:text-white transition-colors">
             <Plus className="w-5 h-5" strokeWidth={2.5} />
           </div>
           <div className="min-w-0">

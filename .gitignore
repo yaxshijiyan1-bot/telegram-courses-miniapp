@@ -25,6 +25,11 @@ tmp/
 *.sql.gz
 FULL_CODEBASE.*
 BOT_CODEBASE.*
+*.zip
+off.doc
+extracted_materials/
+skills/
+skills_hub/
 
 # ==============================================================================
 # 4. DASTURLASH TILLARI KESH VA MUHITLARI

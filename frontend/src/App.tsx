@@ -13,6 +13,7 @@ import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { CheckoutModal } from './components/CheckoutModal';
 import { NotificationsPanel } from './components/NotificationsPanel';
+import { AIMentorModal } from './components/AIMentorModal';
 
 import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
@@ -40,6 +41,7 @@ export const AppContent: React.FC = () => {
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
+  const [isAIMentorOpen, setIsAIMentorOpen] = useState(false);
 
   // ---- ORTQA QAYTISH HIMOYASI ----
   const navStateRef = useRef({ selectedCourse, selectedLesson, purchasedCourse });
@@ -214,24 +216,33 @@ export const AppContent: React.FC = () => {
   // 1. Lesson Player View
   if (selectedLesson) {
     return (
-      <LessonPlayerPage
-        course={selectedLesson.course}
-        lesson={selectedLesson.lesson}
-        moduleTitle={selectedLesson.moduleTitle}
-        prevLessonId={selectedLesson.prev}
-        nextLessonId={selectedLesson.next}
-        onBack={goBack}
-        onSelectLesson={async (c, lId) => {
-          const lData = await api.getProtectedLesson(c.id, lId);
-          setSelectedLesson({
-            course: c,
-            lesson: lData.lesson,
-            moduleTitle: lData.module_title,
-            prev: lData.prev_lesson_id,
-            next: lData.next_lesson_id,
-          });
-        }}
-      />
+      <>
+        <LessonPlayerPage
+          course={selectedLesson.course}
+          lesson={selectedLesson.lesson}
+          moduleTitle={selectedLesson.moduleTitle}
+          prevLessonId={selectedLesson.prev}
+          nextLessonId={selectedLesson.next}
+          onBack={goBack}
+          onOpenAIMentor={() => setIsAIMentorOpen(true)}
+          onSelectLesson={async (c, lId) => {
+            const lData = await api.getProtectedLesson(c.id, lId);
+            setSelectedLesson({
+              course: c,
+              lesson: lData.lesson,
+              moduleTitle: lData.module_title,
+              prev: lData.prev_lesson_id,
+              next: lData.next_lesson_id,
+            });
+          }}
+        />
+        <AIMentorModal
+          isOpen={isAIMentorOpen}
+          onClose={() => setIsAIMentorOpen(false)}
+          currentCourseTitle={selectedLesson.course.title}
+          currentLessonTitle={selectedLesson.lesson.title}
+        />
+      </>
     );
   }
 
@@ -284,6 +295,11 @@ export const AppContent: React.FC = () => {
           notifications={notifications}
           onClose={() => setIsNotifsOpen(false)}
         />
+        <AIMentorModal
+          isOpen={isAIMentorOpen}
+          onClose={() => setIsAIMentorOpen(false)}
+          currentCourseTitle={selectedCourse.title}
+        />
       </>
     );
   }
@@ -292,7 +308,7 @@ export const AppContent: React.FC = () => {
 
   // MAIN TAB LAYOUT (Rock-Solid Viewport & Unbreakable BottomNav)
   return (
-    <div className="flex flex-col h-[100dvh] max-h-[100dvh] w-full bg-[#05070A] text-[#F4F7FB] relative overflow-hidden">
+    <div className="flex flex-col h-[100dvh] max-h-[100dvh] w-full bg-white text-[#0F172A] relative overflow-hidden">
       {/* Background Glow */}
       <div className="aurora pointer-events-none" />
 
@@ -302,6 +318,7 @@ export const AppContent: React.FC = () => {
           onOpenNotifications={() => setIsNotifsOpen(true)}
           onOpenSearch={() => setActiveTab('courses')}
           onOpenProfile={() => setActiveTab('profile')}
+          onOpenAIMentor={() => setIsAIMentorOpen(true)}
           unreadCount={unreadCount}
         />
       </div>
@@ -366,13 +383,21 @@ export const AppContent: React.FC = () => {
       </main>
 
       {/* Unbreakable Symmetrical Floating Bottom Navigation */}
-      {!isNotifsOpen && !isAdminOpen && (
+      {!isNotifsOpen && !isAdminOpen && !isAIMentorOpen && (
         <BottomNav
           activeTab={activeTab}
           onChangeTab={(tab) => setActiveTab(tab)}
           isAuthenticated={isAuthenticated}
         />
       )}
+
+      {/* Global AI Mentor Modal */}
+      <AIMentorModal
+        isOpen={isAIMentorOpen}
+        onClose={() => setIsAIMentorOpen(false)}
+        currentCourseTitle={selectedCourse?.title}
+        currentLessonTitle={selectedLesson?.lesson?.title}
+      />
 
       {/* Global Notifications Panel */}
       <NotificationsPanel

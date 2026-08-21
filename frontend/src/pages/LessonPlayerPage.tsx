@@ -7,8 +7,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Bot,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Course, Lesson } from '../types';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { useTelegram } from '../context/TelegramContext';
@@ -22,6 +23,7 @@ interface LessonPlayerPageProps {
   nextLessonId: string | null;
   onBack: () => void;
   onSelectLesson: (course: Course, lessonId: string) => void;
+  onOpenAIMentor?: () => void;
 }
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -33,7 +35,8 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
   prevLessonId,
   nextLessonId,
   onBack,
-  onSelectLesson
+  onSelectLesson,
+  onOpenAIMentor
 }) => {
   const [activeTab, setActiveTab] = useState<'about' | 'files'>('about');
   const [isCompleted, setIsCompleted] = useState(lesson.completed || false);
@@ -48,26 +51,33 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
 
   return (
     <div className="flex-1 pb-safe bg-darkBg text-ink animate-fade-up flex flex-col justify-between">
-      <div>
+      <div className="flex-1">
         {/* Top bar */}
-        <div className="sticky top-0 z-30 bg-darkBg/85 backdrop-blur-2xl px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="p-4 flex items-center justify-between border-b border-white/[0.06] bg-darkBg/60 backdrop-blur-2xl">
           <button
             onClick={() => {
-              haptic.impact('light');
+              haptic.selection();
               onBack();
             }}
-            className="flex items-center space-x-1.5 text-xs font-bold text-ink p-1.5 -ml-1.5 rounded-xl hover:bg-white/[0.04] active:scale-95 transition-all"
+            className="w-9 h-9 rounded-full glass-chip flex items-center justify-center text-ink-secondary hover:text-ink active:scale-90 transition-transform"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Kursga qaytish</span>
           </button>
-          <span className="text-[10px] font-extrabold text-cyan bg-cyan/10 border border-cyan/25 px-2.5 py-1 rounded-lg tabular-nums">
-            {lesson.duration}
-          </span>
+
+          <div className="text-center px-2 min-w-0">
+            <span className="text-[10px] font-extrabold text-cyan tracking-wider uppercase block truncate">
+              {moduleTitle}
+            </span>
+            <span className="text-xs font-bold text-ink block truncate max-w-[200px]">
+              {lesson.title}
+            </span>
+          </div>
+
+          <div className="w-9 h-9" />
         </div>
 
-        {/* Video */}
-        <div className="p-3">
+        {/* Video Player */}
+        <div className="w-full bg-black aspect-video relative">
           <VideoPlayer
             src={lesson.video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}
             poster={course.cover_url}
@@ -77,15 +87,11 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
           />
         </div>
 
-        {/* Lesson info */}
-        <div className="p-4 space-y-3.5">
+        {/* Content Details */}
+        <div className="p-4 space-y-4">
           <div>
-            <span className="text-[10px] font-extrabold text-cyan uppercase tracking-[0.14em] block">
-              {moduleTitle}
-            </span>
-            <h1 className="text-base sm:text-lg font-extrabold text-ink mt-1 leading-snug">
-              {lesson.title}
-            </h1>
+            <span className="text-[10px] font-bold text-ink-muted">Dars davomiyligi: {lesson.duration || '15 daqiqa'}</span>
+            <h1 className="text-base font-extrabold text-ink mt-0.5">{lesson.title}</h1>
           </div>
 
           {/* Complete CTA */}
@@ -94,11 +100,11 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             whileTap={{ scale: 0.97 }}
             className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center space-x-2 transition-all ${
               isCompleted
-                ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/30'
-                : 'bg-gradient-to-r from-cyan to-cyan-light text-[#05070A] font-extrabold shadow-cyanGlow'
+                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                : 'bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold shadow-cyanGlow'
             }`}
           >
-            <CheckCircle2 className={`w-4 h-4 ${isCompleted ? '' : 'text-[#05070A]'}`} strokeWidth={2.4} />
+            <CheckCircle2 className={`w-4 h-4 ${isCompleted ? '' : 'text-white'}`} strokeWidth={2.4} />
             <span>{isCompleted ? 'Dars tugallandi' : 'Darsni tugallangan deb belgilash'}</span>
           </motion.button>
 
@@ -106,7 +112,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
           <div className="segmented mt-4">
             <button
               onClick={() => {
-                haptic.selection();
+                haptic?.selection?.();
                 setActiveTab('about');
               }}
               className={`segmented-pill ${activeTab === 'about' ? 'active' : ''}`}
@@ -115,7 +121,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             </button>
             <button
               onClick={() => {
-                haptic.selection();
+                haptic?.selection?.();
                 setActiveTab('files');
               }}
               className={`segmented-pill ${activeTab === 'files' ? 'active' : ''}`}
@@ -134,6 +140,34 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 transition={{ duration: 0.25, ease }}
                 className="space-y-3 pt-1"
               >
+                {/* AI Assistant Callout */}
+                {onOpenAIMentor && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      haptic?.impact?.('light');
+                      onOpenAIMentor();
+                    }}
+                    className="w-full text-left p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 flex items-center justify-between transition-all group active:scale-[0.99]"
+                  >
+                    <div className="flex items-center space-x-3 min-w-0 pr-2">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-600 flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-slate-900">AI Dars Yordamchisi</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 font-extrabold">Online</span>
+                        </div>
+                        <span className="text-[11px] text-slate-500 truncate block">
+                          Tushunmagan joyingizni so'rang yoki kod yozdiring
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-amber-600 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                )}
+
                 <p className="text-xs text-ink-secondary leading-relaxed">
                   {lesson.description ||
                     'Ushbu darsda siz kurs mavzusiga doir eng muhim tushunchalar, real amaliy misollar va professional ko‘nikmalarni o‘rganasiz.'}
@@ -145,7 +179,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                     <span>Amaliy topshiriq</span>
                   </div>
                   <p className="text-[11px] text-ink-muted leading-relaxed">
-                    Darsdagi ko‘rsatmalarni o‘z loyihangizda sinab ko‘ring va natijalarni konspekt qilib boring.
+                    Darsda ko‘rsatilgan namunalarni o‘z kodingizda qaytadan yozib ko‘ring va mustahkamlang.
                   </p>
                 </div>
               </motion.div>
@@ -156,12 +190,11 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25, ease }}
-                className="space-y-2 pt-1"
+                className="space-y-2.5 pt-1"
               >
                 {!lesson.resources || lesson.resources.length === 0 ? (
-                  <div className="text-center py-8 glass !rounded-[20px] space-y-2">
-                    <FileText className="w-6 h-6 text-ink-muted mx-auto" strokeWidth={1.8} />
-                    <p className="text-xs text-ink-muted">Bu dars uchun qo‘shimcha fayllar biriktirilmagan.</p>
+                  <div className="text-center py-8 glass !rounded-[20px] text-ink-muted text-xs">
+                    Ushbu dars uchun qo‘shimcha fayllar biriktirilmagan.
                   </div>
                 ) : (
                   lesson.resources.map((file, idx) => (
@@ -178,8 +211,8 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
 
                       <a
                         href={file.url}
-                        onClick={() => haptic.impact('light')}
-                        className="px-3 py-1.5 bg-cyan text-[#05070A] rounded-xl text-[10px] font-extrabold flex items-center space-x-1 shadow-cyanGlowSm flex-shrink-0 active:scale-95 transition-transform"
+                        onClick={() => haptic?.impact?.('light')}
+                        className="px-3 py-1.5 bg-cyan text-white rounded-xl text-[10px] font-extrabold flex items-center space-x-1 shadow-cyanGlowSm flex-shrink-0 active:scale-95 transition-transform"
                       >
                         <Download className="w-3 h-3" />
                         <span>Yuklash</span>
@@ -194,16 +227,16 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
       </div>
 
       {/* Bottom nav */}
-      <div className="p-4 bg-darkBg/90 backdrop-blur-2xl border-t border-white/[0.06] flex items-center justify-between space-x-3">
+      <div className="p-4 bg-white/90 backdrop-blur-2xl border-t border-slate-200/80 flex items-center justify-between space-x-3">
         <button
           onClick={() => {
             if (prevLessonId) {
-              haptic.impact('light');
+              haptic?.impact?.('light');
               onSelectLesson(course, prevLessonId);
             }
           }}
           disabled={!prevLessonId}
-          className="flex-1 py-3 px-3 rounded-2xl glass-chip text-xs font-bold flex items-center justify-center space-x-1 disabled:opacity-30 disabled:pointer-events-none hover:border-cyan/30 transition-colors"
+          className="flex-1 py-3 px-3 rounded-2xl glass-chip text-xs font-bold flex items-center justify-center space-x-1 disabled:opacity-30 disabled:pointer-events-none hover:border-cyan/30 transition-colors text-slate-700"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Oldingi dars</span>
@@ -212,12 +245,12 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
         <button
           onClick={() => {
             if (nextLessonId) {
-              haptic.impact('light');
+              haptic?.impact?.('light');
               onSelectLesson(course, nextLessonId);
             }
           }}
           disabled={!nextLessonId}
-          className="flex-1 py-3 px-3 rounded-2xl bg-gradient-to-r from-cyan to-cyan-light text-[#05070A] font-extrabold text-xs flex items-center justify-center space-x-1 disabled:opacity-30 disabled:pointer-events-none shadow-cyanGlowSm active:scale-[0.98] transition-transform"
+          className="flex-1 py-3 px-3 rounded-2xl bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold text-xs flex items-center justify-center space-x-1 disabled:opacity-30 disabled:pointer-events-none shadow-cyanGlowSm active:scale-[0.98] transition-transform"
         >
           <span>Keyingi dars</span>
           <ChevronRight className="w-4 h-4 stroke-[2.5]" />
