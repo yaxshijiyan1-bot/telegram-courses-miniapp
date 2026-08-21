@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Bot,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Course, Lesson } from '../types';
@@ -36,7 +35,6 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
   nextLessonId,
   onBack,
   onSelectLesson,
-  onOpenAIMentor
 }) => {
   const [activeTab, setActiveTab] = useState<'about' | 'files'>('about');
   const [isCompleted, setIsCompleted] = useState(lesson.completed || false);
@@ -50,16 +48,16 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
   };
 
   return (
-    <div className="flex-1 pb-safe bg-darkBg text-ink animate-fade-up flex flex-col justify-between">
+    <div className="flex-1 pb-safe bg-white text-slate-900 animate-fade-up flex flex-col justify-between">
       <div className="flex-1">
         {/* Top bar */}
-        <div className="p-4 flex items-center justify-between border-b border-white/[0.06] bg-darkBg/60 backdrop-blur-2xl">
+        <div className="p-4 flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-2xl">
           <button
             onClick={() => {
               haptic.selection();
               onBack();
             }}
-            className="w-9 h-9 rounded-full glass-chip flex items-center justify-center text-ink-secondary hover:text-ink active:scale-90 transition-transform"
+            className="w-9 h-9 rounded-full glass-chip flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-90 transition-transform"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -68,7 +66,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             <span className="text-[10px] font-extrabold text-cyan tracking-wider uppercase block truncate">
               {moduleTitle}
             </span>
-            <span className="text-xs font-bold text-ink block truncate max-w-[200px]">
+            <span className="text-xs font-bold text-slate-900 block truncate max-w-[200px]">
               {lesson.title}
             </span>
           </div>
@@ -90,8 +88,8 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
         {/* Content Details */}
         <div className="p-4 space-y-4">
           <div>
-            <span className="text-[10px] font-bold text-ink-muted">Dars davomiyligi: {lesson.duration || '15 daqiqa'}</span>
-            <h1 className="text-base font-extrabold text-ink mt-0.5">{lesson.title}</h1>
+            <span className="text-[10px] font-bold text-slate-400">Dars davomiyligi: {lesson.duration || '15 daqiqa'}</span>
+            <h1 className="text-base font-extrabold text-slate-900 mt-0.5">{lesson.title}</h1>
           </div>
 
           {/* Complete CTA */}
@@ -100,8 +98,8 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             whileTap={{ scale: 0.97 }}
             className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center space-x-2 transition-all ${
               isCompleted
-                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
-                : 'bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold shadow-cyanGlow'
+                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                : 'btn-primary'
             }`}
           >
             <CheckCircle2 className={`w-4 h-4 ${isCompleted ? '' : 'text-white'}`} strokeWidth={2.4} />
@@ -140,45 +138,17 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 transition={{ duration: 0.25, ease }}
                 className="space-y-3 pt-1"
               >
-                {/* AI Assistant Callout */}
-                {onOpenAIMentor && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      haptic?.impact?.('light');
-                      onOpenAIMentor();
-                    }}
-                    className="w-full text-left p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 flex items-center justify-between transition-all group active:scale-[0.99]"
-                  >
-                    <div className="flex items-center space-x-3 min-w-0 pr-2">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-600 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-slate-900">AI Dars Yordamchisi</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 font-extrabold">Online</span>
-                        </div>
-                        <span className="text-[11px] text-slate-500 truncate block">
-                          Tushunmagan joyingizni so'rang yoki kod yozdiring
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-amber-600 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                )}
-
-                <p className="text-xs text-ink-secondary leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed">
                   {lesson.description ||
                     'Ushbu darsda siz kurs mavzusiga doir eng muhim tushunchalar, real amaliy misollar va professional ko‘nikmalarni o‘rganasiz.'}
                 </p>
 
                 <div className="glass !rounded-[20px] p-3.5 space-y-2">
-                  <div className="flex items-center space-x-2 text-xs font-bold text-ink">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-slate-900">
                     <Sparkles className="w-4 h-4 text-cyan" strokeWidth={2.2} />
                     <span>Amaliy topshiriq</span>
                   </div>
-                  <p className="text-[11px] text-ink-muted leading-relaxed">
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
                     Darsda ko‘rsatilgan namunalarni o‘z kodingizda qaytadan yozib ko‘ring va mustahkamlang.
                   </p>
                 </div>
@@ -193,7 +163,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 className="space-y-2.5 pt-1"
               >
                 {!lesson.resources || lesson.resources.length === 0 ? (
-                  <div className="text-center py-8 glass !rounded-[20px] text-ink-muted text-xs">
+                  <div className="text-center py-8 glass !rounded-[20px] text-slate-400 text-xs">
                     Ushbu dars uchun qo‘shimcha fayllar biriktirilmagan.
                   </div>
                 ) : (
@@ -204,8 +174,8 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                           <FileText className="w-4 h-4" strokeWidth={2.2} />
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-ink block truncate">{file.name}</span>
-                          <span className="text-[10px] text-ink-muted">{file.size}</span>
+                          <span className="text-xs font-bold text-slate-900 block truncate">{file.name}</span>
+                          <span className="text-[10px] text-slate-400">{file.size}</span>
                         </div>
                       </div>
 

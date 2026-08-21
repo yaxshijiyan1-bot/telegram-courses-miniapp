@@ -144,10 +144,6 @@ async def handle_tg_update(client: httpx.AsyncClient, update: dict):
                     {
                         "text": "📚 Kurslar Katalogi",
                         "web_app": {"url": f"{webapp_url}#courses"}
-                    },
-                    {
-                        "text": "🤖 AI Mentor",
-                        "web_app": {"url": f"{webapp_url}#ai"}
                     }
                 ],
                 [

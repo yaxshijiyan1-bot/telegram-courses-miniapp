@@ -51,20 +51,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Actions */}
       <div className="flex items-center space-x-2">
-        {onOpenAIMentor && (
-          <button
-            type="button"
-            onClick={() => {
-              haptic.impact('light');
-              onOpenAIMentor();
-            }}
-            className="px-2.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center gap-1.5 text-amber-700 hover:text-amber-800 active:scale-95 transition-all text-xs font-semibold shadow-sm shadow-amber-500/10"
-            aria-label="AI Yordamchi"
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span>AI Mentor</span>
-          </button>
-        )}
 
         <button
           type="button"
