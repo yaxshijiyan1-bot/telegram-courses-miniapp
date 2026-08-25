@@ -43,14 +43,15 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))
 
     # WebApp URL
-    WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://kurslarimiz-platforma.vercel.app")
+    WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://telegram-courses-miniapp2.pages.dev")
     WELCOME_BANNER_URL: str = os.getenv("WELCOME_BANNER_URL", "")
 
     # CORS — faqat ishonchli manbalar (Telegram Mini App o'zi frontend domenda ishlaydi)
     CORS_ORIGINS_RAW: str = os.getenv(
         "CORS_ORIGINS",
-        "https://kurslarimiz-platforma.vercel.app,https://kurslarimiz.vercel.app,http://localhost:3000,http://localhost:5173"
+        "https://telegram-courses-miniapp2.pages.dev,https://kurslarimiz-platforma.vercel.app,https://kurslarimiz.vercel.app,http://localhost:3000,http://localhost:5173,https://*.pages.dev"
     )
+
 
     @property
     def CORS_ORIGINS(self) -> List[str]:
