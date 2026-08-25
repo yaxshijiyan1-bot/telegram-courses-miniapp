@@ -78,8 +78,9 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
         >
           <span className="flex items-center space-x-1.5 glass-chip text-slate-800 px-3 py-1.5 rounded-full">
             <ShieldCheck className="w-3.5 h-3.5 text-cyan" strokeWidth={2.2} />
-            <span>Sertifikatli</span>
+            <span>Amaliy Ta'lim</span>
           </span>
+
           <span className="flex items-center space-x-1.5 glass-chip text-slate-800 px-3 py-1.5 rounded-full">
             <Zap className="w-3.5 h-3.5 text-cyan" strokeWidth={2.2} />
             <span>Telegramga mos</span>

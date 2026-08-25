@@ -120,25 +120,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <h2 className="text-sm font-bold text-ink px-1">Hisob boshqaruvi</h2>
 
         <div className="glass rounded-[22px] divide-y divide-white/[0.05] overflow-hidden">
-          <button
-            type="button"
-            onClick={() => {
-              haptic.impact('light');
-              setShowCertModal(true);
-            }}
-            className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.03] transition-colors text-left"
-          >
-            <div className="flex items-center space-x-3">
-              <Award className="w-4 h-4 text-cyan" strokeWidth={2.2} />
-              <span className="text-xs font-semibold text-ink">Mening sertifikatlarim</span>
-              {certificates.length > 0 && (
-                <span className="text-[9px] font-extrabold bg-cyan/10 text-cyan border border-cyan/20 px-1.5 py-0.5 rounded-md">
-                  {certificates.length}
-                </span>
-              )}
-            </div>
-            <ChevronRight className="w-4 h-4 text-ink-muted" />
-          </button>
+
 
           {isSuperadmin && (
             <button
@@ -225,66 +207,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </motion.div>
       )}
 
-      {/* Sertifikatlar modali */}
-      <AnimatePresence>
-        {showCertModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in" onClick={() => setShowCertModal(false)}>
-            <motion.div
-              initial={{ scale: 0.94, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.94, y: 20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-              className="glass-deep !rounded-[26px] p-5 max-w-sm w-full shadow-2xl space-y-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
-                <div className="flex items-center space-x-2">
-                  <Award className="w-[18px] h-[18px] text-cyan" strokeWidth={2.2} />
-                  <h3 className="text-sm font-extrabold text-ink">Mening sertifikatlarim</h3>
-                </div>
-                <button
-                  onClick={() => setShowCertModal(false)}
-                  className="w-7 h-7 rounded-full glass-chip text-ink-secondary flex items-center justify-center"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
 
-              {certificates.length === 0 ? (
-                <div className="p-5 glass-chip rounded-[20px] text-center space-y-2.5">
-                  <div className="w-12 h-12 rounded-2xl bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center mx-auto">
-                    <Award className="w-6 h-6" strokeWidth={1.8} />
-                  </div>
-                  <h4 className="text-xs font-bold text-ink">Sertifikatlar shu yerda ochiladi</h4>
-                  <p className="text-[11px] text-ink-muted leading-relaxed">
-                    Kurs darslarini 100% yakunlaganingizdan so‘ng rasmiy QR-kodli, raqamli tekshiriladigan sertifikat automatic tarzda qo‘shiladi.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {certificates.map((cert) => (
-                    <div key={cert.id} className="p-3 glass-chip rounded-[18px] flex items-center justify-between">
-                      <div className="min-w-0">
-                        <b className="text-[11px] text-ink block clamp-1">{cert.course_title}</b>
-                        <span className="text-[9px] text-ink-muted font-mono">{cert.certificate_code}</span>
-                      </div>
-                      <ArrowUpRight className="w-4 h-4 text-cyan flex-shrink-0" />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setShowCertModal(false)}
-                className="w-full py-3 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl text-xs shadow-cyanGlowSm"
-              >
-                Tushundim
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Superadmin */}
       {isAdminOpen && (

@@ -79,7 +79,13 @@ export interface Course {
   testimonials?: CourseTestimonial[];
   /** Qo'shimcha erkin ma'lumot bloklari */
   custom_info?: CourseCustomInfo[];
+  /** Kursda nimalarni o'rganasiz bandlari */
+  learning_outcomes?: string[];
+  /** Bo'limlarni yoqish/o'chirish sozlamalari */
+  show_instructor?: boolean;
+  show_outcomes?: boolean;
 }
+
 
 export interface ContinueLearningData {
   course_id: string;

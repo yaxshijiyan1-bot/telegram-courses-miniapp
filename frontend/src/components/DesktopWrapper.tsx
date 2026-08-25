@@ -35,10 +35,10 @@ export const DesktopWrapper: React.FC<DesktopWrapperProps> = ({ children }) => {
           <div className="w-11 h-11 rounded-2xl glass flex items-center justify-center text-cyan">
             <GraduationCap className="w-5 h-5" strokeWidth={2} />
           </div>
-          <div className="text-[11px] text-ink-muted leading-relaxed">
-            Sertifikatli kurslar · Xavfsiz to‘lov<br />
-            Chek tasdiqlash · Real statistika
-          </div>
+          <p className="text-xs font-medium text-slate-400 leading-relaxed font-sans">
+            Amaliy kurslar · Xavfsiz to‘lov<br />
+            Telegram Mini App orqali qulay ta’lim.
+          </p>
         </div>
       </div>
 

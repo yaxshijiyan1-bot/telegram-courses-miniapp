@@ -65,8 +65,8 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
         <h4 className="text-sm font-semibold text-brand-dark mt-0.5">
           {completedText}
         </h4>
-        <p className="text-xs text-brand-secondary mt-1 leading-relaxed">
-          Kurs yakunida professional sertifikat taqdim etiladi.
+        <p className="text-[11px] text-ink-muted">
+          Kurs yakunida barcha amaliy topshiriqlar to‘liq o‘zlashtiriladi.
         </p>
       </div>
     </div>

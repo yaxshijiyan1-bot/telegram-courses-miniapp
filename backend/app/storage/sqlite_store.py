@@ -145,11 +145,15 @@ class SqliteStore(Store):
                 ("gallery_urls", "TEXT"),
                 ("testimonials", "TEXT"),
                 ("custom_info", "TEXT"),
+                ("learning_outcomes", "TEXT"),
+                ("show_instructor", "INTEGER DEFAULT 1"),
+                ("show_outcomes", "INTEGER DEFAULT 1"),
             ):
                 try:
                     c.execute(f"ALTER TABLE courses ADD COLUMN {col} {ddl};")
                 except Exception:
                     pass
+
 
             for col, ddl in (
                 ("channel_invite_link", "TEXT"),
@@ -212,7 +216,9 @@ class SqliteStore(Store):
     def _course_row(self, r: sqlite3.Row) -> Dict[str, Any]:
         d = dict(r)
         d["published"] = bool(d.get("published"))
-        for json_field in ("gallery_urls", "testimonials", "custom_info"):
+        d["show_instructor"] = bool(d.get("show_instructor", 1)) if d.get("show_instructor") is not None else True
+        d["show_outcomes"] = bool(d.get("show_outcomes", 1)) if d.get("show_outcomes") is not None else True
+        for json_field in ("gallery_urls", "testimonials", "custom_info", "learning_outcomes"):
             val = d.get(json_field)
             if isinstance(val, str):
                 try:
@@ -248,6 +254,8 @@ class SqliteStore(Store):
         cur = await self.get_course(course["id"]) or {}
         row = {**cur, **course}
         row["published"] = 1 if row.get("published", True) else 0
+        row["show_instructor"] = 1 if row.get("show_instructor", True) else 0
+        row["show_outcomes"] = 1 if row.get("show_outcomes", True) else 0
         if "created_at" not in row or not row["created_at"]:
             row["created_at"] = _now()
 
@@ -255,14 +263,16 @@ class SqliteStore(Store):
         gallery_json = json.dumps(row.get("gallery_urls") or [])
         testimonials_json = json.dumps(row.get("testimonials") or [])
         custom_info_json = json.dumps(row.get("custom_info") or [])
+        outcomes_json = json.dumps(row.get("learning_outcomes") or [])
 
         with self.lock, self._conn() as c:
             c.execute(
                 """INSERT INTO courses (id,title,slug,category,description,short_description,cover_url,
                    preview_video_url,price,old_price,discount_percent,duration,lesson_count,level,
                    instructor_name,instructor_title,instructor_avatar,instructor_bio,access_duration,
-                   copyright_notice,rating,student_count,telegram_channel_id,gallery_urls,testimonials,custom_info,published,created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   copyright_notice,rating,student_count,telegram_channel_id,gallery_urls,testimonials,custom_info,
+                   learning_outcomes,show_instructor,show_outcomes,published,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(id) DO UPDATE SET title=excluded.title, slug=excluded.slug,
                    category=excluded.category, description=excluded.description,
                    short_description=excluded.short_description, cover_url=excluded.cover_url,
@@ -277,6 +287,9 @@ class SqliteStore(Store):
                    gallery_urls=excluded.gallery_urls,
                    testimonials=excluded.testimonials,
                    custom_info=excluded.custom_info,
+                   learning_outcomes=excluded.learning_outcomes,
+                   show_instructor=excluded.show_instructor,
+                   show_outcomes=excluded.show_outcomes,
                    published=excluded.published""",
                 (row.get("id"), row.get("title"), row.get("slug"), row.get("category"),
                  row.get("description"), row.get("short_description"), row.get("cover_url"),
@@ -286,13 +299,18 @@ class SqliteStore(Store):
                  row.get("instructor_avatar"), row.get("instructor_bio"), row.get("access_duration"),
                  row.get("copyright_notice"), row.get("rating", 5.0), row.get("student_count", 0),
                  row.get("telegram_channel_id"), gallery_json, testimonials_json, custom_info_json,
+                 outcomes_json, row.get("show_instructor", 1), row.get("show_outcomes", 1),
                  row.get("published", 1), row.get("created_at", _now()))
             )
         row["published"] = bool(row.get("published"))
+        row["show_instructor"] = bool(row.get("show_instructor"))
+        row["show_outcomes"] = bool(row.get("show_outcomes"))
         row["gallery_urls"] = json.loads(gallery_json)
         row["testimonials"] = json.loads(testimonials_json)
         row["custom_info"] = json.loads(custom_info_json)
+        row["learning_outcomes"] = json.loads(outcomes_json)
         return row
+
 
     async def delete_course(self, course_id: str) -> bool:
         with self.lock, self._conn() as c:

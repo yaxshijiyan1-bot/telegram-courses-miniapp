@@ -15,8 +15,10 @@ COURSE_COLUMNS = {
     "duration", "lesson_count", "level", "instructor_name", "instructor_title",
     "instructor_avatar", "instructor_bio", "rating", "student_count",
     "telegram_channel_id", "gallery_urls", "testimonials", "custom_info",
+    "learning_outcomes", "show_instructor", "show_outcomes",
     "published", "created_at"
 }
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()

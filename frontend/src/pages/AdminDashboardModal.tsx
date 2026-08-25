@@ -116,6 +116,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [newInfoTitle, setNewInfoTitle] = useState('');
   const [newInfoContent, setNewInfoContent] = useState('');
 
+  // Instructor & Learning Outcomes Section States
+  const [courseInstructorName, setCourseInstructorName] = useState('Kreativ AI');
+  const [courseInstructorTitle, setCourseInstructorTitle] = useState('Katta Ekspert');
+  const [courseInstructorAvatar, setCourseInstructorAvatar] = useState('/images/yaxshi_bola.jpg');
+  const [showInstructor, setShowInstructor] = useState(true);
+  const [showOutcomes, setShowOutcomes] = useState(true);
+  const [courseLearningOutcomes, setCourseLearningOutcomes] = useState<string[]>([]);
+  const [newOutcomeText, setNewOutcomeText] = useState('');
+
+
   // Delete Confirmation State
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
@@ -269,6 +279,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseGallery(Array.isArray(c.gallery_urls) ? c.gallery_urls : []);
     setCourseTestimonials(Array.isArray(c.testimonials) ? c.testimonials : []);
     setCourseCustomInfo(Array.isArray(c.custom_info) ? c.custom_info : []);
+    setCourseInstructorName(c.instructor_name || 'Kreativ AI');
+    setCourseInstructorTitle(c.instructor_title || 'Katta Ekspert');
+    setCourseInstructorAvatar(c.instructor_avatar || '/images/yaxshi_bola.jpg');
+    setShowInstructor(c.show_instructor !== false);
+    setShowOutcomes(c.show_outcomes !== false);
+    setCourseLearningOutcomes(Array.isArray(c.learning_outcomes) ? c.learning_outcomes : []);
     setActiveTab('courses');
     haptic?.selection?.();
   };
@@ -286,11 +302,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseGallery([]);
     setCourseTestimonials([]);
     setCourseCustomInfo([]);
+    setCourseInstructorName('Kreativ AI');
+    setCourseInstructorTitle('Katta Ekspert');
+    setCourseInstructorAvatar('/images/yaxshi_bola.jpg');
+    setShowInstructor(true);
+    setShowOutcomes(true);
+    setCourseLearningOutcomes([]);
     setNewGalleryUrl('');
     setNewTestimonialName('');
     setNewTestimonialText('');
     setNewInfoTitle('');
     setNewInfoContent('');
+    setNewOutcomeText('');
+  };
+
+  // Nimalarni o'rganasiz bandi qo'shish
+  const handleAddOutcome = () => {
+    if (!newOutcomeText.trim()) return;
+    setCourseLearningOutcomes([...courseLearningOutcomes, newOutcomeText.trim()]);
+    setNewOutcomeText('');
+    haptic?.selection?.();
+  };
+
+  const handleRemoveOutcome = (index: number) => {
+    setCourseLearningOutcomes(courseLearningOutcomes.filter((_, i) => i !== index));
+    haptic?.selection?.();
   };
 
   // Galereya rasmi qo'shish
@@ -373,7 +409,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           telegram_channel_id: courseChannelId.trim() || null,
           gallery_urls: courseGallery,
           testimonials: courseTestimonials,
-          custom_info: courseCustomInfo
+          custom_info: courseCustomInfo,
+          instructor_name: courseInstructorName || 'Kreativ AI',
+          instructor_title: courseInstructorTitle || 'Katta Ekspert',
+          instructor_avatar: courseInstructorAvatar || '/images/yaxshi_bola.jpg',
+          show_instructor: showInstructor,
+          show_outcomes: showOutcomes,
+          learning_outcomes: courseLearningOutcomes
         });
       } else {
         const slugBase = courseTitle.toLowerCase()
@@ -395,8 +437,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           cover_url: courseCoverUrl,
           description: courseDesc || courseTitle,
           short_description: courseDesc.slice(0, 120) || courseTitle,
-          instructor_name: 'Kreativ AI',
-          instructor_title: 'Katta Ekspert',
+          instructor_name: courseInstructorName || 'Kreativ AI',
+          instructor_title: courseInstructorTitle || 'Katta Ekspert',
+          instructor_avatar: courseInstructorAvatar || '/images/yaxshi_bola.jpg',
+          show_instructor: showInstructor,
+          show_outcomes: showOutcomes,
+          learning_outcomes: courseLearningOutcomes,
           telegram_channel_id: courseChannelId.trim() || undefined,
           gallery_urls: courseGallery,
           testimonials: courseTestimonials,
@@ -412,6 +458,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setIsActionLoading(null);
     }
   };
+
 
   const executeDeleteCourse = async (courseId: string) => {
     haptic?.impact?.('heavy');
@@ -1160,6 +1207,127 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       </div>
                     )}
                   </div>
+
+                  {/* 6. Kursda Nimalarni O'rganasiz? (Tahrirlash va Yoqish/O'chirish) */}
+
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Kursda Nimalarni O‘rganasiz? ({courseLearningOutcomes.length})</span>
+                      </label>
+                      <label className="flex items-center space-x-1.5 cursor-pointer text-[11px] font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={showOutcomes}
+                          onChange={(e) => setShowOutcomes(e.target.checked)}
+                          className="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5"
+                        />
+                        <span>Ko‘rsatilsin</span>
+                      </label>
+                    </div>
+
+                    {showOutcomes && (
+                      <div className="bg-slate-50 p-3 rounded-2xl space-y-2 border border-slate-200">
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            value={newOutcomeText}
+                            onChange={(e) => setNewOutcomeText(e.target.value)}
+                            placeholder="O'rganiladigan yangi ko'nikma yoki natija..."
+                            className="glass-input text-xs flex-1 bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddOutcome}
+                            className="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-xs font-bold flex items-center space-x-1"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Qo'shish</span>
+                          </button>
+                        </div>
+
+                        {courseLearningOutcomes.length > 0 ? (
+                          <div className="space-y-1.5 pt-1">
+                            {courseLearningOutcomes.map((item, idx) => (
+                              <div key={idx} className="p-2 bg-white border border-slate-200 rounded-xl flex items-center justify-between space-x-2">
+                                <span className="text-xs text-slate-700 flex-1">{item}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveOutcome(idx)}
+                                  className="text-red-500 hover:text-red-700 p-1 text-xs"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-slate-400 italic">
+                            Band kiritilmasa, platformaning standart amaliy natijalari ko'rsatiladi.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 7. Kurs Muallifi (Tahrirlash va Yoqish/O'chirish) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-sky-600" />
+                        <span>Kurs Muallifi Bo‘limi</span>
+                      </label>
+                      <label className="flex items-center space-x-1.5 cursor-pointer text-[11px] font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={showInstructor}
+                          onChange={(e) => setShowInstructor(e.target.checked)}
+                          className="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5"
+                        />
+                        <span>Ko‘rsatilsin</span>
+                      </label>
+                    </div>
+
+                    {showInstructor && (
+                      <div className="bg-slate-50 p-3 rounded-2xl space-y-2 border border-slate-200">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-600 block">Muallif Ismi</label>
+                            <input
+                              type="text"
+                              value={courseInstructorName}
+                              onChange={(e) => setCourseInstructorName(e.target.value)}
+                              placeholder="Masalan: Kreativ AI yoki Yaxshi Bola"
+                              className="glass-input text-xs w-full bg-white"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-600 block">Lavozimi / Kasbi</label>
+                            <input
+                              type="text"
+                              value={courseInstructorTitle}
+                              onChange={(e) => setCourseInstructorTitle(e.target.value)}
+                              placeholder="Masalan: Katta Ekspert / Senior Designer"
+                              className="glass-input text-xs w-full bg-white"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-600 block">Muallif Rasmi (URL)</label>
+                          <input
+                            type="text"
+                            value={courseInstructorAvatar}
+                            onChange={(e) => setCourseInstructorAvatar(e.target.value)}
+                            placeholder="/images/yaxshi_bola.jpg yoki https://..."
+                            className="glass-input text-xs w-full bg-white"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
 
                   {/* Course Full Description */}
                   <div className="space-y-1 pt-2 border-t border-slate-100">

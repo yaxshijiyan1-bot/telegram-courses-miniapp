@@ -7,7 +7,6 @@ import {
   ChevronDown,
   BookOpen,
   Clock,
-  Award,
   Star,
   Users,
   Infinity as InfinityIcon,
@@ -53,21 +52,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
   const totalLessons = course.modules?.reduce((acc, m) => acc + m.lessons.length, 0) ?? course.lesson_count;
 
-  const defaultOutcomes = [
-    "Noldan boshlab professional darajagacha amaliy ko‘nikma va real keyslar",
-    "Bozorda talab yuqori bo‘lgan zamonaviy vositalar va sun'iy intellekt instrumentlari",
-    "Portfolio uchun xalqaro standartdagi 3+ ta to‘liq loyiha tayyorlash",
-    "Frilans va ish topishda ustunlik beruvchi rasmiy QR-kodli sertifikat",
-    "Yopiq Telegram jamiyatida ustoz va mutaxassislardan doimiy yordam",
-    "Dars materiallari, shablonlar va amaliy cheklislar to‘plami"
-  ];
-
-  const targetAudiences = [
-    { title: "Boshlang‘ichlar", desc: "Sohaga yangi kirib kelayotgan va tizimli ta'lim olmoqchi bo‘lganlar" },
-    { title: "Amaliyotchilar", desc: "Mavjud bilimlarini yangilab, daromadini 2-3 barobar oshirmoqchi bo‘lganlar" },
-    { title: "Frilanserlar", desc: "Xalqaro va mahalliy mijozlarga qimmat xizmat ko‘rsatishni istaganlar" }
-  ];
-
+  // Faqs (Sertifikat haqidagi savol olib tashlandi)
   const faqs = [
     {
       q: "Kursni qachon va qayerda ko‘rsam bo‘ladi?",
@@ -78,18 +63,28 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       a: "Har bir talaba uchun AI Mentor va maxsus yopiq Telegram guruh mavjud bo‘lib, u yerda barcha savollaringizga javob olasiz."
     },
     {
-      q: "Sertifikat qanday beriladi?",
-      a: "Barcha video darslar va amaliy topshiriqlarni 100% yakunlaganingizdan so‘ng profilingizda raqamli tekshiriladigan QR sertifikat paydo bo‘ladi."
-    },
-    {
       q: "Darslar qancha muddatga beriladi?",
-      a: "Darslarga 1 yil davomida cheksiz kirish imkoniyati beriladi — istalgan paytda takrorlash uchun qaytishingiz mumkin."
+      a: "Darslarga 1 yil davomida to'liq cheksiz kirish imkoniyati beriladi — istalgan paytda takrorlash uchun qaytishingiz mumkin."
     }
   ];
 
   const galleryList = Array.isArray(course.gallery_urls) ? course.gallery_urls : [];
   const testimonialList = Array.isArray(course.testimonials) ? course.testimonials : [];
   const customInfoList = Array.isArray(course.custom_info) ? course.custom_info : [];
+  
+  // Nimalarni o'rganasiz bandlari (admin kiritgan bo'lsa)
+  const outcomesList = Array.isArray(course.learning_outcomes) && course.learning_outcomes.length > 0
+    ? course.learning_outcomes
+    : [
+        "Noldan boshlab professional darajagacha amaliy ko‘nikma va real keyslar",
+        "Bozorda talab yuqori bo‘lgan zamonaviy vositalar va sun'iy intellekt instrumentlari",
+        "Portfolio uchun xalqaro standartdagi to‘liq amaliy loyihalar tayyorlash",
+        "Yopiq Telegram jamiyatida ustoz va mutaxassislardan doimiy yordam",
+        "Dars materiallari, shablonlar va amaliy qo'llanmalar to‘plami"
+      ];
+
+  const showOutcomes = course.show_outcomes !== false;
+  const showInstructor = course.show_instructor !== false;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 pb-36 animate-fade-up">
@@ -170,9 +165,9 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               <b className="text-xs text-slate-800 font-bold">{totalLessons} ta video</b>
             </div>
             <div className="p-2 bg-slate-50 rounded-2xl">
-              <Award className="w-4 h-4 text-sky-600 mx-auto mb-0.5" />
-              <span className="text-[10px] text-slate-500 block">Sertifikat</span>
-              <b className="text-xs text-slate-800 font-bold">Mavjud</b>
+              <InfinityIcon className="w-4 h-4 text-sky-600 mx-auto mb-0.5" />
+              <span className="text-[10px] text-slate-500 block">Kirish</span>
+              <b className="text-xs text-slate-800 font-bold">Cheksiz</b>
             </div>
           </div>
         </div>
@@ -217,7 +212,45 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           </p>
         </div>
 
-        {/* 2. Qo'shimcha Ma'lumot Bloklari (Custom Info) */}
+        {/* 2. Nimalarni o'rganasiz? (Agar admin yoqqan bo'lsa) */}
+        {showOutcomes && (
+          <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm space-y-3">
+            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Kursda nimalarni o‘rganasiz?</span>
+            </h3>
+
+            <div className="space-y-2">
+              {outcomesList.map((item, idx) => (
+                <div key={idx} className="flex items-start space-x-2.5 text-xs text-slate-600 leading-relaxed">
+                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" strokeWidth={3} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 3. Kurs muallifi (Agar admin yoqqan bo'lsa) */}
+        {showInstructor && (
+          <div className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm flex items-center space-x-3.5">
+            <img
+              src={course.instructor_avatar || (course.instructor_name?.includes('Zuhra') ? '/images/zuhra_olimova.jpg' : '/images/yaxshi_bola.jpg')}
+              alt={course.instructor_name || 'Muallif'}
+              className="w-12 h-12 rounded-2xl object-cover border border-slate-200 flex-shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <span className="text-[9px] text-sky-600 font-extrabold uppercase tracking-wider block">
+                Kurs muallifi
+              </span>
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">{course.instructor_name || 'Kreativ AI'}</h4>
+              <p className="text-[10px] text-slate-500 truncate">{course.instructor_title || 'Katta Ekspert'}</p>
+            </div>
+            <ShieldCheck className="w-5 h-5 text-sky-600 flex-shrink-0" />
+          </div>
+        )}
+
+        {/* 4. Qo'shimcha Ma'lumot Bloklari (Custom Info) */}
         {customInfoList.length > 0 && (
           <div className="space-y-2">
             {customInfoList.map((info, idx) => (
@@ -234,24 +267,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           </div>
         )}
 
-        {/* Nimalarni o'rganasiz? */}
-        <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm space-y-3">
-          <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Kursda nimalarni o‘rganasiz?</span>
-          </h3>
-
-          <div className="space-y-2">
-            {defaultOutcomes.map((item, idx) => (
-              <div key={idx} className="flex items-start space-x-2.5 text-xs text-slate-600 leading-relaxed">
-                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" strokeWidth={3} />
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 3. Talabalar va Ekspertlar Fikrlari (Testimonials) */}
+        {/* 5. Talabalar va Ekspertlar Fikrlari (Testimonials) */}
         {testimonialList.length > 0 && (
           <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm space-y-3">
             <div className="flex justify-between items-center">
@@ -292,28 +308,11 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           </div>
         )}
 
-        {/* Muallif */}
-        <div className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm flex items-center space-x-3.5">
-          <img
-            src={course.instructor_avatar || (course.instructor_name?.includes('Zuhra') ? '/images/zuhra_olimova.jpg' : '/images/yaxshi_bola.jpg')}
-            alt={course.instructor_name}
-            className="w-12 h-12 rounded-2xl object-cover border border-slate-200 flex-shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <span className="text-[9px] text-sky-600 font-extrabold uppercase tracking-wider block">
-              Kurs muallifi
-            </span>
-            <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">{course.instructor_name || 'Kreativ AI'}</h4>
-            <p className="text-[10px] text-slate-500 truncate">{course.instructor_title || 'Katta Ekspert'}</p>
-          </div>
-          <ShieldCheck className="w-5 h-5 text-sky-600 flex-shrink-0" />
-        </div>
-
         {/* Darslar Dasturi (Akkordeon) */}
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-sky-600" />
+              <BookOpen className="w-4 h-4 text-sky-600" />
               <span>Kurs dasturi</span>
             </h3>
             <span className="text-xs font-bold text-slate-500">

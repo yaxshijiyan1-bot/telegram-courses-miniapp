@@ -59,21 +59,22 @@ export const HomePage: React.FC<HomePageProps> = ({
       eyebrow: 'KREATIV AI · 2026',
       title: 'Bilimingizni',
       accent: 'oshiring.',
-      text: 'Amaliy kurslar, tizimli o‘quv yo‘li va rasmiy sertifikat.',
+      text: 'Amaliy kurslar, tizimli o‘quv yo‘li va real loyihalar.',
       cta: 'Kurslarni ko‘rish',
       action: onNavigateToCatalog,
     },
     {
       id: 'cert',
       artwork: '/images/hero_seal.webp',
-      eyebrow: 'SERTIFIKATLI TA’LIM',
+      eyebrow: 'AMALIY TA’LIM',
       title: 'Har bir kurs —',
       accent: 'natija.',
-      text: 'Darslarni yakunlang, raqamli sertifikat egasi bo‘ling.',
+      text: 'Darslarni yakunlang, yuqori daromadli ko‘nikmaga ega bo‘ling.',
       cta: 'Darslarimga',
       action: onNavigateToLearning,
     },
   ], [onNavigateToCatalog, onNavigateToLearning]);
+
 
   const [slideIdx, setSlideIdx] = useState(0);
   const [paused, setPaused] = useState(false);

@@ -161,6 +161,10 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS gallery_urls JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS testimonials JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS custom_info JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS learning_outcomes JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS show_instructor BOOLEAN DEFAULT true;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS show_outcomes BOOLEAN DEFAULT true;
+
 
 -- 12. INDEXES
 CREATE INDEX IF NOT EXISTS idx_courses_slug ON public.courses(slug);
