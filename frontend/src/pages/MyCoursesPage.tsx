@@ -85,11 +85,15 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
 
                 <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 flex items-center justify-center">
                   <img
-                    src={enrolled.cover_url || full?.cover_url || '/images/hero_seal.webp'}
+                    src={enrolled.cover_url || full?.cover_url || '/images/hero_books.jpg'}
                     alt=""
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
+                    }}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
+
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1.5">

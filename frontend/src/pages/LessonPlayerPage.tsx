@@ -91,8 +91,12 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
           <img
             src={lessonImage}
             alt={lesson.title}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
+            }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
+
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex flex-col justify-between p-3.5">
             <div className="flex justify-end">
               <span className="p-1.5 rounded-xl bg-black/60 backdrop-blur-md text-white text-[10px] flex items-center space-x-1">

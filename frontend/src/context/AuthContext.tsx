@@ -17,51 +17,58 @@ interface AuthContextType {
   logout: () => void;
 }
 
+const defaultGuestUser: User = {
+  id: 'guest',
+  name: 'Talaba',
+  role: 'student'
+};
+
 const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
+  user: defaultGuestUser,
+  isAuthenticated: true,
+  isLoading: false,
   login: async () => ({ success: false }),
   telegramLogin: async () => ({ success: false }),
   logout: () => {}
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return defaultGuestUser;
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const { webApp, user: tgUser } = useTelegram();
 
   useEffect(() => {
-    let cancelled = false;
-    const savedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    if (tgUser) {
+      // Telegram user ma'lumotlari bo'lsa avtomatik moslashtiramiz
+      const tgUserData: User = {
+        id: String(tgUser.id),
+        telegram_id: tgUser.id,
+        name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || 'Talaba',
+        username: tgUser.username,
+        role: [8544023815, 8112688757].includes(tgUser.id) ? 'superadmin' : 'student'
+      };
 
-    if (savedUser && token) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        // Tokenni serverda tekshiramiz: eski/yaroqsiz bo'lsa sessiyani tozalab, login'ga qaytaramiz
-        api.verifyToken().then(status => {
-          if (cancelled) return;
-          if (status === 'valid') {
-            setUser(parsed);
-          } else if (status === 'invalid') {
-            api.clearCredentials();
-          } else {
-            // Offline — lokalkira saqlab qolamiz
-            setUser(parsed);
-          }
-        });
-      } catch {
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-      }
-    } else if (tgUser) {
-      // Telegram user mavjud bo'lsa avtomatik kirish
-      telegramLogin();
+      setUser(tgUserData);
+      localStorage.setItem('user', JSON.stringify(tgUserData));
+
+      // Backend bilan jimgina sinxronlash (xatolik bo'lsa ham foydalanuvchini to'xtatmaydi)
+      const initData = webApp?.initData || '';
+      api.telegramAuth(initData, tgUser).then(res => {
+        if (res && res.user) {
+          setUser(res.user);
+          localStorage.setItem('user', JSON.stringify(res.user));
+        }
+      }).catch(() => {
+        // Offline yoki sekin internetda ham foydalanuvchi bemalol kiradi
+      });
     }
-    setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tgUser]);
+  }, [tgUser, webApp]);
 
   const login = async (loginStr: string, pass: string): Promise<AuthResult> => {
     try {
@@ -87,14 +94,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setUser(null);
+    setUser(defaultGuestUser);
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        isAuthenticated: !!user,
+        user: user || defaultGuestUser,
+        isAuthenticated: true,
         isLoading,
         login,
         telegramLogin,

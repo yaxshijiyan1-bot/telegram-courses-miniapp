@@ -34,9 +34,13 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         <img
           src={course.cover_url}
           alt={course.title}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
+          }}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
           loading="lazy"
         />
+
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
 
         {showTopBadge && (

@@ -127,8 +127,12 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           <img
             src={course.cover_url}
             alt={course.title}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
+            }}
             className="w-full h-full object-cover"
           />
+
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex flex-col justify-end p-4">
             <span className="badge-cyan text-[9px] py-0.5 px-2 w-max mb-1.5 font-bold">
               {course.category} · {course.level || "Boshlang'ichdan Yuqori"}
@@ -172,7 +176,8 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             <div className="p-2 bg-slate-50 rounded-2xl">
               <BookOpen className="w-4 h-4 text-sky-600 mx-auto mb-0.5" />
               <span className="text-[10px] text-slate-500 block">Darslar</span>
-              <b className="text-xs text-slate-800 font-bold">{totalLessons} ta video</b>
+              <b className="text-xs text-slate-800 font-bold">{totalLessons} ta dars</b>
+
             </div>
             <div className="p-2 bg-slate-50 rounded-2xl">
               <InfinityIcon className="w-4 h-4 text-sky-600 mx-auto mb-0.5" />
@@ -251,8 +256,12 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             <img
               src={course.instructor_avatar || (course.instructor_name?.includes('Zuhra') ? '/images/zuhra_olimova.jpg' : '/images/yaxshi_bola.jpg')}
               alt={course.instructor_name || 'Muallif'}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/images/yaxshi_bola.jpg';
+              }}
               className="w-12 h-12 rounded-2xl object-cover border border-slate-200 flex-shrink-0"
             />
+
             <div className="min-w-0 flex-1">
               <span className="text-[9px] text-sky-600 font-extrabold uppercase tracking-wider block">
                 Kurs muallifi
