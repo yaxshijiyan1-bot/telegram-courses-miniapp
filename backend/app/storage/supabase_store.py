@@ -14,7 +14,7 @@ COURSE_COLUMNS = {
     "cover_url", "preview_video_url", "price", "old_price", "discount_percent",
     "duration", "lesson_count", "level", "instructor_name", "instructor_title",
     "instructor_avatar", "instructor_bio", "rating", "student_count",
-    "published", "created_at"
+    "telegram_channel_id", "published", "created_at"
 }
 
 def _now() -> str:
@@ -97,9 +97,18 @@ class SupabaseStore(Store):
         rows = await self._req("GET", "courses", {"or": f"(id.eq.{id_or_slug},slug.eq.{id_or_slug})", "limit": 1})
         return rows[0] if rows else None
 
+    async def get_course_by_channel_id(self, channel_id: str) -> Optional[Dict[str, Any]]:
+        ch_str = str(channel_id).strip()
+        ch_clean = ch_str.replace("-100", "").replace("-", "")
+        rows = await self._req("GET", "courses", {"or": f"(telegram_channel_id.eq.{ch_str},telegram_channel_id.eq.-100{ch_clean},telegram_channel_id.eq.{ch_clean})", "limit": 1})
+        return rows[0] if rows else None
+
     async def upsert_course(self, course: Dict[str, Any]) -> Dict[str, Any]:
         # Faqat sxemadagi ustunlarni yuboramiz (ortiqcha kalitlar PostgREST 400 beradi)
-        row = {k: v for k, v in course.items() if k in COURSE_COLUMNS and v is not None}
+        # Null qiymatlar ham muhim: admin eski narx yoki biriktirilgan kanal IDni
+        # ataylab tozalashi mumkin. Mavjud kurs bilan merge qilingan chaqiriqda
+        # non-null majburiy ustunlar doim saqlanadi.
+        row = {k: v for k, v in course.items() if k in COURSE_COLUMNS}
         rows = await self._req("POST", "courses", json_body=row)
         if rows:
             return rows[0]
@@ -157,9 +166,27 @@ class SupabaseStore(Store):
         rows = await self._req("GET", "purchases", {"transaction_id": f"eq.{transaction_id}", "limit": 1})
         return rows[0] if rows else None
 
+    async def get_purchase_by_invite_link(self, invite_link: str) -> Optional[Dict[str, Any]]:
+        rows = await self._req("GET", "purchases", {
+            "channel_invite_link": f"eq.{invite_link}", "limit": 1
+        })
+        return rows[0] if rows else None
+
     async def update_purchase(self, purchase_id: str, fields: Dict[str, Any]) -> bool:
         res = await self._req("PATCH", "purchases", {"id": f"eq.{purchase_id}"}, json_body=fields)
         return res is not None
+
+    async def transition_purchase_status(
+        self, purchase_id: str, expected_status: str, fields: Dict[str, Any]
+    ) -> bool:
+        res = await self._req(
+            "PATCH",
+            "purchases",
+            {"id": f"eq.{purchase_id}", "status": f"eq.{expected_status}"},
+            json_body=fields,
+        )
+        # PostgREST returns an empty list if the row changed between read and update.
+        return bool(res)
 
     async def list_purchases(self, status: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         params = {"order": "created_at.desc", "limit": limit}

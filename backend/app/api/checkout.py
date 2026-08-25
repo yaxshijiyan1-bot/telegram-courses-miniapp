@@ -9,7 +9,6 @@ from typing import Optional
 from app.models.schemas import CreateOrderRequest, CreateOrderResponse
 from app.core.security import get_current_user
 from app.core.config import settings
-from app.core.r2 import r2_client
 from app.storage import get_store
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,7 @@ router = APIRouter(prefix="/checkout", tags=["Checkout & Payments"])
 
 class SubmitReceiptRequest(BaseModel):
     course_id: str
-    payment_method: str = "payme"
+    payment_method: str = "karta"
     receipt_image: str  # Base64 (data:image...) yoki URL
     comment: Optional[str] = None
 
@@ -38,7 +37,7 @@ def _rate_limited(request: Request) -> bool:
 
 @router.get("/payment-info")
 async def get_payment_info():
-    """To'lov rekvizitlari va admin kontaktlari"""
+    """To'lov rekvizitlari (Karta raqam, egasi va bank nomi)"""
     return {
         "card_number": settings.CARD_NUMBER,
         "card_holder": settings.CARD_HOLDER,
@@ -80,7 +79,7 @@ async def create_order(
         "course_title": course["title"],
         "amount": course.get("price", 0),
         "status": "pending",
-        "payment_method": req.payment_method,
+        "payment_method": req.payment_method or "karta",
         "transaction_id": order_id,
         "telegram_id": current_user.get("telegram_id"),
         "student_name": current_user.get("name"),
@@ -92,7 +91,7 @@ async def create_order(
         "course_id": course["id"],
         "course_title": course["title"],
         "amount": course.get("price", 0),
-        "payment_method": req.payment_method,
+        "payment_method": req.payment_method or "karta",
         "payment_url": f"{settings.WEBAPP_URL}#checkout",
         "status": "pending"
     }
@@ -105,8 +104,7 @@ async def submit_receipt(
 ):
     """
     Talaba tomonidan to'lov cheki skrinshotini yuborish.
-    Rasm Cloudflare R2 ga yuklanadi, yozuv bazaga tushadi va
-    ikkala Superadminga Telegram Bot orqali yuboriladi.
+    Chek rasmi bazaga og'ir yuk bo'lib saqlanmaydi — to'g'ridan-to'g'ri Telegram orqali adminga yuboriladi.
     Kurs FAQAT admin tasdiqlagach ochiladi.
     """
     if _rate_limited(request):
@@ -124,40 +122,23 @@ async def submit_receipt(
     username = current_user.get("username") or "tg_user"
     telegram_id = current_user.get("telegram_id", 0)
 
-    # Chek rasmini R2 ga yuklash (base64 bo'lsa)
-    receipt_url = req.receipt_image
-    if req.receipt_image.startswith("data:image"):
-        try:
-            header, encoded = req.receipt_image.split(",", 1)
-            image_bytes = base64.b64decode(encoded)
-            if len(image_bytes) > 8 * 1024 * 1024:
-                raise HTTPException(status_code=413, detail="Rasm hajmi 8 MB dan oshmasligi kerak")
-            mime = header.split(":")[1].split(";")[0] if ":" in header else "image/jpeg"
-            ext = "png" if "png" in mime else ("webp" if "webp" in mime else "jpg")
-            uploaded = r2_client.upload_bytes(f"receipts/{order_id}.{ext}", image_bytes, content_type=mime)
-            if uploaded:
-                receipt_url = uploaded
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.warning(f"R2 yuklash muvaffaqiyatsiz, base64 saqlanmaydi: {e}")
-
+    # Bazaga faqat yengil matnli ma'lumot saqlanadi (og'ir rasm saqlanmaydi)
     await store.create_purchase({
         "user_id": user_id,
         "course_id": course["id"],
         "course_title": course["title"],
         "amount": course.get("price", 0),
         "status": "pending_approval",
-        "payment_method": req.payment_method,
+        "payment_method": req.payment_method or "karta",
         "transaction_id": order_id,
         "telegram_id": telegram_id,
         "student_name": student_name,
         "username": username,
-        "receipt_image_url": receipt_url if receipt_url.startswith("http") else None,
+        "receipt_image_url": req.receipt_image if req.receipt_image.startswith("http") else None,
         "comment": req.comment,
     })
 
-    # Ikkala Superadminga Telegram Bot orqali to'lov cheki va xabarni yuborish
+    # Ikkala Superadminga to'g'ridan-to'g'ri Telegram Bot orqali to'lov cheki rasmi va tasdiqlash tugmalarini yuborish
     notified = 0
     if settings.BOT_TOKEN:
         tg_api = f"https://api.telegram.org/bot{settings.BOT_TOKEN}"
@@ -168,7 +149,7 @@ async def submit_receipt(
             f"🆔 <b>Telegram ID:</b> <code>{telegram_id}</code>\n"
             f"📚 <b>Kurs:</b> {course['title']}\n"
             f"💰 <b>Summa:</b> {amount:,} so'm\n"
-            f"💳 <b>To'lov turi:</b> {req.payment_method.upper()}\n"
+            f"💳 <b>To'lov usuli:</b> Karta orqali o'tkazma\n"
             f"🔢 <b>Buyurtma ID:</b> <code>{order_id}</code>\n"
         )
         if req.comment:
@@ -191,37 +172,51 @@ async def submit_receipt(
             for admin_id in settings.ADMIN_IDS:
                 try:
                     sent = False
-                    if receipt_url and receipt_url.startswith("http"):
+                    # 1. Agar rasm URL bo'lsa
+                    if req.receipt_image.startswith("http"):
                         res = await client.post(f"{tg_api}/sendPhoto", json={
                             "chat_id": admin_id,
-                            "photo": receipt_url,
+                            "photo": req.receipt_image,
                             "caption": caption,
                             "parse_mode": "HTML",
+                            "protect_content": True,
                             "reply_markup": keyboard
                         })
                         sent = res.status_code == 200
-                    if not sent and receipt_url and receipt_url.startswith("data:image"):
+
+                    # 2. Agar rasm Base64 bo'lsa — fayl sifatida to'g'ridan-to'g'ri adminga jo'natamiz (bazada saqlamasdan)
+                    elif req.receipt_image.startswith("data:image"):
                         try:
-                            header, encoded = receipt_url.split(",", 1)
+                            _, encoded = req.receipt_image.split(",", 1)
                             image_bytes = base64.b64decode(encoded)
                             files = {"photo": ("receipt.jpg", image_bytes, "image/jpeg")}
-                            res = await client.post(f"{tg_api}/sendPhoto", data={
-                                "chat_id": str(admin_id),
-                                "caption": caption,
-                                "parse_mode": "HTML",
-                                "reply_markup": json.dumps(keyboard)
-                            }, files=files)
+                            res = await client.post(
+                                f"{tg_api}/sendPhoto",
+                                data={
+                                    "chat_id": str(admin_id),
+                                    "caption": caption,
+                                    "parse_mode": "HTML",
+                                    "protect_content": "true",
+                                    "reply_markup": json.dumps(keyboard)
+                                },
+                                files=files
+                            )
                             sent = res.status_code == 200
-                        except Exception:
+                        except Exception as ex:
+                            logger.error(f"Base64 rasm yuborishda xato: {ex}")
                             sent = False
+
+                    # 3. Agar rasm o'tmasa, oddiy matnli xabarni yuboramiz
                     if not sent:
                         res = await client.post(f"{tg_api}/sendMessage", json={
                             "chat_id": admin_id,
                             "text": caption,
                             "parse_mode": "HTML",
+                            "protect_content": True,
                             "reply_markup": keyboard
                         })
                         sent = res.status_code == 200
+
                     if sent:
                         notified += 1
                 except Exception as e:
@@ -231,5 +226,5 @@ async def submit_receipt(
         "success": True,
         "order_id": order_id,
         "notified_admins": notified,
-        "message": "To'lov cheki qabul qilindi! Adminlar tasdiqlagach, kurs avtomatik ochiladi."
+        "message": "To'lov cheki adminga yuborildi! Adminlar tasdiqlagach, kurs avtomatik ochiladi."
     }

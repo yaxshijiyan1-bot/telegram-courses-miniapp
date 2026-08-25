@@ -53,6 +53,15 @@ python test_suite.py http://localhost:8000  # lokalga qarshi
 cd backend && python smoke_test.py          # to'liq biznes oqimi (lokal server kerak)
 ```
 
+### 4. Yopiq dars kanallarini ulash
+
+1. Botni yopiq kanalga administrator qilib qo'shing va unga **Invite Users via Link** huquqini bering.
+2. Bot superadminlarga kanalning manfiy ID raqamini yuboradi (masalan, `-1001234567890`).
+3. Admin panel → **Kurslar** → kursni tahrirlash bo'limida bu qiymatni **Yopiq kanal ID** maydoniga saqlang.
+4. Chek tasdiqlanganda bot xaridorga 72 soatlik join-request havolasini yuboradi. So'rov faqat aynan xaridorning Telegram ID si va shu invite-link mos bo'lsa avtomatik qabul qilinadi; havola ulashilgan begona akkaunt rad etiladi.
+
+Ixtiyoriy ravishda `.env` ichida `WELCOME_BANNER_URL`, `PAYME_PAYMENT_URL`, `CLICK_PAYMENT_URL` va `UZUM_PAYMENT_URL` ni bering. To'lov havolalari bo'sh qolsa, foydalanuvchi karta rekvizitlari orqali to'laydi.
+
 ---
 
 ## 🔐 Xavfsizlik Qoidalari

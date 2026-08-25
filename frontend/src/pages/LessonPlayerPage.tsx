@@ -162,34 +162,41 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 transition={{ duration: 0.25, ease }}
                 className="space-y-2.5 pt-1"
               >
-                {!lesson.resources || lesson.resources.length === 0 ? (
+                {(!lesson.resources || lesson.resources.filter(f => !f.url?.endsWith('.mp4') && !f.name?.endsWith('.mp4')).length === 0) ? (
                   <div className="text-center py-8 glass !rounded-[20px] text-slate-400 text-xs">
-                    Ushbu dars uchun qo‘shimcha fayllar biriktirilmagan.
+                    Ushbu dars uchun qo‘shimcha materiallar biriktirilmagan.
                   </div>
                 ) : (
-                  lesson.resources.map((file, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 glass !rounded-[20px]">
-                      <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                        <div className="w-9 h-9 rounded-xl bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center flex-shrink-0">
-                          <FileText className="w-4 h-4" strokeWidth={2.2} />
+                  lesson.resources
+                    .filter((file) => !file.url?.endsWith('.mp4') && !file.name?.endsWith('.mp4'))
+                    .map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 glass !rounded-[20px]">
+                        <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                          <div className="w-9 h-9 rounded-xl bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-4 h-4" strokeWidth={2.2} />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-slate-900 block truncate">{file.name}</span>
+                            <span className="text-[10px] text-slate-400">{file.size}</span>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <span className="text-xs font-bold text-slate-900 block truncate">{file.name}</span>
-                          <span className="text-[10px] text-slate-400">{file.size}</span>
-                        </div>
-                      </div>
 
-                      <a
-                        href={file.url}
-                        onClick={() => haptic?.impact?.('light')}
-                        className="px-3 py-1.5 bg-cyan text-white rounded-xl text-[10px] font-extrabold flex items-center space-x-1 shadow-cyanGlowSm flex-shrink-0 active:scale-95 transition-transform"
-                      >
-                        <Download className="w-3 h-3" />
-                        <span>Yuklash</span>
-                      </a>
-                    </div>
-                  ))
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => haptic?.impact?.('light')}
+                          className="px-3 py-1.5 bg-cyan text-white rounded-xl text-[10px] font-extrabold flex items-center space-x-1 shadow-cyanGlowSm flex-shrink-0 active:scale-95 transition-transform"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Yuklash</span>
+                        </a>
+                      </div>
+                    ))
                 )}
+                <div className="text-[10px] text-slate-400 text-center pt-1 font-mono">
+                  🔒 Dars videolari xavfsiz striming orqali uzatiladi (yuklab olish taqiqlanadi)
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

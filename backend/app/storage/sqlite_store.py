@@ -83,6 +83,8 @@ class SqliteStore(Store):
                 receipt_image_url TEXT,
                 comment TEXT,
                 reviewed_by TEXT,
+                channel_invite_link TEXT,
+                invite_expires_at TEXT,
                 created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS enrollments (
@@ -129,6 +131,19 @@ class SqliteStore(Store):
             CREATE INDEX IF NOT EXISTS idx_prog_user_course ON lesson_progress(user_id, course_id);
             CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id);
             """)
+            try:
+                c.execute("ALTER TABLE courses ADD COLUMN telegram_channel_id TEXT;")
+            except Exception:
+                pass
+            # Ilgari yaratilgan SQLite bazalarini ham yangi anti-leak maydonlariga ko'chiramiz.
+            for column, definition in (
+                ("channel_invite_link", "TEXT"),
+                ("invite_expires_at", "TEXT"),
+            ):
+                try:
+                    c.execute(f"ALTER TABLE purchases ADD COLUMN {column} {definition};")
+                except sqlite3.OperationalError:
+                    pass
 
     # ---------------- USERS ----------------
     async def get_user_by_tg(self, telegram_id: int) -> Optional[Dict[str, Any]]:
@@ -191,6 +206,16 @@ class SqliteStore(Store):
             row = c.execute("SELECT * FROM courses WHERE id=? OR slug=?", (id_or_slug, id_or_slug)).fetchone()
             return self._course_row(row) if row else None
 
+    async def get_course_by_channel_id(self, channel_id: str) -> Optional[Dict[str, Any]]:
+        ch_str = str(channel_id).strip()
+        ch_clean = ch_str.replace("-100", "").replace("-", "")
+        with self.lock, self._conn() as c:
+            row = c.execute(
+                "SELECT * FROM courses WHERE telegram_channel_id=? OR telegram_channel_id=? OR telegram_channel_id=?",
+                (ch_str, f"-100{ch_clean}", ch_clean)
+            ).fetchone()
+            return self._course_row(row) if row else None
+
     async def upsert_course(self, course: Dict[str, Any]) -> Dict[str, Any]:
         cur = await self.get_course(course["id"]) or {}
         row = {**cur, **course}
@@ -202,8 +227,8 @@ class SqliteStore(Store):
                 """INSERT INTO courses (id,title,slug,category,description,short_description,cover_url,
                    preview_video_url,price,old_price,discount_percent,duration,lesson_count,level,
                    instructor_name,instructor_title,instructor_avatar,instructor_bio,access_duration,
-                   copyright_notice,rating,student_count,published,created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   copyright_notice,rating,student_count,telegram_channel_id,published,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(id) DO UPDATE SET title=excluded.title, slug=excluded.slug,
                    category=excluded.category, description=excluded.description,
                    short_description=excluded.short_description, cover_url=excluded.cover_url,
@@ -214,6 +239,7 @@ class SqliteStore(Store):
                    instructor_avatar=excluded.instructor_avatar, instructor_bio=excluded.instructor_bio,
                    access_duration=excluded.access_duration, copyright_notice=excluded.copyright_notice,
                    rating=excluded.rating, student_count=excluded.student_count,
+                   telegram_channel_id=excluded.telegram_channel_id,
                    published=excluded.published""",
                 (row.get("id"), row.get("title"), row.get("slug"), row.get("category"),
                  row.get("description"), row.get("short_description"), row.get("cover_url"),
@@ -222,7 +248,7 @@ class SqliteStore(Store):
                  row.get("level"), row.get("instructor_name"), row.get("instructor_title"),
                  row.get("instructor_avatar"), row.get("instructor_bio"), row.get("access_duration"),
                  row.get("copyright_notice"), row.get("rating", 5.0), row.get("student_count", 0),
-                 row.get("published", 1), row.get("created_at", _now()))
+                 row.get("telegram_channel_id"), row.get("published", 1), row.get("created_at", _now()))
             )
         row["published"] = bool(row.get("published"))
         return row
@@ -246,19 +272,29 @@ class SqliteStore(Store):
         with self.lock, self._conn() as c:
             c.execute(
                 """INSERT INTO purchases (id,user_id,course_id,amount,status,payment_method,transaction_id,
-                   telegram_id,student_name,username,course_title,receipt_image_url,comment,reviewed_by,created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   telegram_id,student_name,username,course_title,receipt_image_url,comment,reviewed_by,
+                   channel_invite_link,invite_expires_at,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (row.get("id"), row.get("user_id"), row.get("course_id"), row.get("amount", 0),
                  row.get("status", "pending"), row.get("payment_method"), row.get("transaction_id"),
                  row.get("telegram_id"), row.get("student_name"), row.get("username"),
                  row.get("course_title"), row.get("receipt_image_url"), row.get("comment"),
-                 row.get("reviewed_by"), row["created_at"])
+                 row.get("reviewed_by"), row.get("channel_invite_link"), row.get("invite_expires_at"),
+                 row["created_at"])
             )
         return row
 
     async def get_purchase_by_tx(self, transaction_id: str) -> Optional[Dict[str, Any]]:
         with self.lock, self._conn() as c:
             row = c.execute("SELECT * FROM purchases WHERE transaction_id=?", (transaction_id,)).fetchone()
+            return dict(row) if row else None
+
+    async def get_purchase_by_invite_link(self, invite_link: str) -> Optional[Dict[str, Any]]:
+        with self.lock, self._conn() as c:
+            row = c.execute(
+                "SELECT * FROM purchases WHERE channel_invite_link=? ORDER BY created_at DESC LIMIT 1",
+                (invite_link,),
+            ).fetchone()
             return dict(row) if row else None
 
     async def update_purchase(self, purchase_id: str, fields: Dict[str, Any]) -> bool:
@@ -268,6 +304,19 @@ class SqliteStore(Store):
         with self.lock, self._conn() as c:
             c.execute(f"UPDATE purchases SET {cols} WHERE id=?", (*fields.values(), purchase_id))
         return True
+
+    async def transition_purchase_status(
+        self, purchase_id: str, expected_status: str, fields: Dict[str, Any]
+    ) -> bool:
+        if not fields:
+            return False
+        cols = ", ".join(f"{k}=?" for k in fields)
+        with self.lock, self._conn() as c:
+            cur = c.execute(
+                f"UPDATE purchases SET {cols} WHERE id=? AND status=?",
+                (*fields.values(), purchase_id, expected_status),
+            )
+            return cur.rowcount == 1
 
     async def list_purchases(self, status: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         with self.lock, self._conn() as c:

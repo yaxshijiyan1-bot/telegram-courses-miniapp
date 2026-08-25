@@ -2,7 +2,7 @@ import uuid
 import logging
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Any, Optional
 from app.core.security import get_current_admin
 from app.core.r2 import r2_client
@@ -29,6 +29,53 @@ class PaymentSettingsRequest(BaseModel):
     card_number: str
     card_holder: str
     bank_name: str
+
+class CourseUpsertRequest(BaseModel):
+    """Admin kurs formasining tekshirilgan, storage-agnostic modeli."""
+    title: Optional[str] = Field(default=None, min_length=2, max_length=255)
+    slug: Optional[str] = Field(default=None, min_length=2, max_length=255)
+    category: Optional[str] = Field(default=None, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=10000)
+    short_description: Optional[str] = Field(default=None, max_length=500)
+    cover_url: Optional[str] = Field(default=None, max_length=2_000_000)
+    price: Optional[int] = Field(default=None, ge=0, le=10_000_000_000)
+    old_price: Optional[int] = Field(default=None, ge=0, le=10_000_000_000)
+    discount_percent: Optional[int] = Field(default=None, ge=0, le=100)
+    duration: Optional[str] = Field(default=None, max_length=100)
+    lesson_count: Optional[int] = Field(default=None, ge=0, le=10000)
+    level: Optional[str] = Field(default=None, max_length=100)
+    instructor_name: Optional[str] = Field(default=None, max_length=255)
+    instructor_title: Optional[str] = Field(default=None, max_length=255)
+    instructor_bio: Optional[str] = Field(default=None, max_length=5000)
+    preview_video_url: Optional[str] = Field(default=None, max_length=2000)
+    access_duration: Optional[str] = Field(default=None, max_length=100)
+    rating: Optional[float] = Field(default=None, ge=0, le=5)
+    student_count: Optional[int] = Field(default=None, ge=0)
+    telegram_channel_id: Optional[str] = Field(default=None, max_length=32)
+    published: Optional[bool] = None
+
+    @field_validator("slug")
+    @classmethod
+    def clean_slug(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip().lower()
+        if not value or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789-" for char in value):
+            raise ValueError("slug faqat kichik lotin harflari, raqamlar va '-' dan iborat bo'lishi kerak")
+        return value
+
+    @field_validator("telegram_channel_id")
+    @classmethod
+    def clean_channel_id(cls, value: Optional[str]) -> Optional[str]:
+        if value in (None, ""):
+            return None
+        try:
+            channel_id = int(str(value).strip())
+        except ValueError as exc:
+            raise ValueError("telegram_channel_id raqam bo'lishi kerak") from exc
+        if channel_id >= 0:
+            raise ValueError("Telegram kanal ID manfiy bo'lishi kerak (masalan, -100...)")
+        return str(channel_id)
 
 @router.get("/dashboard-stats")
 async def get_admin_dashboard_stats(admin: dict = Depends(get_current_admin)):
@@ -176,6 +223,7 @@ async def manual_enroll_student(
                     "chat_id": target["telegram_id"],
                     "text": f"🎁 <b>Sizga kurs sovg'a qilindi!</b>\n\n'{course['title']}' kursi hisobingizga biriktirildi.\nAdmin: {admin.get('name')}",
                     "parse_mode": "HTML",
+                    "protect_content": True,
                     "reply_markup": {"inline_keyboard": [[{"text": "🚀 Kursni Boshlash", "web_app": {"url": settings.WEBAPP_URL}}]]}
                 })
         except Exception:
@@ -213,7 +261,8 @@ async def broadcast_message(
                 payload = {
                     "chat_id": r["telegram_id"],
                     "text": broadcast_text,
-                    "parse_mode": "HTML"
+                    "parse_mode": "HTML",
+                    "protect_content": True,
                 }
                 if keyboard:
                     payload["reply_markup"] = keyboard
@@ -261,23 +310,23 @@ async def admin_list_courses(admin: dict = Depends(get_current_admin)):
 
 @router.post("/courses")
 async def create_course(
-    course_data: Dict[str, Any],
+    course_data: CourseUpsertRequest,
     admin: dict = Depends(get_current_admin)
 ):
     """Yangi kurs yaratish"""
     store = get_store()
-    if not course_data.get("title") or not course_data.get("slug"):
+    payload = course_data.model_dump(exclude_none=True)
+    if not payload.get("title") or not payload.get("slug"):
         raise HTTPException(status_code=400, detail="Kurs nomi (title) va slug majburiy")
-    if not course_data.get("id"):
-        course_data["id"] = str(uuid.uuid4())
-    course_data.setdefault("published", True)
-    row = await store.upsert_course(course_data)
+    payload["id"] = str(uuid.uuid4())
+    payload.setdefault("published", True)
+    row = await store.upsert_course(payload)
     return {"success": True, "message": f"'{row.get('title')}' kursi yaratildi!", "course": row}
 
 @router.put("/courses/{course_id}")
 async def update_course(
     course_id: str,
-    course_data: Dict[str, Any],
+    course_data: CourseUpsertRequest,
     admin: dict = Depends(get_current_admin)
 ):
     """Mavjud kursning nomi, narxi, tavsifi va parametrlarini tahrirlash (bazada saqlanadi)"""
@@ -286,15 +335,11 @@ async def update_course(
     if not target:
         raise HTTPException(status_code=404, detail="Kurs topilmadi")
 
-    allowed = ["title", "price", "old_price", "category", "level", "duration", "description",
-               "short_description", "cover_url", "instructor_name", "instructor_title",
-               "instructor_bio", "lesson_count", "published", "slug", "rating", "student_count",
-               "preview_video_url", "access_duration"]
-    updates = {k: v for k, v in course_data.items() if k in allowed and v is not None}
-    if "price" in updates:
-        updates["price"] = int(updates["price"])
-    if "old_price" in updates and updates["old_price"]:
-        updates["old_price"] = int(updates["old_price"])
+    # exclude_unset explicit null qiymatlarni (masalan eski narx yoki kanal IDni
+    # tozalash) saqlab qoladi.
+    updates = course_data.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="Tahrirlash uchun kamida bitta maydon yuboring")
 
     merged = {**target, **updates}
     row = await store.upsert_course(merged)

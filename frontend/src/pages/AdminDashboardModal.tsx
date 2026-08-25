@@ -96,6 +96,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [courseDuration, setCourseDuration] = useState('20 soat');
   const [courseLessonsCount, setCourseLessonsCount] = useState('24');
   const [courseLevel, setCourseLevel] = useState("Boshlang'ich va Professional");
+  const [courseChannelId, setCourseChannelId] = useState('');
   const [courseCoverUrl, setCourseCoverUrl] = useState('/images/hero_books.jpg');
   const [courseDesc, setCourseDesc] = useState('');
 
@@ -244,6 +245,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseDuration(c.duration || '20 soat');
     setCourseLessonsCount(String(c.lesson_count || 24));
     setCourseLevel(c.level || "Boshlang'ich va Professional");
+    setCourseChannelId(c.telegram_channel_id ? String(c.telegram_channel_id) : '');
     setCourseCoverUrl(c.cover_url || '/images/hero_books.jpg');
     setCourseDesc(c.description || c.short_description || '');
     setActiveTab('courses');
@@ -257,6 +259,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseOldPrice('');
     setCourseDuration('20 soat');
     setCourseLessonsCount('24');
+    setCourseChannelId('');
     setCourseCoverUrl('/images/hero_books.jpg');
     setCourseDesc('');
   };
@@ -278,7 +281,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           level: courseLevel,
           cover_url: courseCoverUrl,
           description: courseDesc,
-          short_description: courseDesc.slice(0, 120)
+          short_description: courseDesc.slice(0, 120),
+          telegram_channel_id: courseChannelId.trim() || null
         });
       } else {
         const slugBase = courseTitle.toLowerCase()
@@ -301,7 +305,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           description: courseDesc || courseTitle,
           short_description: courseDesc.slice(0, 120) || courseTitle,
           instructor_name: 'Course Academy',
-          instructor_title: 'Katta Ekspert'
+          instructor_title: 'Katta Ekspert',
+          telegram_channel_id: courseChannelId.trim() || undefined
         } as Partial<Course>);
       }
       showNotification(res.message || 'Kurs muvaffaqiyatli saqlandi!');
@@ -779,6 +784,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         className="glass-input w-full text-xs"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 block">Yopiq kanal ID (ixtiyoriy)</label>
+                    <input
+                      type="text"
+                      value={courseChannelId}
+                      onChange={(e) => setCourseChannelId(e.target.value)}
+                      placeholder="-1001234567890"
+                      className="glass-input w-full font-mono text-xs"
+                    />
+                    <p className="text-[10px] leading-snug text-slate-500">
+                      Bot kanalga admin bo‘lganda yuborgan ID ni kiriting. Xaridorlar faqat shu kanalga xavfsiz qo‘shiladi.
+                    </p>
                   </div>
 
                   {/* 3D Cover Image Selector */}

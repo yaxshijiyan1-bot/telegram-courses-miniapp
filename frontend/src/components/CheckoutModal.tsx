@@ -9,18 +9,14 @@ import {
   Copy,
   Check,
   ShieldCheck,
-  Smartphone,
   ArrowLeft,
   Sparkles,
-  Lock,
 } from 'lucide-react';
 import { Course } from '../types';
 import { api } from '../services/api';
 import { useTelegram } from '../context/TelegramContext';
 import { formatPrice } from '../utils/format';
 import { InlineLoader } from 'generative-loaders';
-
-export type PaymentMethod = 'payme' | 'click' | 'uzum' | 'stars';
 
 interface CheckoutModalProps {
   course: Course;
@@ -37,7 +33,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('payme');
   const [step, setStep] = useState<1 | 2>(1);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -47,13 +42,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [cardInfo, setCardInfo] = useState<{ card_number: string; card_holder: string; bank_name?: string }>({
     card_number: '8600 5304 1234 5678',
     card_holder: 'Yaxshi Bola / Zuhra Olimova',
+    bank_name: 'Uzcard / Humo'
   });
   const { haptic, user } = useTelegram();
 
   useEffect(() => {
     api.getPaymentInfo().then(info => {
       if (info && info.card_number) {
-        setCardInfo({ card_number: info.card_number, card_holder: info.card_holder, bank_name: info.bank_name });
+        setCardInfo({
+          card_number: info.card_number,
+          card_holder: info.card_holder,
+          bank_name: info.bank_name || 'Uzcard / Humo'
+        });
       }
     }).catch(() => {});
   }, []);
@@ -107,7 +107,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         course_id: course.id,
         course_title: course.title,
         amount: course.price,
-        payment_method: selectedMethod,
+        payment_method: 'karta',
         receipt_image: receiptImage,
         student_name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Talaba',
         username: user?.username || 'user',
@@ -134,6 +134,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-0 sm:p-4 animate-in">
       <div className="w-full max-w-md glass-deep !rounded-t-[28px] sm:!rounded-[28px] text-ink shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar animate-sheet relative">
 
+        {/* Modal Header */}
         <div className="sticky top-0 z-10 glass-deep !rounded-t-[28px] flex items-center justify-between p-4 border-b border-slate-200/80">
           <div className="flex items-center space-x-2.5">
             {step === 2 && !isSubmitted && (
@@ -151,7 +152,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div>
               <h3 className="text-[13px] font-extrabold text-ink leading-tight">Xavfsiz to‘lov</h3>
               <p className="text-[10px] text-ink-muted">
-                {isSubmitted ? 'Yuborildi' : step === 1 ? '1/2 · To‘lov usuli' : '2/2 · Chek yuborish'}
+                {isSubmitted ? 'Yuborildi' : step === 1 ? '1/2 · Karta rekvizitlari' : '2/2 · Chek yuborish'}
               </p>
             </div>
           </div>
@@ -166,6 +167,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </button>
         </div>
 
+        {/* Progress Bar */}
         {!isSubmitted && (
           <div className="px-4 pt-3 flex space-x-1.5">
             {[1, 2].map((s) => (
@@ -192,13 +194,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="w-16 h-16 bg-cyan/15 text-cyan rounded-full flex items-center justify-center mx-auto border border-cyan/30 shadow-cyanGlowSm">
                 <CheckCircle2 className="w-8 h-8" strokeWidth={2.2} />
               </div>
-              <h4 className="text-base font-extrabold text-ink">Chek qabul qilindi!</h4>
+              <h4 className="text-base font-extrabold text-ink">Chek adminga yuborildi!</h4>
               <p className="text-[11px] text-ink-secondary max-w-xs mx-auto leading-relaxed">
-                Chekingiz adminlarga yuborildi. 5–10 daqiqa ichida tekshirilib, darslar shaxsiy kabinetingizda ochiladi.
+                To‘lov chekingiz adminlarimizga yuborildi. Tekshirilgach, darslar kabinetingizda ochiladi va bot orqali xabar boradi.
               </p>
             </motion.div>
           ) : step === 1 ? (
             <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease }} className="space-y-4">
+              {/* Course Card Preview */}
               <div className="glass-chip rounded-[20px] p-3.5 flex items-center justify-between">
                 <div className="min-w-0 pr-2 flex items-center space-x-2.5">
                   <img src={course.cover_url} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-200 flex-shrink-0" />
@@ -214,65 +217,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </span>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[11px] font-extrabold text-ink-secondary block">To‘lov tizimi</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['payme', 'click', 'uzum'] as PaymentMethod[]).map((m) => {
-                    const active = selectedMethod === m;
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => { haptic?.selection?.(); setSelectedMethod(m); }}
-                        className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center space-y-1.5 transition-all text-xs font-bold border ${
-                          active
-                            ? 'bg-cyan/10 border-cyan/40 text-cyan shadow-sm shadow-cyan/20'
-                            : 'glass-chip text-ink-secondary hover:text-ink'
-                        }`}
-                      >
-                        <Smartphone className={`w-4 h-4 ${active ? 'text-cyan' : 'text-ink-muted'}`} />
-                        <span className="capitalize">{m}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="glass rounded-[22px] p-4 space-y-3">
+              {/* Bank Card Info Card */}
+              <div className="glass rounded-[22px] p-4 space-y-3.5 border border-slate-200/90 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 text-xs text-ink-secondary">
                     <CreditCard className="w-4 h-4 text-cyan" />
-                    <span className="font-semibold">{cardInfo.bank_name || 'Humo / Uzcard'}</span>
+                    <span className="font-bold text-slate-800">{cardInfo.bank_name || 'Humo / Uzcard'}</span>
                   </div>
                   <button
                     onClick={handleCopyCard}
-                    className="flex items-center space-x-1 text-[11px] font-bold text-cyan glass-chip px-2.5 py-1 rounded-full active:scale-95 transition-transform"
+                    className="flex items-center space-x-1 text-[11px] font-bold text-cyan glass-chip px-3 py-1.5 rounded-full active:scale-95 transition-transform"
                   >
-                    {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                    <span>{copied ? 'Nusxalandi' : 'Nusxalash'}</span>
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copied ? 'Nusxalandi!' : 'Karta raqamini nusxalash'}</span>
                   </button>
                 </div>
 
-                <div className="bg-slate-100 rounded-xl p-3 flex items-center justify-between font-mono">
-                  <span className="text-sm font-bold tracking-wider text-ink">{cardNumber}</span>
+                <div className="bg-slate-100/90 rounded-2xl p-3.5 flex items-center justify-between font-mono border border-slate-200">
+                  <span className="text-base font-extrabold tracking-wider text-slate-900">{cardNumber}</span>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-ink-secondary pt-1">
-                  <span>Karta egasi:</span>
-                  <span className="font-bold text-ink">{cardInfo.card_holder}</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-ink-secondary">
-                  <span>To‘lov summasi:</span>
-                  <span className="font-extrabold text-sm text-cyan tabular-nums">{formatPrice(course.price)}</span>
+                <div className="space-y-1.5 pt-1 text-xs">
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Karta egasi:</span>
+                    <span className="font-extrabold text-slate-900">{cardInfo.card_holder}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>To‘lov summasi:</span>
+                    <span className="font-extrabold text-base text-cyan tabular-nums">{formatPrice(course.price)}</span>
+                  </div>
                 </div>
               </div>
 
+              {/* Simple 2-Step Instruction */}
               <div className="glass-chip rounded-[18px] p-3 text-[11px] text-ink-secondary leading-relaxed space-y-1">
-                <p className="font-semibold text-ink">💡 Qisqa yo‘riqnoma:</p>
+                <p className="font-semibold text-ink">💡 To‘lov qilish tartibi:</p>
                 <ol className="list-decimal list-inside space-y-0.5 text-ink-muted">
-                  <li>Kartani nusxalang va <b className="text-ink">{selectedMethod.toUpperCase()}</b> ilovasidan pul o‘tkazing.</li>
-                  <li>To‘lov chekini skrinshot qiling.</li>
-                  <li>Keyingi qadamda skrinshotni yuklang.</li>
+                  <li>Karta raqamidan nusxa oling va ilovangizdan pul o‘tkazing.</li>
+                  <li>To‘lov chekining skrinshotini oling.</li>
+                  <li><b>"Chek yuklash"</b> tugmasini bosib, rasmni yuboring.</li>
                 </ol>
               </div>
 
@@ -281,7 +264,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 onClick={() => { haptic?.impact?.('light'); setStep(2); }}
                 className="w-full py-3.5 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl shadow-cyanGlow active:scale-[0.98] transition-transform flex items-center justify-center space-x-2 text-sm"
               >
-                <span>To‘ladim, chek yuklayman</span>
+                <span>To‘lov qildim, chek yuklash</span>
                 <Sparkles className="w-4 h-4" />
               </button>
             </motion.div>
@@ -333,13 +316,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 ) : (
                   <>
                     <Check className="w-4 h-4 stroke-[3]" />
-                    <span>Chekni yuborish</span>
+                    <span>Chekni adminga yuborish</span>
                   </>
                 )}
               </button>
 
               <p className="text-[10px] text-ink-muted text-center leading-relaxed">
-                Chek yuborilgach admin tekshiradi. Tasdiqlansa, kurs avtomatik ochiladi va bot orqali xabar keladi.
+                Chek to‘g‘ridan-to‘g‘ri adminlarga yuboriladi. Tasdiqlangach, kurs darslari ochiladi.
               </p>
             </motion.div>
           )}

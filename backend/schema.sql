@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS public.courses (
     instructor_bio TEXT,
     rating NUMERIC(2, 1) DEFAULT 5.0,
     student_count INT DEFAULT 0,
+    telegram_channel_id BIGINT,
     published BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -78,7 +79,7 @@ CREATE TABLE IF NOT EXISTS public.purchases (
     course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
     amount BIGINT NOT NULL,
     status VARCHAR(50) DEFAULT 'completed',
-    payment_method VARCHAR(50) DEFAULT 'payme',
+    payment_method VARCHAR(50) DEFAULT 'karta',
     transaction_id VARCHAR(255),
     telegram_id BIGINT,
     student_name VARCHAR(255),
@@ -87,10 +88,20 @@ CREATE TABLE IF NOT EXISTS public.purchases (
     receipt_image_url TEXT,
     comment TEXT,
     reviewed_by VARCHAR(255),
+    channel_invite_link TEXT,
+    invite_expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Oldingi o'rnatmalar uchun xavfsiz migration
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS telegram_channel_id BIGINT;
+ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS channel_invite_link TEXT;
+ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS invite_expires_at TIMESTAMP WITH TIME ZONE;
+
 CREATE INDEX IF NOT EXISTS idx_purchases_transaction ON public.purchases(transaction_id);
 CREATE INDEX IF NOT EXISTS idx_purchases_status ON public.purchases(status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_purchases_channel_invite_link
+    ON public.purchases(channel_invite_link) WHERE channel_invite_link IS NOT NULL;
 
 -- 7. ENROLLMENTS (SOTIB OLINGAN KURSLAR HUQUQI)
 CREATE TABLE IF NOT EXISTS public.enrollments (
@@ -147,7 +158,7 @@ CREATE INDEX IF NOT EXISTS idx_lessons_course_id ON public.lessons(course_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_user_course ON public.enrollments(user_id, course_id);
 CREATE INDEX IF NOT EXISTS idx_progress_user_lesson ON public.lesson_progress(user_id, lesson_id);
 
--- ENABLE RLS (Row Level Security)
+-- 12. ENABLE RLS (Row Level Security)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.modules ENABLE ROW LEVEL SECURITY;
@@ -158,11 +169,14 @@ ALTER TABLE public.lesson_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
--- PUBLIC READ POLICIES (anon & authenticated)
+-- 13. PUBLIC READ POLICIES (anon & authenticated)
 -- FAQAT ommaviy kontent ochiq: kurslar, modullar, darslar (published).
--- Shaxsiy jadvallar (users, purchases, enrollments, lesson_progress,
--- certificates, notifications) uchun anon politsiya YO'Q — ularga faqat
--- service_role kalit orqali backend kiradi (RLS'ni chetlab o'tadi).
+-- Shaxsiy jadvallarga faqat service_role kalit orqali backend kiradi.
+DROP POLICY IF EXISTS "Public courses are viewable by everyone" ON public.courses;
 CREATE POLICY "Public courses are viewable by everyone" ON public.courses FOR SELECT USING (published = true);
+
+DROP POLICY IF EXISTS "Public modules are viewable by everyone" ON public.modules;
 CREATE POLICY "Public modules are viewable by everyone" ON public.modules FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public lessons basic info viewable by everyone" ON public.lessons;
 CREATE POLICY "Public lessons basic info viewable by everyone" ON public.lessons FOR SELECT USING (published = true);

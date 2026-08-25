@@ -20,10 +20,14 @@ import { useTelegram } from './context/TelegramContext';
 import { api, MOCK_COURSES } from './services/api';
 import { Course, Lesson, Certificate, NotificationItem } from './types';
 import { AdminDashboardModal } from './pages/AdminDashboardModal';
+import { TelegramGate } from './components/TelegramGate';
+import { useSecurityShield } from './hooks/useSecurityShield';
+import { ShieldAlert } from 'lucide-react';
 
 export const AppContent: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const { showBackButton, hideBackButton } = useTelegram();
+  const { securityWarning } = useSecurityShield();
 
   // Navigation State
   const [showSplash, setShowSplash] = useState(true);
@@ -378,6 +382,14 @@ export const AppContent: React.FC = () => {
 
       {/* Global AI Mentor Modal */}
 
+      {/* Global Security Toast Alert */}
+      {securityWarning && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600/95 backdrop-blur-lg text-white text-xs font-semibold px-4 py-2 rounded-2xl shadow-xl flex items-center space-x-2 border border-red-400/50 animate-bounce max-w-[90vw] text-center">
+          <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+          <span>{securityWarning}</span>
+        </div>
+      )}
+
       {/* Global Notifications Panel */}
       <NotificationsPanel
         isOpen={isNotifsOpen}
@@ -399,8 +411,10 @@ export const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <DesktopWrapper>
-      <AppContent />
-    </DesktopWrapper>
+    <TelegramGate>
+      <DesktopWrapper>
+        <AppContent />
+      </DesktopWrapper>
+    </TelegramGate>
   );
 }

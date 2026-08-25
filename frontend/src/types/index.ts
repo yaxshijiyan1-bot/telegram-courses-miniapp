@@ -51,6 +51,8 @@ export interface Course {
   instructor_title: string;
   instructor_avatar?: string;
   instructor_bio?: string;
+  /** Yopiq dars kanali IDsi, masalan: -1001234567890 */
+  telegram_channel_id?: number | string;
   rating: number;
   student_count: number;
   modules?: Module[];
@@ -158,4 +160,5 @@ export interface PaymentInfo {
   bank_name: string;
   bot_username: string;
   bot_url: string;
+  payment_urls?: Partial<Record<'payme' | 'click' | 'uzum', string>>;
 }

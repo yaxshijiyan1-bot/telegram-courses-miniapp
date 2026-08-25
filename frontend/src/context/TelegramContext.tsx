@@ -4,6 +4,7 @@ interface TelegramContextType {
   webApp: any;
   user: any;
   isExpanded: boolean;
+  isTelegram: boolean;
   haptic: {
     impact: (style?: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
     notification: (type?: 'error' | 'success' | 'warning') => void;
@@ -17,6 +18,7 @@ const TelegramContext = createContext<TelegramContextType>({
   webApp: null,
   user: null,
   isExpanded: false,
+  isTelegram: false,
   haptic: {
     impact: () => {},
     notification: () => {},
@@ -30,14 +32,26 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [webApp, setWebApp] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isTelegram, setIsTelegram] = useState(false);
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg) {
-      tg.ready();
-      tg.expand();
+      try {
+        tg.ready();
+        tg.expand();
+        // Vertikal surishda tasodifiy yopilib ketishning oldini olish
+        if (tg.disableVerticalSwipes) {
+          tg.disableVerticalSwipes();
+        }
+      } catch {}
+
       setWebApp(tg);
-      setIsExpanded(tg.isExpanded);
+      setIsExpanded(tg.isExpanded || false);
+
+      const hasInitData = Boolean(tg.initData && tg.initData.length > 0);
+      const hasTgUser = Boolean(tg.initDataUnsafe?.user?.id);
+      setIsTelegram(hasInitData || hasTgUser || Boolean((window as any).TelegramWebviewProxy));
 
       if (tg.initDataUnsafe?.user) {
         setUser(tg.initDataUnsafe.user);
@@ -75,7 +89,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const showBackButton = (onClick: () => void) => {
     if (webApp?.BackButton) {
-      // Eski handlerni olib tashlaymiz — aks holda ular to'planib, orqaga bosilganda bir nechta amal bajariladi
       if (backButtonHandlerRef.current) {
         try { webApp.BackButton.offClick(backButtonHandlerRef.current); } catch {}
       }
@@ -97,6 +110,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         webApp,
         user,
         isExpanded,
+        isTelegram,
         haptic,
         showBackButton,
         hideBackButton

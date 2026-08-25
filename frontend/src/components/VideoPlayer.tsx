@@ -7,11 +7,13 @@ import {
   Maximize,
   RotateCcw,
   RotateCw,
-  Gauge,
+  Lock,
   ShieldAlert,
-  Lock
+  EyeOff
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
+import { useSecurityShield } from '../hooks/useSecurityShield';
+import { DynamicWatermark } from './DynamicWatermark';
 
 interface VideoPlayerProps {
   src: string;
@@ -27,13 +29,47 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onTimeUpdate
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const { haptic, user } = useTelegram();
+  const controlsTimeoutRef = useRef<number | null>(null);
+  const { haptic } = useTelegram();
+
+  // Xavfsizlik himoyasi: oyna nofaol bo'lganda / ekran yozish vositasi faollashganda
+  const { isWindowBlurred, securityWarning, dismissWarning } = useSecurityShield({
+    onSecurityAlert: () => {
+      // Skrinshot yoki xavfli amal bajarilganda videoni darhol to'xtatamiz
+      if (videoRef.current && isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  });
+
+  // Oyna nofaol bo'lsa videoni to'xtatish
+  useEffect(() => {
+    if (isWindowBlurred && videoRef.current && isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [isWindowBlurred, isPlaying]);
+
+  // Avtomatik controls yashirish
+  const handleUserActivity = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    if (isPlaying) {
+      controlsTimeoutRef.current = window.setTimeout(() => {
+        setShowControls(false);
+      }, 3500);
+    }
+  };
 
   const togglePlay = () => {
     haptic.impact('light');
@@ -42,7 +78,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       videoRef.current.pause();
       setIsPlaying(false);
     } else {
-      videoRef.current.play();
+      videoRef.current.play().catch(() => {});
       setIsPlaying(true);
     }
   };
@@ -82,11 +118,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const toggleFullscreen = () => {
     haptic.impact('light');
-    if (!videoRef.current) return;
-    if (videoRef.current.requestFullscreen) {
-      videoRef.current.requestFullscreen();
-    } else if ((videoRef.current as any).webkitEnterFullscreen) {
-      (videoRef.current as any).webkitEnterFullscreen();
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen();
+      } else if ((containerRef.current as any).webkitRequestFullscreen) {
+        (containerRef.current as any).webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
     }
   };
 
@@ -98,45 +142,93 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div
-      onContextMenu={(e) => e.preventDefault()}
+      ref={containerRef}
+      onMouseMove={handleUserActivity}
+      onTouchStart={handleUserActivity}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }}
       className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-elevated group select-none"
     >
+      {/* HTML5 Video Element with Full Security Lockdown */}
       <video
         ref={videoRef}
         src={src}
         poster={poster}
         playsInline
-        controlsList="nodownload noplaybackrate"
+        preload="metadata"
+        controlsList="nodownload noplaybackrate nofullscreen"
         disablePictureInPicture
+        // @ts-ignore
+        disableRemotePlayback
+        onContextMenu={(e) => e.preventDefault()}
+        draggable={false}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
         onEnded={() => {
           setIsPlaying(false);
           onEnded?.();
         }}
-        onClick={togglePlay}
-        className="w-full h-full object-contain cursor-pointer pointer-events-auto"
+        className="w-full h-full object-contain pointer-events-none select-none"
       />
 
-      {/* Dynamic Watermark / Anti-Leak Overlay */}
-      <div className="absolute top-2.5 right-3 pointer-events-none opacity-45 bg-black/45 px-2 py-0.5 rounded text-[9px] font-mono text-white/90 flex items-center space-x-1 border border-white/10">
-        <Lock className="w-2.5 h-2.5 text-cyan" />
-        <span>
-          {user?.first_name
-            ? `${user.first_name} · ID: ${user.id}`
-            : 'Mualliflik huquqi bilan himoyalangan'}
-        </span>
-      </div>
+      {/* Transparent Click Shield Layer — prevents direct video right click / inspection */}
+      <div
+        onClick={togglePlay}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }}
+        className="absolute inset-0 z-10 cursor-pointer pointer-events-auto"
+      />
 
-      <div className="absolute bottom-12 left-3 pointer-events-none opacity-30 text-[8px] text-white/70 font-sans tracking-wide">
-        Mualliflik huquqi bilan himoyalangan. Tarqatish taqiqlanadi.
-      </div>
+      {/* Dinamik Harakatlanuvchi Watermark (Foydalanuvchi Telegram ID & Name) */}
+      <DynamicWatermark variant="video" />
 
-      {/* Play/Pause Large Center Icon Overlay when paused */}
-      {!isPlaying && (
+      {/* ⚠️ Privacy & Anti-Recording Shield (Oyna nofaol bo'lganda yoki ekran yozishda chiqadi) */}
+      {isWindowBlurred && (
+        <div className="absolute inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-4 space-y-3 pointer-events-auto animate-fade-in">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center">
+            <EyeOff className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-white">Xavfsizlik Himoyasi Faollashdi</h4>
+            <p className="text-[11px] text-white/60 max-w-xs leading-relaxed">
+              Ilova nofaol holatga o'tdi yoki tashqi yozish/skrinshot signali aniqlandi.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              dismissWarning();
+              if (videoRef.current) {
+                videoRef.current.play().catch(() => {});
+                setIsPlaying(true);
+              }
+            }}
+            className="px-4 py-2 rounded-xl bg-cyan text-white text-xs font-bold shadow-cyanGlow active:scale-95 transition-transform flex items-center space-x-1.5"
+          >
+            <Play className="w-3.5 h-3.5 fill-white" />
+            <span>Darsni davom ettirish</span>
+          </button>
+        </div>
+      )}
+
+      {/* Xavfsizlik Ogohlantirishi Toasti */}
+      {securityWarning && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 animate-bounce border border-red-400">
+          <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{securityWarning}</span>
+        </div>
+      )}
+
+      {/* Play/Pause Markaziy Katta Tugma (Pauza paytida) */}
+      {!isPlaying && !isWindowBlurred && (
         <div
           onClick={togglePlay}
-          className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer backdrop-blur-[2px] transition-all"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/35 cursor-pointer backdrop-blur-[1px] transition-all pointer-events-auto"
         >
           <div className="w-14 h-14 rounded-full bg-cyan text-[#05070A] flex items-center justify-center shadow-cyanGlow transform group-hover:scale-110 active:scale-95 transition-all">
             <Play className="w-6 h-6 fill-[#05070A] translate-x-0.5" />
@@ -144,16 +236,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Custom Video Controls Bar */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 flex flex-col space-y-2">
-        {/* Timeline Slider */}
+      {/* Maxsus Video Boshqaruv Paneli (Custom Security Controls Bar) */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 z-25 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 flex flex-col space-y-2 transition-opacity duration-300 pointer-events-auto ${
+          showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Progress Slider */}
         <input
           type="range"
           min={0}
           max={duration || 100}
           value={currentTime}
           onChange={handleSeek}
-          className="vslider w-full"
+          className="vslider w-full cursor-pointer"
           style={{ ['--fill' as any]: `${duration ? (currentTime / duration) * 100 : 0}%` }}
         />
 
@@ -164,10 +260,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               {isPlaying ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
             </button>
 
-            <button onClick={() => skipTime(-10)} className="p-1 text-white/80 hover:text-white">
+            <button onClick={() => skipTime(-10)} className="p-1 text-white/80 hover:text-white" title="-10s">
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => skipTime(10)} className="p-1 text-white/80 hover:text-white">
+            <button onClick={() => skipTime(10)} className="p-1 text-white/80 hover:text-white" title="+10s">
               <RotateCw className="w-3.5 h-3.5" />
             </button>
 
@@ -177,7 +273,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Speed toggle */}
+            {/* Tezlik tanlash */}
             <button
               onClick={changeSpeed}
               className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-bold tracking-wider hover:bg-white/30 transition-colors"
@@ -185,7 +281,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               {playbackSpeed}x
             </button>
 
-            {/* Mute */}
+            {/* Ovoz sozlash */}
             <button
               onClick={() => {
                 if (videoRef.current) {

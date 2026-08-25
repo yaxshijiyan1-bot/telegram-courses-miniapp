@@ -30,6 +30,12 @@
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+input, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
 html {
@@ -47,6 +53,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Telegram Safe Areas */

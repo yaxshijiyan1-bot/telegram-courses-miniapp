@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # WebApp URL
     WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://kurslarimiz-platforma.vercel.app")
+    WELCOME_BANNER_URL: str = os.getenv("WELCOME_BANNER_URL", "")
 
     # CORS — faqat ishonchli manbalar (Telegram Mini App o'zi frontend domenda ishlaydi)
     CORS_ORIGINS_RAW: str = os.getenv(
@@ -89,6 +90,9 @@ class Settings(BaseSettings):
     CARD_NUMBER: str = os.getenv("CARD_NUMBER", "8600 5304 1234 5678")
     CARD_HOLDER: str = os.getenv("CARD_HOLDER", "Yaxshi Bola / Zuhra Olimova")
     CARD_BANK: str = os.getenv("CARD_BANK", "Uzcard / Humo (Payme, Click, Uzum)")
+    PAYME_PAYMENT_URL: str = os.getenv("PAYME_PAYMENT_URL", "")
+    CLICK_PAYMENT_URL: str = os.getenv("CLICK_PAYMENT_URL", "")
+    UZUM_PAYMENT_URL: str = os.getenv("UZUM_PAYMENT_URL", "")
 
     # AI & OpenRouter sozlamalari
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
