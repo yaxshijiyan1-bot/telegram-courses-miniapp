@@ -116,7 +116,8 @@ export const MOCK_COURSES: Course[] = [
     instructor_avatar: '/images/zuhra_olimova.jpg',
     instructor_bio: "Fintech, EdTech va Telegram Mini App interfeyslari bo'yicha yetakchi Art Director.",
     rating: 5.0,
-    student_count: 980
+    student_count: 980,
+    gallery_urls: ['/images/course_design.jpg', '/images/design_course.jpg', '/images/hero_books.jpg']
   },
   {
     id: 'c3333333-3333-3333-3333-333333333333',
@@ -138,7 +139,9 @@ export const MOCK_COURSES: Course[] = [
     instructor_avatar: '/images/yaxshi_bola.jpg',
     instructor_bio: "High-load tizimlar va Telegram ekotizimi bo'yicha yetakchi dasturchi va arxitektor.",
     rating: 4.9,
-    student_count: 1850
+    student_count: 1850,
+    gallery_urls: ['/images/code_course.jpg', '/images/hero_books.jpg', '/images/course_biz.jpg']
+
   },
   {
     id: 'c4444444-4444-4444-4444-444444444444',

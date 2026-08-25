@@ -7,10 +7,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Maximize2,
+  X,
+  Image as ImageIcon,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Course, Lesson } from '../types';
-import { VideoPlayer } from '../components/VideoPlayer';
 import { useTelegram } from '../context/TelegramContext';
 import { api } from '../services/api';
 
@@ -38,6 +41,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'about' | 'files'>('about');
   const [isCompleted, setIsCompleted] = useState(lesson.completed || false);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
   const { haptic } = useTelegram();
 
   const handleMarkComplete = async () => {
@@ -46,6 +50,8 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
     setIsCompleted(true);
     await api.markLessonComplete(course.id, lesson.id);
   };
+
+  const lessonImage = (lesson as any).cover_url || course.cover_url || '/images/hero_books.jpg';
 
   return (
     <div className="flex-1 pb-safe bg-white text-slate-900 animate-fade-up flex flex-col justify-between">
@@ -74,21 +80,37 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
           <div className="w-9 h-9" />
         </div>
 
-        {/* Video Player */}
-        <div className="w-full bg-black aspect-video relative">
-          <VideoPlayer
-            src={lesson.video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}
-            poster={course.cover_url}
-            onEnded={() => {
-              setIsCompleted(true);
-            }}
+        {/* Dars Muqovasi / Infografika Rasmi (Videoplayer o'rnida) */}
+        <div 
+          onClick={() => {
+            haptic.selection();
+            setIsImageZoomed(true);
+          }}
+          className="w-full bg-slate-950 aspect-video relative overflow-hidden group cursor-pointer border-b border-slate-200"
+        >
+          <img
+            src={lessonImage}
+            alt={lesson.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex flex-col justify-between p-3.5">
+            <div className="flex justify-end">
+              <span className="p-1.5 rounded-xl bg-black/60 backdrop-blur-md text-white text-[10px] flex items-center space-x-1">
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Kattalashtirish</span>
+              </span>
+            </div>
+            <div className="space-y-0.5">
+              <span className="badge-cyan text-[8px] py-0 px-1.5 font-bold">Amaliy Dars Materiali</span>
+              <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">{lesson.title}</h3>
+            </div>
+          </div>
         </div>
 
         {/* Content Details */}
         <div className="p-4 space-y-4">
           <div>
-            <span className="text-[10px] font-bold text-slate-400">Dars davomiyligi: {lesson.duration || '15 daqiqa'}</span>
+            <span className="text-[10px] font-bold text-slate-400">Dars tartibi: {lesson.duration || '15 daqiqa'}</span>
             <h1 className="text-base font-extrabold text-slate-900 mt-0.5">{lesson.title}</h1>
           </div>
 
@@ -103,7 +125,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             }`}
           >
             <CheckCircle2 className={`w-4 h-4 ${isCompleted ? '' : 'text-white'}`} strokeWidth={2.4} />
-            <span>{isCompleted ? 'Dars tugallandi' : 'Darsni tugallangan deb belgilash'}</span>
+            <span>{isCompleted ? 'Dars tugallandi ✓' : 'Darsni tugallangan deb belgilash'}</span>
           </motion.button>
 
           {/* Tabs */}
@@ -138,18 +160,19 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 transition={{ duration: 0.25, ease }}
                 className="space-y-3 pt-1"
               >
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  {lesson.description ||
-                    'Ushbu darsda siz kurs mavzusiga doir eng muhim tushunchalar, real amaliy misollar va professional ko‘nikmalarni o‘rganasiz.'}
-                </p>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+                  <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                    Qisqacha mazmun
+                  </span>
+                  <p className="text-xs text-slate-600 leading-relaxed font-normal whitespace-pre-line">
+                    {lesson.description || "Ushbu amaliy darsda siz kursning asosiy mavzularini o'rganasiz va real amaliy topshiriqlarni bajarasiz."}
+                  </p>
+                </div>
 
-                <div className="glass !rounded-[20px] p-3.5 space-y-2">
-                  <div className="flex items-center space-x-2 text-xs font-bold text-slate-900">
-                    <Sparkles className="w-4 h-4 text-cyan" strokeWidth={2.2} />
-                    <span>Amaliy topshiriq</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Darsda ko‘rsatilgan namunalarni o‘z kodingizda qaytadan yozib ko‘ring va mustahkamlang.
+                <div className="p-3 bg-sky-50 rounded-2xl border border-sky-100 flex items-start space-x-2.5">
+                  <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-sky-900 leading-relaxed font-medium">
+                    Darsdagi tushunarsiz joylar bo'lsa, pastdagi <b>AI Mentor</b> tugmasi orqali istalgan savolingizni berishingiz mumkin.
                   </p>
                 </div>
               </motion.div>
@@ -160,79 +183,89 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25, ease }}
-                className="space-y-2.5 pt-1"
+                className="space-y-2 pt-1"
               >
-                {(!lesson.resources || lesson.resources.filter(f => !f.url?.endsWith('.mp4') && !f.name?.endsWith('.mp4')).length === 0) ? (
-                  <div className="text-center py-8 glass !rounded-[20px] text-slate-400 text-xs">
-                    Ushbu dars uchun qo‘shimcha materiallar biriktirilmagan.
-                  </div>
-                ) : (
-                  lesson.resources
-                    .filter((file) => !file.url?.endsWith('.mp4') && !file.name?.endsWith('.mp4'))
-                    .map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 glass !rounded-[20px]">
-                        <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                          <div className="w-9 h-9 rounded-xl bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-4 h-4" strokeWidth={2.2} />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold text-slate-900 block truncate">{file.name}</span>
-                            <span className="text-[10px] text-slate-400">{file.size}</span>
-                          </div>
+                {lesson.resources && lesson.resources.length > 0 ? (
+                  lesson.resources.map((res, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-3 min-w-0 pr-2">
+                        <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600">
+                          <FileText className="w-4 h-4" />
                         </div>
-
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => haptic?.impact?.('light')}
-                          className="px-3 py-1.5 bg-cyan text-white rounded-xl text-[10px] font-extrabold flex items-center space-x-1 shadow-cyanGlowSm flex-shrink-0 active:scale-95 transition-transform"
-                        >
-                          <Download className="w-3 h-3" />
-                          <span>Yuklash</span>
-                        </a>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-slate-900 block truncate">
+                            {res.name}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">{res.size || 'PDF'}</span>
+                        </div>
                       </div>
-                    ))
+                      <a
+                        href={res.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-cyan"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-xs text-slate-400">
+                    Ushbu dars uchun qo'shimcha fayl yo'q.
+                  </div>
                 )}
-                <div className="text-[10px] text-slate-400 text-center pt-1 font-mono">
-                  🔒 Dars videolari xavfsiz striming orqali uzatiladi (yuklab olish taqiqlanadi)
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Bottom nav */}
-      <div className="p-4 bg-white/90 backdrop-blur-2xl border-t border-slate-200/80 flex items-center justify-between space-x-3">
+      {/* Footer Navigation Buttons */}
+      <div className="p-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-3 sticky bottom-0 z-10">
         <button
-          onClick={() => {
-            if (prevLessonId) {
-              haptic?.impact?.('light');
-              onSelectLesson(course, prevLessonId);
-            }
-          }}
+          onClick={() => prevLessonId && onSelectLesson(course, prevLessonId)}
           disabled={!prevLessonId}
-          className="flex-1 py-3 px-3 rounded-2xl glass-chip text-xs font-bold flex items-center justify-center space-x-1 disabled:opacity-30 disabled:pointer-events-none hover:border-cyan/30 transition-colors text-slate-700"
+          className="py-3 px-4 rounded-2xl border border-slate-200 text-xs font-bold flex items-center justify-center space-x-1.5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 active:scale-95 transition-all text-slate-700"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Oldingi dars</span>
         </button>
 
         <button
-          onClick={() => {
-            if (nextLessonId) {
-              haptic?.impact?.('light');
-              onSelectLesson(course, nextLessonId);
-            }
-          }}
+          onClick={() => nextLessonId && onSelectLesson(course, nextLessonId)}
           disabled={!nextLessonId}
-          className="flex-1 py-3 px-3 rounded-2xl bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold text-xs flex items-center justify-center space-x-1 disabled:opacity-30 disabled:pointer-events-none shadow-cyanGlowSm active:scale-[0.98] transition-transform"
+          className="py-3 px-4 rounded-2xl bg-slate-900 text-white text-xs font-bold flex items-center justify-center space-x-1.5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-800 active:scale-95 transition-all shadow-sm"
         >
           <span>Keyingi dars</span>
-          <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Lightbox Modal for Zoomed Image */}
+      {isImageZoomed && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-fade-in"
+          onClick={() => setIsImageZoomed(false)}
+        >
+          <div className="relative max-w-lg w-full bg-slate-900 rounded-3xl overflow-hidden border border-white/10 p-2 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setIsImageZoomed(false)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <img
+              src={lessonImage}
+              alt={lesson.title}
+              className="w-full h-auto max-h-[80vh] object-contain rounded-2xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
