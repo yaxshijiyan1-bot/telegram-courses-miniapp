@@ -159,7 +159,8 @@ def _course_keyboard(course: Dict[str, Any], index: int, total: int) -> dict:
 def _course_caption(course: Dict[str, Any]) -> str:
     title = _escape(course.get("title") or "Kurs")
     category = _escape(course.get("category") or "Premium ta'lim")
-    instructor = _escape(course.get("instructor_name") or "Course Academy ustozlari")
+    instructor = _escape(course.get("instructor_name") or "Kreativ AI ustozlari")
+
     instructor_title = _escape(course.get("instructor_title") or "Ekspert")
     old_price = course.get("old_price")
     old_price_line = f"\n🏷 <s>{_uzs(old_price)}</s>" if old_price else ""
@@ -198,21 +199,42 @@ async def show_course_card(client: httpx.AsyncClient, chat_id: int, index: int) 
     await send_tg_message(client, chat_id, caption, keyboard)
 
 
+async def _get_active_card_info() -> Dict[str, str]:
+    store = get_store()
+    card_num = settings.CARD_NUMBER
+    card_holder = settings.CARD_HOLDER
+    bank_name = settings.CARD_BANK
+    try:
+        saved_pay = await store.get_setting("payment_settings")
+        if saved_pay:
+            data = json.loads(saved_pay)
+            if data.get("card_number"):
+                card_num = data["card_number"]
+            if data.get("card_holder"):
+                card_holder = data["card_holder"]
+            if data.get("bank_name"):
+                bank_name = data["bank_name"]
+    except Exception:
+        pass
+    return {"card_number": card_num, "card_holder": card_holder, "bank_name": bank_name}
+
+
 async def _send_payment_info(client: httpx.AsyncClient, chat_id: int) -> None:
+    card = await _get_active_card_info()
     text = (
-        "💳 <b>To'lov rekvizitlari</b>\n\n"
-        f"🏦 <b>{_escape(settings.CARD_BANK)}</b>\n"
+        "💳 <b>Kreativ AI — To'lov rekvizitlari</b>\n\n"
+        f"🏦 Bank: <b>{_escape(card['bank_name'])}</b>\n"
         f"💳 Karta raqami (nusxalash uchun bosing):\n"
-        f"<code>{_escape(settings.CARD_NUMBER)}</code>\n"
-        f"👤 Qabul qiluvchi: <b>{_escape(settings.CARD_HOLDER)}</b>\n\n"
+        f"<code>{_escape(card['card_number'])}</code>\n"
+        f"👤 Qabul qiluvchi: <b>{_escape(card['card_holder'])}</b>\n\n"
         "💡 <b>To'lov tartibi:</b>\n"
         "1. Karta raqamidan nusxa oling va ilovangizdan pul o'tkazing.\n"
-        "2. To'lov chekini skrinshot qilib, shu chatga yuboring.\n"
-        "3. Admin tekshirishi bilan darslar avtomatik ochiladi."
+        "2. To'lov chekini skrinshot qilib, shu chatga rasm ko'rinishida yuboring.\n"
+        "3. Admin tasdiqlashi bilan darslar va yopiq kanal avtomatik ochiladi."
     )
     rows = [
-        [{"text": "📚 Kurs tanlash va to'lash", "callback_data": "course:0"}],
-        [{"text": "🚀 Mini Appni Ochish", "web_app": {"url": settings.WEBAPP_URL}}]
+        [{"text": "🚀 Kreativ AI — Mini App", "web_app": {"url": settings.WEBAPP_URL}}],
+        [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}],
     ]
     await send_tg_message(
         client,
@@ -228,20 +250,26 @@ async def _start_checkout(client: httpx.AsyncClient, chat_id: int, user: Dict[st
     if not course or not course.get("published", True):
         await send_tg_message(client, chat_id, "⚠️ Bu kurs hozir mavjud emas.")
         return
+    card = await _get_active_card_info()
     _checkout_sessions[int(user["telegram_id"])] = course["id"]
     await send_tg_message(
         client,
         chat_id,
-        "💳 <b>To'lovni yakunlash</b>\n\n"
+        "💳 <b>To'lovni amalga oshirish</b>\n\n"
         f"📚 Kurs: <b>{_escape(course['title'])}</b>\n"
         f"💰 Summa: <b>{_uzs(course.get('price'))}</b>\n\n"
-        f"🏦 {_escape(settings.CARD_BANK)}\n"
-        f"💳 <code>{_escape(settings.CARD_NUMBER)}</code>\n"
-        f"👤 {_escape(settings.CARD_HOLDER)}\n\n"
-        "To'lovni amalga oshiring va <b>chek skrinshotini rasm sifatida shu chatga yuboring</b>. "
-        "Admin tekshirganidan keyin kurs ochiladi.",
-        {"inline_keyboard": [[{"text": "✖️ Bekor qilish", "callback_data": "checkout:cancel"}]]},
+        f"🏦 Bank: <b>{_escape(card['bank_name'])}</b>\n"
+        f"💳 Karta raqami (nusxalash uchun bosing):\n"
+        f"<code>{_escape(card['card_number'])}</code>\n"
+        f"👤 Qabul qiluvchi: <b>{_escape(card['card_holder'])}</b>\n\n"
+        "To'lovni amalga oshiring va <b>chek skrinshotini rasm ko'rinishida shu chatga yuboring</b>.\n"
+        "Admin tekshirishi bilan darslar sizga ochiladi.",
+        {"inline_keyboard": [
+            [{"text": "🚀 Mini Appda ko'rish", "web_app": {"url": f"{settings.WEBAPP_URL}#course_{course['id']}"}}],
+            [{"text": "✖️ Bekor qilish", "callback_data": "checkout:cancel"}]
+        ]},
     )
+
 
 
 async def _notify_admins_about_receipt(
@@ -505,11 +533,14 @@ async def _send_help(client: httpx.AsyncClient, chat_id: int) -> None:
     await send_tg_message(
         client,
         chat_id,
-        "🤝 <b>Yordam markazi</b>\n\n"
-        "To'lov, kurs yoki texnik savollar bo'yicha adminlarga yozing:\n"
-        "👤 Yaxshi Bola — @yomonboia\n"
-        "👤 Zuhra Olimova — @sokin_notalar",
-        {"inline_keyboard": [[{"text": "🚀 Mini App", "web_app": {"url": settings.WEBAPP_URL}}]]},
+        "🤝 <b>Kreativ AI — Yordam markazi</b>\n\n"
+        "To'lov, kurslar, yopiq kanallar yoki takliflar bo'yicha superadminlarga yozing:\n\n"
+        "👤 <b>Yaxshi Bola</b> — @yomonboia\n"
+        "👤 <b>Zuhra Olimova</b> — @sokin_notalar",
+        {"inline_keyboard": [
+            [{"text": "🚀 Kreativ AI Mini App", "web_app": {"url": settings.WEBAPP_URL}}],
+            [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}]
+        ]},
     )
 
 
@@ -518,22 +549,25 @@ async def _send_welcome(client: httpx.AsyncClient, chat_id: int, tg_user: Dict[s
     is_admin = tg_user.get("id") in settings.ADMIN_IDS
     text = (
         f"Assalomu alaykum, <b>{first_name}</b>! 🎓\n\n"
-        "<b>Course Academy</b> — premium ta'lim platformasiga xush kelibsiz.\n\n"
-        "📚 Amaliy kurslar\n🤖 AI Mentor\n🏆 Kurs yakunida sertifikat\n🔐 Himoyalangan dars kanallari\n\n"
-        "Quyidagi bo'limlardan birini tanlang 👇"
+        "<b>Kreativ AI</b> — Sun'iy intellekt, dizayn va zamonaviy kasblar platformasiga xush kelibsiz!\n\n"
+        "✨ <b>Imkoniyatlar:</b>\n"
+        "• 📚 Yuqori sifatli amaliy kurslar\n"
+        "• 🤖 24/7 Shaxsiy AI Mentor\n"
+        "• 🏆 Tekshiriluvchi QR-kodli sertifikatlar\n"
+        "• 🔐 Himoyalangan yopiq dars kanallari\n\n"
+        "Darslarni boshlash uchun quyidagi tugmani bosing 👇"
     )
     keyboard_rows = [
-        [{"text": "🚀 Mini App", "web_app": {"url": settings.WEBAPP_URL}}],
-        [{"text": "📚 Kurslar", "callback_data": "course:0"}, {"text": "💳 To'lovlar", "callback_data": "payments"}],
-        [{"text": "🤖 AI Mentor", "callback_data": "ai:info"}, {"text": "🆘 Yordam", "callback_data": "help"}],
+        [{"text": "🚀 Platformani Ochish (Mini App)", "web_app": {"url": settings.WEBAPP_URL}}],
+        [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}, {"text": "💳 To'lov Rekvizitlari", "callback_data": "payments"}],
+        [{"text": "🤖 AI Mentor", "callback_data": "ai:info"}, {"text": "🆘 Admin Yordami", "callback_data": "help"}],
     ]
     if is_admin:
-        keyboard_rows.append([{"text": "⚙️ Superadmin panel", "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}}])
+        keyboard_rows.append([{"text": "⚙️ Superadmin Boshqaruv Paneli", "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}}])
     keyboard = {"inline_keyboard": keyboard_rows}
 
     banner_url = getattr(settings, "WELCOME_BANNER_URL", "")
     if not banner_url:
-        # Alohida banner sozlanmagan bo'lsa, birinchi premium kurs muqovasidan foydalanamiz.
         try:
             courses = await get_store().list_courses(published_only=True)
             banner_url = str(courses[0].get("cover_url") or "") if courses else ""
@@ -555,7 +589,7 @@ async def _send_stats(client: httpx.AsyncClient, chat_id: int, user_id: int) -> 
     pending = await store.list_purchases(status="pending_approval", limit=1000)
     active_courses = await store.list_courses(published_only=True)
     text = (
-        "📊 <b>Course Academy statistikasi</b>\n\n"
+        "📊 <b>Kreativ AI — Platforma Statistikasi</b>\n\n"
         f"💰 Jami tushum: <b>{_uzs(stats.get('total_revenue'))}</b>\n"
         f"📈 Oylik tushum: <b>{_uzs(stats.get('monthly_revenue'))}</b>\n"
         f"👥 Talabalar: <b>{await store.count_users()} ta</b>\n"
@@ -564,8 +598,9 @@ async def _send_stats(client: httpx.AsyncClient, chat_id: int, user_id: int) -> 
     )
     await send_tg_message(
         client, chat_id, text,
-        {"inline_keyboard": [[{"text": "📊 Admin panel", "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}}]]},
+        {"inline_keyboard": [[{"text": "⚙️ Admin Panelni Ochish", "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}}]]},
     )
+
 
 
 async def _handle_ai_question(client: httpx.AsyncClient, chat_id: int, first_name: str, raw_text: str) -> None:
