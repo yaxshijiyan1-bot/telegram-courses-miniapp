@@ -145,7 +145,7 @@ export const TelegramGate: React.FC<TelegramGateProps> = ({ children }) => {
 
       {/* Footer copyright */}
       <div className="mt-8 text-[11px] text-white/40 font-mono text-center">
-        COURSE ACADEMY SECURE PLATFORM © 2026
+        KREATIV AI SECURE PLATFORM © 2026
       </div>
     </div>
   );

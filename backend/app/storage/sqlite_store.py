@@ -14,8 +14,6 @@ class SqliteStore(Store):
     """
     O'rnatilgan SQLite storage — Supabase jadvallari mavjud bo'lmaganda
     avtomatik ishlaydigan nol-konfiguratsiyali fallback.
-    Render free tier'da fayl tizimi deploy'da yangilanadi — production uchun
-    Supabase'da schema.sql ishga tushirish tavsiya etiladi ( kod o'zi topadi).
     """
     backend_name = "sqlite"
 
@@ -65,6 +63,10 @@ class SqliteStore(Store):
                 copyright_notice TEXT,
                 rating REAL DEFAULT 5.0,
                 student_count INTEGER DEFAULT 0,
+                telegram_channel_id TEXT,
+                gallery_urls TEXT,
+                testimonials TEXT,
+                custom_info TEXT,
                 published INTEGER DEFAULT 1,
                 created_at TEXT NOT NULL
             );
@@ -125,24 +127,38 @@ class SqliteStore(Store):
                 is_read INTEGER DEFAULT 0,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
             CREATE INDEX IF NOT EXISTS idx_purchases_tx ON purchases(transaction_id);
             CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases(status);
             CREATE INDEX IF NOT EXISTS idx_enroll_user ON enrollments(user_id);
             CREATE INDEX IF NOT EXISTS idx_prog_user_course ON lesson_progress(user_id, course_id);
             CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id);
             """)
-            try:
-                c.execute("ALTER TABLE courses ADD COLUMN telegram_channel_id TEXT;")
-            except Exception:
-                pass
-            # Ilgari yaratilgan SQLite bazalarini ham yangi anti-leak maydonlariga ko'chiramiz.
-            for column, definition in (
-                ("channel_invite_link", "TEXT"),
-                ("invite_expires_at", "TEXT"),
+
+            # Safe column additions
+            for col, ddl in (
+                ("telegram_channel_id", "TEXT"),
+                ("gallery_urls", "TEXT"),
+                ("testimonials", "TEXT"),
+                ("custom_info", "TEXT"),
             ):
                 try:
-                    c.execute(f"ALTER TABLE purchases ADD COLUMN {column} {definition};")
-                except sqlite3.OperationalError:
+                    c.execute(f"ALTER TABLE courses ADD COLUMN {col} {ddl};")
+                except Exception:
+                    pass
+
+            for col, ddl in (
+                ("channel_invite_link", "TEXT"),
+                ("invite_expires_at", "TEXT"),
+                ("reviewed_by", "TEXT"),
+            ):
+                try:
+                    c.execute(f"ALTER TABLE purchases ADD COLUMN {col} {ddl};")
+                except Exception:
                     pass
 
     # ---------------- USERS ----------------
@@ -167,10 +183,13 @@ class SqliteStore(Store):
         }
         with self.lock, self._conn() as c:
             c.execute(
-                "INSERT INTO users (id, telegram_id, name, username, role, created_at) VALUES (?,?,?,?,?,?)",
+                """INSERT INTO users (id, telegram_id, name, username, role, created_at)
+                   VALUES (?,?,?,?,?,?)
+                   ON CONFLICT(telegram_id) DO UPDATE SET name=excluded.name, username=excluded.username, role=excluded.role""",
                 (row["id"], row["telegram_id"], row["name"], row["username"], row["role"], row["created_at"])
             )
         return row
+
 
     async def update_user(self, user_id: str, fields: Dict[str, Any]) -> bool:
         if not fields:
@@ -193,6 +212,15 @@ class SqliteStore(Store):
     def _course_row(self, r: sqlite3.Row) -> Dict[str, Any]:
         d = dict(r)
         d["published"] = bool(d.get("published"))
+        for json_field in ("gallery_urls", "testimonials", "custom_info"):
+            val = d.get(json_field)
+            if isinstance(val, str):
+                try:
+                    d[json_field] = json.loads(val)
+                except Exception:
+                    d[json_field] = []
+            elif val is None:
+                d[json_field] = []
         return d
 
     async def list_courses(self, published_only: bool = True) -> List[Dict[str, Any]]:
@@ -222,13 +250,19 @@ class SqliteStore(Store):
         row["published"] = 1 if row.get("published", True) else 0
         if "created_at" not in row or not row["created_at"]:
             row["created_at"] = _now()
+
+        # Serialize JSON fields
+        gallery_json = json.dumps(row.get("gallery_urls") or [])
+        testimonials_json = json.dumps(row.get("testimonials") or [])
+        custom_info_json = json.dumps(row.get("custom_info") or [])
+
         with self.lock, self._conn() as c:
             c.execute(
                 """INSERT INTO courses (id,title,slug,category,description,short_description,cover_url,
                    preview_video_url,price,old_price,discount_percent,duration,lesson_count,level,
                    instructor_name,instructor_title,instructor_avatar,instructor_bio,access_duration,
-                   copyright_notice,rating,student_count,telegram_channel_id,published,created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   copyright_notice,rating,student_count,telegram_channel_id,gallery_urls,testimonials,custom_info,published,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(id) DO UPDATE SET title=excluded.title, slug=excluded.slug,
                    category=excluded.category, description=excluded.description,
                    short_description=excluded.short_description, cover_url=excluded.cover_url,
@@ -240,6 +274,9 @@ class SqliteStore(Store):
                    access_duration=excluded.access_duration, copyright_notice=excluded.copyright_notice,
                    rating=excluded.rating, student_count=excluded.student_count,
                    telegram_channel_id=excluded.telegram_channel_id,
+                   gallery_urls=excluded.gallery_urls,
+                   testimonials=excluded.testimonials,
+                   custom_info=excluded.custom_info,
                    published=excluded.published""",
                 (row.get("id"), row.get("title"), row.get("slug"), row.get("category"),
                  row.get("description"), row.get("short_description"), row.get("cover_url"),
@@ -248,9 +285,13 @@ class SqliteStore(Store):
                  row.get("level"), row.get("instructor_name"), row.get("instructor_title"),
                  row.get("instructor_avatar"), row.get("instructor_bio"), row.get("access_duration"),
                  row.get("copyright_notice"), row.get("rating", 5.0), row.get("student_count", 0),
-                 row.get("telegram_channel_id"), row.get("published", 1), row.get("created_at", _now()))
+                 row.get("telegram_channel_id"), gallery_json, testimonials_json, custom_info_json,
+                 row.get("published", 1), row.get("created_at", _now()))
             )
         row["published"] = bool(row.get("published"))
+        row["gallery_urls"] = json.loads(gallery_json)
+        row["testimonials"] = json.loads(testimonials_json)
+        row["custom_info"] = json.loads(custom_info_json)
         return row
 
     async def delete_course(self, course_id: str) -> bool:
@@ -259,7 +300,6 @@ class SqliteStore(Store):
             return cur.rowcount > 0
 
     async def seed_course_structure(self, course_id: str, modules: list) -> bool:
-        # SQLite rejimida modullar kod tarafida (build_course_modules) saqlanadi — bazaga yozish shart emas
         return True
 
     # ---------------- PURCHASES ----------------
@@ -471,3 +511,19 @@ class SqliteStore(Store):
                 "SELECT id, telegram_id, name FROM users WHERE telegram_id IS NOT NULL AND telegram_id != 0"
             ).fetchall()
             return [dict(r) for r in rows]
+
+    # ---------------- APP SETTINGS ----------------
+    async def get_setting(self, key: str) -> Optional[str]:
+        with self.lock, self._conn() as c:
+            row = c.execute("SELECT value FROM app_settings WHERE key=?", (key,)).fetchone()
+            return row["value"] if row else None
+
+    async def set_setting(self, key: str, value: str) -> bool:
+        with self.lock, self._conn() as c:
+            c.execute(
+                """INSERT INTO app_settings (key, value, updated_at)
+                   VALUES (?, ?, ?)
+                   ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at""",
+                (key, value, _now())
+            )
+        return True

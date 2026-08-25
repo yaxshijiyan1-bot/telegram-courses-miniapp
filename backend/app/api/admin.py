@@ -1,9 +1,10 @@
 import uuid
+import json
 import logging
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field, field_validator
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from app.core.security import get_current_admin
 from app.core.r2 import r2_client
 from app.core.config import settings
@@ -296,11 +297,19 @@ async def update_payment_settings(
     req: PaymentSettingsRequest,
     admin: dict = Depends(get_current_admin)
 ):
-    """Karta raqamlari va rekvizitlarni yangilash (joriy ish sessiyasi uchun)"""
+    """Karta raqamlari va rekvizitlarni doimiy bazada saqlash"""
+    store = get_store()
     settings.CARD_NUMBER = req.card_number
     settings.CARD_HOLDER = req.card_holder
     settings.CARD_BANK = req.bank_name
-    return {"success": True, "message": "To'lov rekvizitlari yangilandi"}
+    
+    pay_data = {
+        "card_number": req.card_number,
+        "card_holder": req.card_holder,
+        "bank_name": req.bank_name
+    }
+    await store.set_setting("payment_settings", json.dumps(pay_data))
+    return {"success": True, "message": "To'lov rekvizitlari bazada muvaffaqiyatli saqlandi!"}
 
 @router.get("/courses")
 async def admin_list_courses(admin: dict = Depends(get_current_admin)):

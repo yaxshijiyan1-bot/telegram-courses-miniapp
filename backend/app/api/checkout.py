@@ -38,10 +38,28 @@ def _rate_limited(request: Request) -> bool:
 @router.get("/payment-info")
 async def get_payment_info():
     """To'lov rekvizitlari (Karta raqam, egasi va bank nomi)"""
+    store = get_store()
+    card_num = settings.CARD_NUMBER
+    card_holder = settings.CARD_HOLDER
+    bank_name = settings.CARD_BANK
+
+    try:
+        saved_pay = await store.get_setting("payment_settings")
+        if saved_pay:
+            data = json.loads(saved_pay)
+            if data.get("card_number"):
+                card_num = data["card_number"]
+            if data.get("card_holder"):
+                card_holder = data["card_holder"]
+            if data.get("bank_name"):
+                bank_name = data["bank_name"]
+    except Exception as e:
+        logger.warning(f"Error reading payment_settings from store: {e}")
+
     return {
-        "card_number": settings.CARD_NUMBER,
-        "card_holder": settings.CARD_HOLDER,
-        "bank_name": settings.CARD_BANK,
+        "card_number": card_num,
+        "card_holder": card_holder,
+        "bank_name": bank_name,
         "admins": [
             {
                 "name": "Yaxshi Bola",
@@ -59,6 +77,7 @@ async def get_payment_info():
         "bot_username": settings.BOT_USERNAME,
         "bot_url": f"https://t.me/{settings.BOT_USERNAME}"
     }
+
 
 @router.post("/create-order", response_model=CreateOrderResponse)
 async def create_order(

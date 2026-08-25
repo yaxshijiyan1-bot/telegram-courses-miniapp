@@ -486,7 +486,7 @@ class ApiService {
 
     // Client-side fallback if backend API is unreachable
     return {
-      reply: `Salom! Men sizning **Course Academy AI Yordamchingizman**.\n\nSizning savolingiz: "${params.message}"\n\nBu mavzu bo'yicha maslahat: Darsdagi asosiy tushunchalarni amaliyotda qo'llab ko'ring va topshiriqlarni mustaqil bajarishga harakat qiling! 🚀`,
+      reply: `Salom! Men sizning **Kreativ AI Yordamchingizman**.\n\nSizning savolingiz: "${params.message}"\n\nBu mavzu bo'yicha maslahat: Darsdagi asosiy tushunchalarni amaliyotda qo'llab ko'ring va topshiriqlarni mustaqil bajarishga harakat qiling! 🚀`,
       provider: 'openrouter',
       model: 'stealth/ox-alpha',
       suggestions: [
@@ -679,12 +679,13 @@ class ApiService {
     });
   }
 
-  async savePaymentSettings(cardNumber: string, cardHolder: string, bankName: string): Promise<{ success: boolean }> {
+  async savePaymentSettings(cardNumber: string, cardHolder: string, bankName: string): Promise<{ success: boolean; message?: string }> {
     return this.adminFetch('/admin/payment-settings', {
       method: 'PUT',
       body: JSON.stringify({ card_number: cardNumber, card_holder: cardHolder, bank_name: bankName })
     });
   }
 }
+
 
 export const api = new ApiService();

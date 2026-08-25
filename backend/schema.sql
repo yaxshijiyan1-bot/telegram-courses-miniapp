@@ -150,7 +150,19 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 11. INDEXES
+-- 11. APP SETTINGS TABLE (Karta rekvizitlari va global parametrlar uchun doimiy xotira)
+CREATE TABLE IF NOT EXISTS public.app_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Kurslar uchun yangi ustunlar (Galereya, fikrlar va erkin ma'lumotlar)
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS gallery_urls JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS testimonials JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS custom_info JSONB DEFAULT '[]'::jsonb;
+
+-- 12. INDEXES
 CREATE INDEX IF NOT EXISTS idx_courses_slug ON public.courses(slug);
 CREATE INDEX IF NOT EXISTS idx_modules_course_id ON public.modules(course_id);
 CREATE INDEX IF NOT EXISTS idx_lessons_module_id ON public.lessons(module_id);
@@ -158,7 +170,7 @@ CREATE INDEX IF NOT EXISTS idx_lessons_course_id ON public.lessons(course_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_user_course ON public.enrollments(user_id, course_id);
 CREATE INDEX IF NOT EXISTS idx_progress_user_lesson ON public.lesson_progress(user_id, lesson_id);
 
--- 12. ENABLE RLS (Row Level Security)
+-- 13. ENABLE RLS (Row Level Security)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.modules ENABLE ROW LEVEL SECURITY;
@@ -168,8 +180,9 @@ ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lesson_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 
--- 13. PUBLIC READ POLICIES (anon & authenticated)
+-- 14. PUBLIC READ POLICIES (anon & authenticated)
 -- FAQAT ommaviy kontent ochiq: kurslar, modullar, darslar (published).
 -- Shaxsiy jadvallarga faqat service_role kalit orqali backend kiradi.
 DROP POLICY IF EXISTS "Public courses are viewable by everyone" ON public.courses;
@@ -178,5 +191,6 @@ CREATE POLICY "Public courses are viewable by everyone" ON public.courses FOR SE
 DROP POLICY IF EXISTS "Public modules are viewable by everyone" ON public.modules;
 CREATE POLICY "Public modules are viewable by everyone" ON public.modules FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Public lessons basic info viewable by everyone" ON public.lessons;
-CREATE POLICY "Public lessons basic info viewable by everyone" ON public.lessons FOR SELECT USING (published = true);
+DROP POLICY IF EXISTS "Public app_settings are viewable by everyone" ON public.app_settings;
+CREATE POLICY "Public app_settings are viewable by everyone" ON public.app_settings FOR SELECT USING (true);
+

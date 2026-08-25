@@ -26,11 +26,15 @@ import {
   Bot,
   Search,
   Zap,
-  CheckCheck
+  Star,
+  MessageSquare,
+  FileText,
+  AlertTriangle,
+  ArrowLeft
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 import { api } from '../services/api';
-import { AdminStats, PendingReceipt, AdminStudent, Course } from '../types';
+import { AdminStats, PendingReceipt, AdminStudent, Course, CourseTestimonial, CourseCustomInfo } from '../types';
 import { InlineLoader } from 'generative-loaders';
 import { formatPrice } from '../utils/format';
 
@@ -99,6 +103,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [courseChannelId, setCourseChannelId] = useState('');
   const [courseCoverUrl, setCourseCoverUrl] = useState('/images/hero_books.jpg');
   const [courseDesc, setCourseDesc] = useState('');
+
+  // Gallery, Testimonials & Custom Info States
+  const [courseGallery, setCourseGallery] = useState<string[]>([]);
+  const [newGalleryUrl, setNewGalleryUrl] = useState('');
+  const [courseTestimonials, setCourseTestimonials] = useState<CourseTestimonial[]>([]);
+  const [newTestimonialName, setNewTestimonialName] = useState('');
+  const [newTestimonialRole, setNewTestimonialRole] = useState('Talaba');
+  const [newTestimonialText, setNewTestimonialText] = useState('');
+  const [newTestimonialRating, setNewTestimonialRating] = useState(5);
+  const [courseCustomInfo, setCourseCustomInfo] = useState<CourseCustomInfo[]>([]);
+  const [newInfoTitle, setNewInfoTitle] = useState('');
+  const [newInfoContent, setNewInfoContent] = useState('');
+
+  // Delete Confirmation State
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
   // Other States
   const [broadcastText, setBroadcastText] = useState('');
@@ -219,7 +238,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         setCourseLevel(d.level || "Boshlang'ich va Professional");
         setCourseDesc(d.description || d.short_description || '');
         
-        // Category bo'yicha muqova tanlaymiz
         if (d.category === 'Dizayn') setCourseCoverUrl('/images/course_design.jpg');
         else if (d.category === 'Biznes') setCourseCoverUrl('/images/course_biz.jpg');
         else if (d.category === 'Marketing') setCourseCoverUrl('/images/course_marketing.jpg');
@@ -248,6 +266,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseChannelId(c.telegram_channel_id ? String(c.telegram_channel_id) : '');
     setCourseCoverUrl(c.cover_url || '/images/hero_books.jpg');
     setCourseDesc(c.description || c.short_description || '');
+    setCourseGallery(Array.isArray(c.gallery_urls) ? c.gallery_urls : []);
+    setCourseTestimonials(Array.isArray(c.testimonials) ? c.testimonials : []);
+    setCourseCustomInfo(Array.isArray(c.custom_info) ? c.custom_info : []);
     setActiveTab('courses');
     haptic?.selection?.();
   };
@@ -262,6 +283,73 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseChannelId('');
     setCourseCoverUrl('/images/hero_books.jpg');
     setCourseDesc('');
+    setCourseGallery([]);
+    setCourseTestimonials([]);
+    setCourseCustomInfo([]);
+    setNewGalleryUrl('');
+    setNewTestimonialName('');
+    setNewTestimonialText('');
+    setNewInfoTitle('');
+    setNewInfoContent('');
+  };
+
+  // Galereya rasmi qo'shish
+  const handleAddGalleryImage = () => {
+    if (!newGalleryUrl.trim()) return;
+    setCourseGallery([...courseGallery, newGalleryUrl.trim()]);
+    setNewGalleryUrl('');
+    haptic?.selection?.();
+  };
+
+  const handleRemoveGalleryImage = (index: number) => {
+    setCourseGallery(courseGallery.filter((_, i) => i !== index));
+    haptic?.selection?.();
+  };
+
+  // Testimonial qo'shish
+  const handleAddTestimonial = () => {
+    if (!newTestimonialName.trim() || !newTestimonialText.trim()) {
+      showError('Iltimos, talaba ismi va fikr matnini kiriting!');
+      return;
+    }
+    const newT: CourseTestimonial = {
+      id: String(Date.now()),
+      name: newTestimonialName.trim(),
+      role: newTestimonialRole.trim() || 'Talaba',
+      text: newTestimonialText.trim(),
+      rating: newTestimonialRating
+    };
+    setCourseTestimonials([...courseTestimonials, newT]);
+    setNewTestimonialName('');
+    setNewTestimonialText('');
+    haptic?.selection?.();
+  };
+
+  const handleRemoveTestimonial = (index: number) => {
+    setCourseTestimonials(courseTestimonials.filter((_, i) => i !== index));
+    haptic?.selection?.();
+  };
+
+  // Custom Info blok qo'shish
+  const handleAddCustomInfo = () => {
+    if (!newInfoTitle.trim() || !newInfoContent.trim()) {
+      showError('Iltimos, sarlavha va matnni kiriting!');
+      return;
+    }
+    const newI: CourseCustomInfo = {
+      id: String(Date.now()),
+      title: newInfoTitle.trim(),
+      content: newInfoContent.trim()
+    };
+    setCourseCustomInfo([...courseCustomInfo, newI]);
+    setNewInfoTitle('');
+    setNewInfoContent('');
+    haptic?.selection?.();
+  };
+
+  const handleRemoveCustomInfo = (index: number) => {
+    setCourseCustomInfo(courseCustomInfo.filter((_, i) => i !== index));
+    haptic?.selection?.();
   };
 
   const handleSaveCourse = async (e: React.FormEvent) => {
@@ -282,7 +370,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           cover_url: courseCoverUrl,
           description: courseDesc,
           short_description: courseDesc.slice(0, 120),
-          telegram_channel_id: courseChannelId.trim() || null
+          telegram_channel_id: courseChannelId.trim() || null,
+          gallery_urls: courseGallery,
+          testimonials: courseTestimonials,
+          custom_info: courseCustomInfo
         });
       } else {
         const slugBase = courseTitle.toLowerCase()
@@ -304,9 +395,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           cover_url: courseCoverUrl,
           description: courseDesc || courseTitle,
           short_description: courseDesc.slice(0, 120) || courseTitle,
-          instructor_name: 'Course Academy',
+          instructor_name: 'Kreativ AI',
           instructor_title: 'Katta Ekspert',
-          telegram_channel_id: courseChannelId.trim() || undefined
+          telegram_channel_id: courseChannelId.trim() || undefined,
+          gallery_urls: courseGallery,
+          testimonials: courseTestimonials,
+          custom_info: courseCustomInfo
         } as Partial<Course>);
       }
       showNotification(res.message || 'Kurs muvaffaqiyatli saqlandi!');
@@ -319,13 +413,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
-  const handleDeleteCourse = async (courseId: string) => {
-    if (!confirm('Rostan ham bu kursni o‘chirmoqchimisiz?')) return;
+  const executeDeleteCourse = async (courseId: string) => {
     haptic?.impact?.('heavy');
     setIsActionLoading(`del_${courseId}`);
     try {
       const res = await api.deleteCourse(courseId);
       showNotification(res.message || 'Kurs o‘chirildi');
+      setCourseToDelete(null);
       await loadData(true);
     } catch (e: any) {
       showError(e?.message || 'O‘chirishda xatolik');
@@ -340,6 +434,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setCourseCoverUrl(reader.result as string);
+        haptic?.notification?.('success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCustomGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCourseGallery([...courseGallery, reader.result as string]);
         haptic?.notification?.('success');
       };
       reader.readAsDataURL(file);
@@ -371,7 +477,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setIsActionLoading(`enroll_${studentId}`);
     try {
       const res = await api.manualEnroll(studentId, courseId);
-      showNotification(res.message || 'Kurs ochildi!');
+      showNotification(res.message || 'Talabaga kurs ochildi!');
       await loadData(true);
     } catch (e: any) {
       showError(e?.message || 'Kursni ochishda xatolik');
@@ -385,16 +491,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     haptic?.impact?.('heavy');
     setIsActionLoading('settings');
     try {
-      await api.savePaymentSettings(cardNumber, cardHolder, bankName);
-      showNotification('To‘lov rekvizitlari muvaffaqiyatli saqlandi!');
+      const res = await api.savePaymentSettings(cardNumber.trim(), cardHolder.trim(), bankName.trim());
+      showNotification(res.message || 'Karta rekvizitlari muvaffaqiyatli saqlandi!');
     } catch (e: any) {
-      showError(e?.message || 'Saqlashda xatolik');
+      showError(e?.message || 'Karta ma\'lumotlarini saqlashda xatolik');
     } finally {
       setIsActionLoading(null);
     }
   };
 
   const filteredStudents = students.filter(st => {
+    if (!studentSearchQuery.trim()) return true;
     const q = studentSearchQuery.toLowerCase();
     return (
       (st.name || '').toLowerCase().includes(q) ||
@@ -404,49 +511,45 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-50 text-slate-900 flex flex-col w-full h-full min-h-screen overflow-hidden animate-fade-up">
-      {/* 1. iOS 27 Top Header */}
-      <header className="px-4 py-3 bg-white/95 backdrop-blur-2xl border-b border-slate-200/90 flex items-center justify-between flex-shrink-0 shadow-sm">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#F8FAFC] text-slate-900 overflow-hidden animate-fade-in">
+      {/* 1. Header with glass styling */}
+      <div className="pt-safe px-4 py-3 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 flex items-center justify-between flex-shrink-0 shadow-sm">
         <div className="flex items-center space-x-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-cyan-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-xl bg-sky-600/10 border border-sky-600/25 flex items-center justify-center text-sky-600">
+            <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
-              <h2 className="text-sm font-extrabold text-slate-900">Superadmin Paneli</h2>
-              <span className="badge-cyan text-[9px] py-0.5 px-2 font-black">2026 LIVE</span>
+              <h2 className="text-sm font-extrabold text-slate-900">Kreativ AI Admin Panel</h2>
+              <span className="badge-cyan text-[9px] py-0 px-1.5 font-bold">2026</span>
             </div>
-            <span className="text-[11px] text-slate-500">
-              Admin: <b className="text-sky-600">{stats?.admin_name || adminName}</b>
-            </span>
+            <span className="text-[10px] text-slate-500 font-medium">{adminName}</span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-1.5">
+        <div className="flex items-center space-x-1">
           <button
             type="button"
-            onClick={() => { haptic?.selection?.(); loadData(); }}
-            className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
+            onClick={() => loadData()}
+            disabled={isLoading}
+            className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 active:scale-95 flex items-center justify-center transition-all"
             title="Yangilash"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-sky-600' : ''}`} />
           </button>
           <button
             type="button"
-            onClick={() => {
-              haptic?.impact?.('light');
-              onClose();
-            }}
-            className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
-            aria-label="Yopish"
+            onClick={onClose}
+            className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 active:scale-95 flex items-center justify-center transition-all"
+            title="Yopish"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* 2. Horizontal Navigation Tabs */}
-      <div className="px-3 py-2 bg-white border-b border-slate-200/80 flex space-x-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+      {/* 2. Top Tabs */}
+      <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center space-x-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -490,8 +593,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         </div>
       )}
 
-      {/* 4. Main Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* 4. Main Scrollable Content with large bottom padding (pb-36) so navbar never covers buttons */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-36">
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center space-y-2 text-slate-400">
             <InlineLoader variant="orbit" size={28} color="#0284C7" />
@@ -600,10 +703,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                               type="button"
                               onClick={() => handleReject(receipt.order_id)}
                               disabled={isActionLoading === receipt.order_id}
-                              className="py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-2xl text-xs font-bold flex items-center justify-center space-x-1 hover:bg-red-100 active:scale-95 transition-all"
+                              className="py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-2xl text-xs font-bold flex items-center justify-center space-x-1 border border-red-200"
                             >
-                              <Ban className="w-3.5 h-3.5" />
-                              <span>Rad etish</span>
+                              {isActionLoading === receipt.order_id ? (
+                                <InlineLoader variant="orbit" size={14} color="#DC2626" />
+                              ) : (
+                                <>
+                                  <Ban className="w-3.5 h-3.5" />
+                                  <span>Rad etish</span>
+                                </>
+                              )}
                             </button>
                           </div>
                         )}
@@ -614,21 +723,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               </div>
             )}
 
-            {/* TAB 2: COURSES MANAGEMENT & AI BUILDER */}
+            {/* TAB 2: COURSES MANAGEMENT & AI GENERATOR */}
             {activeTab === 'courses' && (
               <div className="space-y-4">
-                {/* 1-Click AI Course Creator */}
-                <div className="bg-gradient-to-br from-sky-50 via-cyan-50/50 to-blue-50 border border-sky-200/90 p-4 rounded-3xl space-y-3 shadow-sm">
+                {/* 1. AI Assistant Course Generator */}
+                <div className="bg-gradient-to-br from-sky-50 via-indigo-50/50 to-white border border-sky-200/80 p-4 rounded-3xl space-y-3 shadow-sm">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-sm">
+                    <div className="w-7 h-7 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
                       <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                        <span>AI Bilan 1-Bosishda Kurs Yaratish</span>
-                        <span className="text-[9px] bg-sky-600 text-white px-2 py-0.5 rounded-full font-bold">stealth/ox-alpha</span>
-                      </h4>
-                      <p className="text-[10px] text-slate-500">Mavzuni yozing, AI to'liq darslar rejasini tuzib beradi</p>
+                      <h4 className="text-xs font-extrabold text-slate-900">AI Bilan Kurs Generatsiya Qilish</h4>
+                      <span className="text-[10px] text-slate-500 font-mono">OpenRouter stealth/ox-alpha</span>
                     </div>
                   </div>
 
@@ -637,40 +743,35 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       type="text"
                       value={aiTopic}
                       onChange={(e) => setAiTopic(e.target.value)}
-                      placeholder="Masalan: Next.js 15 Fullstack Dasturlash yoki AI SMM..."
-                      className="glass-input w-full bg-white text-xs"
-                      disabled={isAiGenerating}
+                      placeholder="Mavzu: masalan 'Figma UI/UX Masterclass' yoki 'Python Telegram Bot'"
+                      className="glass-input w-full text-xs"
                     />
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex space-x-2">
                       <select
                         value={aiCategory}
                         onChange={(e) => setAiCategory(e.target.value)}
-                        className="glass-input bg-white text-xs py-2"
-                        disabled={isAiGenerating}
+                        className="glass-input text-xs flex-1"
                       >
-                        <option value="AI">AI</option>
-                        <option value="Dasturlash">Dasturlash</option>
-                        <option value="Dizayn">Dizayn</option>
-                        <option value="Biznes">Biznes</option>
-                        <option value="Marketing">Marketing</option>
+                        <option value="AI">AI & Neyrotarmoqlar</option>
+                        <option value="Dizayn">UI/UX & Grafik Dizayn</option>
+                        <option value="Dasturlash">Dasturlash & Web</option>
+                        <option value="Biznes">Biznes & Startap</option>
+                        <option value="Marketing">Marketing & SMM</option>
                       </select>
 
                       <button
                         type="button"
                         onClick={handleGenerateCourseWithAI}
-                        disabled={isAiGenerating || !aiTopic.trim()}
-                        className="flex-1 btn-primary py-2.5 text-xs font-bold flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                        disabled={isAiGenerating}
+                        className="btn-primary py-2.5 px-4 text-xs font-extrabold flex items-center justify-center space-x-1.5 flex-shrink-0"
                       >
                         {isAiGenerating ? (
-                          <div className="flex items-center space-x-1.5">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>ox-alpha o'ylamoqda...</span>
-                          </div>
+                          <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
                         ) : (
                           <>
-                            <Bot className="w-3.5 h-3.5" />
-                            <span>AI Yordamida Yaratish</span>
+                            <Bot className="w-4 h-4" />
+                            <span>AI Tuzsin</span>
                           </>
                         )}
                       </button>
@@ -678,20 +779,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
                 </div>
 
-                {/* Course Edit/Create Form */}
-                <form onSubmit={handleSaveCourse} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-3.5 shadow-sm">
+                {/* 2. Course Add/Edit Form */}
+                <form onSubmit={handleSaveCourse} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-4 shadow-sm">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                       <BookOpen className="w-4 h-4 text-sky-600" />
-                      <span>{editingCourseId ? 'Kursni Tahrirlash' : 'Kurs Tafsilotlari'}</span>
+                      <span>{editingCourseId ? 'Kursni Tahrirlash' : 'Yangi Kurs Qo‘shish'}</span>
                     </h4>
                     {editingCourseId && (
                       <button
                         type="button"
                         onClick={resetCourseForm}
-                        className="text-[11px] text-sky-600 font-bold hover:underline"
+                        className="text-[11px] text-slate-500 hover:text-slate-900 font-bold"
                       >
-                        + Yangi forma
+                        Bekor qilish ✕
                       </button>
                     )}
                   </div>
@@ -801,11 +902,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
 
                   {/* 3D Cover Image Selector */}
-                  <div className="space-y-2 pt-1 border-t border-slate-100">
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
                     <div className="flex justify-between items-center">
                       <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                         <ImageIcon className="w-4 h-4 text-sky-600" />
-                        <span>Kurs Muqovasi (3D Rasm)</span>
+                        <span>Kurs Asosiy Muqovasi (3D Rasm)</span>
                       </label>
                       <label className="text-[10px] text-sky-600 font-bold cursor-pointer hover:underline flex items-center gap-1">
                         <Upload className="w-3 h-3" />
@@ -863,9 +964,206 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
                   </div>
 
+                  {/* 3. Kursdan Lavhalar (Ko'p rasmli galereya) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span>Kursdan Lavhalar & Skrinshotlar ({courseGallery.length})</span>
+                      </label>
+                      <label className="text-[10px] text-sky-600 font-bold cursor-pointer hover:underline flex items-center gap-1">
+                        <Upload className="w-3 h-3" />
+                        <span>Rasm qo'shish</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCustomGalleryUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={newGalleryUrl}
+                        onChange={(e) => setNewGalleryUrl(e.target.value)}
+                        placeholder="Rasm URL manzili: masalan /images/ai_course.jpg yoki https://..."
+                        className="glass-input flex-1 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddGalleryImage}
+                        className="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold flex items-center space-x-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Qo'shish</span>
+                      </button>
+                    </div>
+
+                    {courseGallery.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        {courseGallery.map((url, index) => (
+                          <div key={index} className="relative rounded-xl overflow-hidden border border-slate-200 group aspect-video bg-slate-100">
+                            <img src={url} alt={`Lavha ${index + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveGalleryImage(index)}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] opacity-80 hover:opacity-100 shadow"
+                              title="O'chirish"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4. O'quvchilar va Ekspertlar Sharhlari (Testimonials) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <MessageSquare className="w-4 h-4 text-emerald-600" />
+                      <span>Fikrlar & Sharhlar ({courseTestimonials.length})</span>
+                    </label>
+
+                    <div className="bg-slate-50 p-3 rounded-2xl space-y-2 border border-slate-200">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={newTestimonialName}
+                          onChange={(e) => setNewTestimonialName(e.target.value)}
+                          placeholder="Talaba ismi (masalan: Jasur Aliyev)"
+                          className="glass-input text-xs w-full bg-white"
+                        />
+                        <input
+                          type="text"
+                          value={newTestimonialRole}
+                          onChange={(e) => setNewTestimonialRole(e.target.value)}
+                          placeholder="Kasbi / Natijasi (masalan: Frontend Dev)"
+                          className="glass-input text-xs w-full bg-white"
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 bg-white px-2 py-1.5 rounded-xl border border-slate-200">
+                          <span className="text-[10px] font-bold text-slate-600">Baho:</span>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setNewTestimonialRating(star)}
+                              className="focus:outline-none"
+                            >
+                              <Star
+                                className={`w-3.5 h-3.5 ${
+                                  star <= newTestimonialRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <textarea
+                        rows={2}
+                        value={newTestimonialText}
+                        onChange={(e) => setNewTestimonialText(e.target.value)}
+                        placeholder="Kurs haqidagi sharh va taassurot..."
+                        className="glass-input text-xs w-full bg-white leading-relaxed"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleAddTestimonial}
+                        className="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-xs font-bold flex items-center space-x-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Fikrni Qo'shish</span>
+                      </button>
+                    </div>
+
+                    {courseTestimonials.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        {courseTestimonials.map((t, idx) => (
+                          <div key={idx} className="p-2.5 bg-white border border-slate-200 rounded-2xl flex items-start justify-between space-x-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center space-x-1.5">
+                                <span className="text-xs font-bold text-slate-900">{t.name}</span>
+                                <span className="text-[10px] text-slate-500">({t.role || 'Talaba'})</span>
+                                <span className="text-[10px] text-amber-500 font-bold">★ {t.rating}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2">{t.text}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTestimonial(idx)}
+                              className="text-red-500 hover:text-red-700 p-1 text-xs"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 5. Qo'shimcha Erkin Ma'lumot Bloklari */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-indigo-600" />
+                      <span>Qo'shimcha Ma'lumot Bloklari ({courseCustomInfo.length})</span>
+                    </label>
+
+                    <div className="bg-slate-50 p-3 rounded-2xl space-y-2 border border-slate-200">
+                      <input
+                        type="text"
+                        value={newInfoTitle}
+                        onChange={(e) => setNewInfoTitle(e.target.value)}
+                        placeholder="Blok Sarlavhasi (masalan: Kurs kimlar uchun? yoki Nimalar o'rgatiladi?)"
+                        className="glass-input text-xs w-full bg-white"
+                      />
+                      <textarea
+                        rows={2}
+                        value={newInfoContent}
+                        onChange={(e) => setNewInfoContent(e.target.value)}
+                        placeholder="Blok matni yoki bandlar..."
+                        className="glass-input text-xs w-full bg-white leading-relaxed"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCustomInfo}
+                        className="px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl text-xs font-bold flex items-center space-x-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Blokni Qo'shish</span>
+                      </button>
+                    </div>
+
+                    {courseCustomInfo.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        {courseCustomInfo.map((info, idx) => (
+                          <div key={idx} className="p-2.5 bg-white border border-slate-200 rounded-2xl flex items-start justify-between space-x-2">
+                            <div className="min-w-0">
+                              <b className="text-xs font-bold text-slate-900 block">{info.title}</b>
+                              <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2">{info.content}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCustomInfo(idx)}
+                              className="text-red-500 hover:text-red-700 p-1 text-xs"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Course Full Description */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 block">Kurs Haqida To‘liq Ma'lumot</label>
+                  <div className="space-y-1 pt-2 border-t border-slate-100">
+                    <label className="text-xs font-bold text-slate-700 block">Kurs Asosiy Tavsifi</label>
                     <textarea
                       rows={3}
                       required
@@ -880,7 +1178,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   <button
                     type="submit"
                     disabled={isActionLoading === 'course_form'}
-                    className="btn-primary w-full py-3 text-xs font-extrabold flex items-center justify-center space-x-1.5"
+                    className="btn-primary w-full py-3 text-xs font-extrabold flex items-center justify-center space-x-1.5 shadow-lg shadow-sky-500/20"
                   >
                     {isActionLoading === 'course_form' ? (
                       <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
@@ -903,7 +1201,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     {courses.map((c) => (
                       <div
                         key={c.id}
-                        className="bg-white border border-slate-200/90 p-3 rounded-2xl flex items-center justify-between space-x-3 shadow-sm"
+                        className="bg-white border border-slate-200/90 p-3 rounded-2xl flex items-center justify-between space-x-3 shadow-sm hover:border-slate-300 transition-colors"
                       >
                         <div className="flex items-center space-x-3 min-w-0">
                           <img
@@ -929,7 +1227,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteCourse(c.id)}
+                            onClick={() => setCourseToDelete(c)}
                             disabled={isActionLoading === `del_${c.id}`}
                             className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                             title="O‘chirish"
@@ -981,22 +1279,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     type="text"
                     value={studentSearchQuery}
                     onChange={(e) => setStudentSearchQuery(e.target.value)}
-                    placeholder="Talabani ism, @username yoki ID bo'yicha qidirish..."
-                    className="glass-input w-full pl-9 bg-white text-xs"
+                    placeholder="Talabani ism, @username yoki Telegram ID bo'yicha qidirish..."
+                    className="glass-input w-full pl-9 text-xs"
                   />
                 </div>
 
-                {/* Grant Assignment Selector */}
-                <div className="bg-white border border-slate-200/90 p-3 rounded-2xl space-y-1.5 shadow-sm">
-                  <label className="text-[10px] font-bold text-sky-600 uppercase tracking-wider block">
-                    Grant / Kurs biriktirish uchun kurs tanlang:
-                  </label>
+                {/* Manual Grant Course Selector */}
+                <div className="p-3 bg-white border border-slate-200/90 rounded-2xl flex items-center justify-between space-x-2 shadow-sm">
+                  <span className="text-xs font-bold text-slate-700 whitespace-nowrap">Ochiladigan Kurs:</span>
                   <select
                     value={enrollCourseId}
                     onChange={(e) => setEnrollCourseId(e.target.value)}
-                    className="glass-input w-full text-xs"
+                    className="glass-input text-xs py-1.5 flex-1"
                   >
-                    <option value="">— Kursni tanlang —</option>
+                    <option value="">-- Kursni tanlang --</option>
                     {courses.map(c => (
                       <option key={c.id} value={c.id}>{c.title}</option>
                     ))}
@@ -1069,10 +1365,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* TAB 6: SETTINGS (PAYMENT CARDS) */}
             {activeTab === 'settings' && (
-              <form onSubmit={handleSaveCardSettings} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-3 shadow-sm">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  To‘lov Rekvizitlari Sozlamalari
-                </h4>
+              <form onSubmit={handleSaveCardSettings} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-4 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-7 h-7 rounded-xl bg-sky-600/10 text-sky-600 flex items-center justify-center">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                      To‘lov Rekvizitlari (Bazada Doimiy Saqlanadi)
+                    </h4>
+                    <span className="text-[10px] text-slate-500">Mijozlar to'lov qilganda aynan shu rekvizitlar chiqadi</span>
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 block">Karta Raqami</label>
                   <input
@@ -1080,17 +1385,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     required
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    className="glass-input w-full font-mono text-sm"
+                    placeholder="8600 5304 1234 5678"
+                    className="glass-input w-full font-mono text-sm tracking-wider"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block">Karta Egasi</label>
+                  <label className="text-xs font-bold text-slate-700 block">Karta Egasi (F.I.SH)</label>
                   <input
                     type="text"
                     required
                     value={cardHolder}
                     onChange={(e) => setCardHolder(e.target.value)}
-                    className="glass-input w-full"
+                    placeholder="YAXSHI BOLA / ZUHRA OLIMOVA"
+                    className="glass-input w-full uppercase"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1099,15 +1406,23 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     type="text"
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Kapitalbank / TBC / Milliy Bank"
                     className="glass-input w-full"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isActionLoading === 'settings'}
-                  className="btn-primary w-full py-3 text-xs font-extrabold"
+                  className="btn-primary w-full py-3.5 text-xs font-extrabold flex items-center justify-center space-x-2 shadow-lg shadow-sky-500/20"
                 >
-                  <span>Rekvizitlarni Saqlash</span>
+                  {isActionLoading === 'settings' ? (
+                    <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>Karta Rekvizitlarini Bazaga Saqlash</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}
@@ -1115,7 +1430,47 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         )}
       </div>
 
-      {/* 5. Receipt Zoom Modal */}
+      {/* 5. Delete Course Confirmation Dialog */}
+      {courseToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h4 className="text-sm font-extrabold text-slate-900">Kursni o'chirishni tasdiqlaysizmi?</h4>
+              <p className="text-xs text-slate-500">
+                <b className="text-slate-800">{courseToDelete.title}</b> kursi va uning barcha sozlamalari tizimdan butunlay o'chiriladi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setCourseToDelete(null)}
+                className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={() => executeDeleteCourse(courseToDelete.id)}
+                disabled={isActionLoading === `del_${courseToDelete.id}`}
+                className="py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center"
+              >
+                {isActionLoading === `del_${courseToDelete.id}` ? (
+                  <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
+                ) : (
+                  'Ha, O‘chirish'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Receipt Zoom Modal */}
       {zoomedReceipt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
           <div className="bg-white border border-slate-200 rounded-3xl p-4 max-w-sm w-full space-y-3 shadow-2xl">

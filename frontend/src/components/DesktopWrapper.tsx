@@ -13,7 +13,7 @@ export const DesktopWrapper: React.FC<DesktopWrapperProps> = ({ children }) => {
         <div className="inline-flex items-center space-x-2 glass-chip px-3.5 py-1.5 rounded-full w-max text-cyan">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan" />
           <span className="text-[10px] font-extrabold tracking-[0.18em] uppercase">
-            Course Academy
+            Kreativ AI
           </span>
         </div>
 
@@ -43,7 +43,7 @@ export const DesktopWrapper: React.FC<DesktopWrapperProps> = ({ children }) => {
       </div>
 
       {/* Mobile Device Frame */}
-      <main className="app-frame" aria-label="Course Academy">
+      <main className="app-frame" aria-label="Kreativ AI">
         {children}
       </main>
     </div>

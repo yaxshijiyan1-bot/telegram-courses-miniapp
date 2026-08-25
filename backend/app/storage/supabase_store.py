@@ -14,7 +14,8 @@ COURSE_COLUMNS = {
     "cover_url", "preview_video_url", "price", "old_price", "discount_percent",
     "duration", "lesson_count", "level", "instructor_name", "instructor_title",
     "instructor_avatar", "instructor_bio", "rating", "student_count",
-    "telegram_channel_id", "published", "created_at"
+    "telegram_channel_id", "gallery_urls", "testimonials", "custom_info",
+    "published", "created_at"
 }
 
 def _now() -> str:
@@ -104,10 +105,6 @@ class SupabaseStore(Store):
         return rows[0] if rows else None
 
     async def upsert_course(self, course: Dict[str, Any]) -> Dict[str, Any]:
-        # Faqat sxemadagi ustunlarni yuboramiz (ortiqcha kalitlar PostgREST 400 beradi)
-        # Null qiymatlar ham muhim: admin eski narx yoki biriktirilgan kanal IDni
-        # ataylab tozalashi mumkin. Mavjud kurs bilan merge qilingan chaqiriqda
-        # non-null majburiy ustunlar doim saqlanadi.
         row = {k: v for k, v in course.items() if k in COURSE_COLUMNS}
         rows = await self._req("POST", "courses", json_body=row)
         if rows:
@@ -121,10 +118,6 @@ class SupabaseStore(Store):
         return res is not None
 
     async def seed_course_structure(self, course_id: str, modules: List[Dict[str, Any]]) -> bool:
-        """
-        Kursning modullari va darslarini birinchi ishga tushirishda yozadi.
-        lesson_progress.lesson_id FK talab qilgani uchun darslar bazada bo'lishi shart.
-        """
         existing = await self._req("GET", "modules", {"course_id": f"eq.{course_id}", "select": "id", "limit": 1})
         if existing:
             return True
@@ -185,7 +178,6 @@ class SupabaseStore(Store):
             {"id": f"eq.{purchase_id}", "status": f"eq.{expected_status}"},
             json_body=fields,
         )
-        # PostgREST returns an empty list if the row changed between read and update.
         return bool(res)
 
     async def list_purchases(self, status: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
@@ -214,7 +206,6 @@ class SupabaseStore(Store):
         rows = await self._req("POST", "enrollments", json_body=row)
         if rows:
             return rows[0]
-        # Duplicate -> faollashtiramiz
         await self._req("PATCH", "enrollments",
                         {"user_id": f"eq.{user_id}", "course_id": f"eq.{course_id}"},
                         {"status": "active"})
@@ -310,3 +301,16 @@ class SupabaseStore(Store):
             "select": "id,telegram_id,name", "telegram_id": "not.is.null", "limit": "1000"
         })
         return [r for r in (rows or []) if r.get("telegram_id")]
+
+    # ---------------- APP SETTINGS ----------------
+    async def get_setting(self, key: str) -> Optional[str]:
+        rows = await self._req("GET", "app_settings", {"key": f"eq.{key}", "limit": 1})
+        return rows[0].get("value") if rows else None
+
+    async def set_setting(self, key: str, value: str) -> bool:
+        row = {"key": key, "value": value, "updated_at": _now()}
+        rows = await self._req("POST", "app_settings", json_body=row)
+        if rows:
+            return True
+        res = await self._req("PATCH", "app_settings", {"key": f"eq.{key}"}, json_body={"value": value, "updated_at": _now()})
+        return res is not None

@@ -34,8 +34,8 @@ export const AIMentorModal: React.FC<AIMentorModalProps> = ({
       id: 'welcome',
       role: 'assistant',
       content: currentCourseTitle
-        ? `Assalomu alaykum! Men **Course Academy AI Mentoringizman** *(OpenRouter stealth/ox-alpha)*.\n\nSiz hozir **"${currentCourseTitle}"** ${currentLessonTitle ? `— *${currentLessonTitle}*` : ''} darsini o'rganmoqdasiz. Qanday savolingiz yoki topshirig'ingiz bor?`
-        : "Assalomu alaykum! Men **Course Academy AI Mentoringizman** *(OpenRouter stealth/ox-alpha 2026)*.\n\nDasturlash, AI arxitekturasi, prompt engineering, xatolarni tuzatish va amaliy keyslar bo'yicha yordam berishga tayyorman! 🚀",
+        ? `Assalomu alaykum! Men **Kreativ AI Mentoringizman** *(OpenRouter stealth/ox-alpha)*.\n\nSiz hozir **"${currentCourseTitle}"** ${currentLessonTitle ? `— *${currentLessonTitle}*` : ''} darsini o'rganmoqdasiz. Qanday savolingiz yoki topshirig'ingiz bor?`
+        : "Assalomu alaykum! Men **Kreativ AI Mentoringizman** *(OpenRouter stealth/ox-alpha 2026)*.\n\nDasturlash, AI arxitekturasi, prompt engineering, xatolarni tuzatish va amaliy keyslar bo'yicha yordam berishga tayyorman! 🚀",
       provider: 'openrouter',
       model: 'stealth/ox-alpha',
     },

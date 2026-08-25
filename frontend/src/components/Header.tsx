@@ -41,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         <div className="flex flex-col">
           <span className="text-[15px] font-extrabold text-ink leading-tight tracking-tight">
-            Course Academy
+            Kreativ AI
           </span>
           <span className="text-[10px] font-medium text-ink-muted tracking-wide">
             bilim qiymatga aylanadi

@@ -32,6 +32,21 @@ export interface Module {
   lessons: Lesson[];
 }
 
+export interface CourseTestimonial {
+  id?: string;
+  name: string;
+  role?: string;
+  text: string;
+  rating: number;
+  avatar?: string;
+}
+
+export interface CourseCustomInfo {
+  id?: string;
+  title: string;
+  content: string;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -58,6 +73,12 @@ export interface Course {
   modules?: Module[];
   is_enrolled?: boolean;
   progress_percent?: number;
+  /** Kursdan lavhalar / galereya rasmlari */
+  gallery_urls?: string[];
+  /** O'quvchilar va mutaxassislar fikrlari */
+  testimonials?: CourseTestimonial[];
+  /** Qo'shimcha erkin ma'lumot bloklari */
+  custom_info?: CourseCustomInfo[];
 }
 
 export interface ContinueLearningData {
@@ -86,44 +107,41 @@ export interface EnrolledCourse {
 
 export interface Certificate {
   id: string;
-  course_id: string;
-  course_title: string;
-  student_name: string;
   certificate_code: string;
-  issued_at: string;
-  certificate_url?: string;
+  student_name: string;
+  course_title: string;
+  course_cover?: string;
+  instructor_name?: string;
+  issue_date: string;
+  grade?: string;
+  qr_code_url?: string;
+  verification_url?: string;
 }
 
 export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'course' | 'system' | 'success';
-  is_read: boolean;
+  type: 'info' | 'success' | 'warning' | 'urgent' | 'announcement';
   created_at: string;
+  is_read: boolean;
+  link?: string;
 }
 
-// ===== ADMIN TURLARI =====
+export interface StudentDashboardData {
+  user_name: string;
+  overall_progress_percent: number;
+  completed_lessons_count: number;
+  total_lessons_count: number;
+  continue_learning: ContinueLearningData | null;
+  enrolled_courses: EnrolledCourse[];
+}
 
 export interface AdminStats {
-  admin_name: string;
-  admin_username: string;
-  role: string;
-  storage_backend: string;
   total_revenue: number;
   monthly_revenue: number;
   total_students: number;
   active_courses_count: number;
-  pending_receipts_count: number;
-  recent_sales: {
-    id: string;
-    student_name: string;
-    course_title: string;
-    amount: number;
-    payment_method: string;
-    status: string;
-    date: string;
-  }[];
 }
 
 export interface PendingReceipt {
@@ -131,34 +149,37 @@ export interface PendingReceipt {
   student_name: string;
   username: string;
   telegram_id: number;
-  course_id: string;
   course_title: string;
   amount: number;
   payment_method: string;
-  receipt_image: string | null;
-  comment: string | null;
-  created_at: string;
+  receipt_image: string;
   status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
 }
 
 export interface AdminStudent {
   id: string;
   name: string;
+  username?: string;
+  telegram_id?: number;
+  overall_progress?: string;
+  enrolled_courses?: string;
+  created_at: string;
+}
+
+export interface PaymentInfoAdmin {
+  name: string;
   username: string;
-  telegram_id: number;
+  telegram_url: string;
   role: string;
-  enrolled_courses_count: number;
-  enrolled_courses: string;
-  overall_progress: string;
-  joined_date: string;
-  status: string;
 }
 
 export interface PaymentInfo {
   card_number: string;
   card_holder: string;
   bank_name: string;
+  admins: PaymentInfoAdmin[];
   bot_username: string;
   bot_url: string;
-  payment_urls?: Partial<Record<'payme' | 'click' | 'uzum', string>>;
 }
+

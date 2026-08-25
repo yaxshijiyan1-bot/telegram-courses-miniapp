@@ -56,7 +56,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     {
       id: 'grow',
       artwork: '/images/hero_grad.webp',
-      eyebrow: 'COURSE ACADEMY · 2026',
+      eyebrow: 'KREATIV AI · 2026',
       title: 'Bilimingizni',
       accent: 'oshiring.',
       text: 'Amaliy kurslar, tizimli o‘quv yo‘li va rasmiy sertifikat.',

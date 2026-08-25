@@ -31,7 +31,7 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
         <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full glass-chip text-cyan">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse-glow" />
           <span className="text-[10px] font-extrabold tracking-[0.18em] uppercase">
-            Course Academy
+            Kreativ AI
           </span>
         </div>
       </motion.div>
@@ -105,7 +105,7 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
           <ArrowRight className="w-4 h-4 stroke-[2.5]" />
         </motion.button>
         <p className="text-[10px] text-center text-slate-400 font-medium">
-          bilim qiymatga aylanadi · Course Academy 2026
+          bilim qiymatga aylanadi · Kreativ AI 2026
         </p>
       </motion.div>
     </div>
