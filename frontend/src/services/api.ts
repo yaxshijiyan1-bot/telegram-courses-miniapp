@@ -632,6 +632,34 @@ class ApiService {
     });
   }
 
+  async uploadBase64ToR2(base64Data: string, filename: string = "image.jpg", folder: string = "courses"): Promise<{ success: boolean; url: string }> {
+    return this.adminFetch('/admin/upload-base64', {
+      method: 'POST',
+      body: JSON.stringify({ data: base64Data, filename, folder })
+    });
+  }
+
+  async uploadFileToR2(file: File, folder: string = "courses"): Promise<{ success: boolean; url: string }> {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+    
+    const res = await fetch(`${API_BASE_URL}/admin/upload-file`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: formData
+    });
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Fayl yuklashda xatolik yuz berdi');
+    }
+    return await res.json();
+  }
+
   async savePaymentSettings(cardNumber: string, cardHolder: string, bankName: string): Promise<{ success: boolean; message?: string }> {
     return this.adminFetch('/admin/payment-settings', {
       method: 'PUT',

@@ -140,6 +140,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
   const showNotification = (msg: string) => {
     setSuccessMsg(msg);
@@ -518,12 +520,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsUploadingCover(true);
+      haptic?.impact?.('light');
       try {
-        const compressed = await compressImage(file, 800, 800, 0.7);
-        setCourseCoverUrl(compressed);
-        haptic?.notification?.('success');
-      } catch (error) {
-        showError('Rasmni yuklashda xatolik yuz berdi');
+        const compressed = await compressImage(file, 1000, 1000, 0.8);
+        const res = await api.uploadBase64ToR2(compressed, file.name || 'cover.jpg', 'courses/covers');
+        if (res && res.url) {
+          setCourseCoverUrl(res.url);
+          showNotification('✨ Muqova rasmi Cloudflare R2 ga muvaffaqiyatli yuklandi!');
+          haptic?.notification?.('success');
+        } else {
+          showError('R2 ga yuklashda xatolik yuz berdi');
+        }
+      } catch (error: any) {
+        showError(error?.message || 'Muqova rasmini yuklashda xatolik yuz berdi');
+      } finally {
+        setIsUploadingCover(false);
       }
     }
   };
@@ -531,12 +543,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleCustomGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsUploadingGallery(true);
+      haptic?.impact?.('light');
       try {
-        const compressed = await compressImage(file, 1024, 1024, 0.75);
-        setCourseGallery([...courseGallery, compressed]);
-        haptic?.notification?.('success');
-      } catch (error) {
-        showError('Rasmni yuklashda xatolik yuz berdi');
+        const compressed = await compressImage(file, 1200, 1200, 0.8);
+        const res = await api.uploadBase64ToR2(compressed, file.name || 'gallery.jpg', 'courses/gallery');
+        if (res && res.url) {
+          setCourseGallery(prev => [...prev, res.url]);
+          showNotification('📸 Lavha rasmi Cloudflare R2 ga muvaffaqiyatli yuklandi!');
+          haptic?.notification?.('success');
+        } else {
+          showError('R2 ga yuklashda xatolik yuz berdi');
+        }
+      } catch (error: any) {
+        showError(error?.message || 'Lavha rasmini yuklashda xatolik yuz berdi');
+      } finally {
+        setIsUploadingGallery(false);
       }
     }
   };
@@ -997,12 +1019,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         <ImageIcon className="w-4 h-4 text-sky-600" />
                         <span>Kurs Asosiy Muqovasi (3D Rasm)</span>
                       </label>
-                      <label className="text-[10px] text-sky-600 font-bold cursor-pointer hover:underline flex items-center gap-1">
-                        <Upload className="w-3 h-3" />
-                        <span>Fayl yuklash</span>
+                      <label className={`text-[10px] font-bold cursor-pointer flex items-center gap-1 transition-opacity ${isUploadingCover ? 'text-amber-600 opacity-80 cursor-wait' : 'text-sky-600 hover:underline'}`}>
+                        {isUploadingCover ? (
+                          <>
+                            <span className="w-2.5 h-2.5 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" />
+                            <span>R2 ga yuklanmoqda...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3 h-3" />
+                            <span>R2 ga yuklash</span>
+                          </>
+                        )}
                         <input
                           type="file"
                           accept="image/*"
+                          disabled={isUploadingCover}
                           onChange={handleCustomImageUpload}
                           className="hidden"
                         />
@@ -1015,7 +1047,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         <img src={courseCoverUrl} alt="Cover Preview" className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-500 block">Joriy rasm manzili:</span>
+                        <span className="text-[10px] text-slate-500 block">Joriy rasm manzili (R2 / URL):</span>
                         <input
                           type="text"
                           value={courseCoverUrl}
@@ -1060,12 +1092,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         <Sparkles className="w-4 h-4 text-amber-500" />
                         <span>Kursdan Lavhalar & Skrinshotlar ({courseGallery.length})</span>
                       </label>
-                      <label className="text-[10px] text-sky-600 font-bold cursor-pointer hover:underline flex items-center gap-1">
-                        <Upload className="w-3 h-3" />
-                        <span>Rasm qo'shish</span>
+                      <label className={`text-[10px] font-bold cursor-pointer flex items-center gap-1 transition-opacity ${isUploadingGallery ? 'text-amber-600 opacity-80 cursor-wait' : 'text-sky-600 hover:underline'}`}>
+                        {isUploadingGallery ? (
+                          <>
+                            <span className="w-2.5 h-2.5 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" />
+                            <span>R2 ga yuklanmoqda...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3 h-3" />
+                            <span>R2 ga yuklash</span>
+                          </>
+                        )}
                         <input
                           type="file"
                           accept="image/*"
+                          disabled={isUploadingGallery}
                           onChange={handleCustomGalleryUpload}
                           className="hidden"
                         />

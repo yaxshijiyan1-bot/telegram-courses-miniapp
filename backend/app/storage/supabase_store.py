@@ -1,5 +1,7 @@
 import logging
 import uuid
+import json
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import httpx
@@ -8,16 +10,69 @@ from .base import Store
 
 logger = logging.getLogger(__name__)
 
-# Supabase courses jadvalidagi haqiqiy ustunlar (schema.sql) — faqat shular yuboriladi
-COURSE_COLUMNS = {
+# Supabase courses jadvalidagi asosiy ustunlar
+BASE_COURSE_COLUMNS = {
     "id", "title", "slug", "category", "description", "short_description",
     "cover_url", "preview_video_url", "price", "old_price", "discount_percent",
     "duration", "lesson_count", "level", "instructor_name", "instructor_title",
     "instructor_avatar", "instructor_bio", "rating", "student_count",
-    "telegram_channel_id", "gallery_urls", "testimonials", "custom_info",
-    "learning_outcomes", "show_instructor", "show_outcomes",
-    "published", "created_at"
+    "telegram_channel_id", "published", "created_at"
 }
+
+
+def _unpack_course(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not row:
+        return None
+    res = dict(row)
+    desc = res.get("description") or ""
+    
+    # Metadata tag <!-- KREATIV_META:{...} --> ni qidiramiz
+    meta_match = None
+    import re
+    meta_search = re.search(r'<!-- KREATIV_META:(.*?) -->', desc, re.DOTALL)
+    if meta_search:
+        try:
+            meta = json.loads(meta_search.group(1))
+            res["gallery_urls"] = meta.get("gallery_urls") or []
+            res["testimonials"] = meta.get("testimonials") or []
+            res["custom_info"] = meta.get("custom_info") or []
+            res["learning_outcomes"] = meta.get("learning_outcomes") or []
+            res["show_instructor"] = meta.get("show_instructor", True)
+            res["show_outcomes"] = meta.get("show_outcomes", True)
+        except Exception as e:
+            logger.warning(f"Metadata parse error: {e}")
+        # Tavsifdan tegni tozalab faqat haqiqiy matnni ko'rsatamiz
+        res["description"] = re.sub(r'<!-- KREATIV_META:.*? -->', '', desc, flags=re.DOTALL).strip()
+    else:
+        # Default qiymatlar
+        res.setdefault("gallery_urls", [])
+        res.setdefault("testimonials", [])
+        res.setdefault("custom_info", [])
+        res.setdefault("learning_outcomes", [])
+        res.setdefault("show_instructor", True)
+        res.setdefault("show_outcomes", True)
+        
+    return res
+
+
+def _pack_course_for_supabase(course: Dict[str, Any]) -> Dict[str, Any]:
+    row = {k: v for k, v in course.items() if k in BASE_COURSE_COLUMNS}
+    
+    # Kengaytirilgan metadatalarni description ichiga xavfsiz qadoqlaymiz
+    meta = {
+        "gallery_urls": course.get("gallery_urls") or [],
+        "testimonials": course.get("testimonials") or [],
+        "custom_info": course.get("custom_info") or [],
+        "learning_outcomes": course.get("learning_outcomes") or [],
+        "show_instructor": course.get("show_instructor", True),
+        "show_outcomes": course.get("show_outcomes", True)
+    }
+    
+    import re
+    clean_desc = re.sub(r'<!-- KREATIV_META:.*? -->', '', course.get("description") or "", flags=re.DOTALL).strip()
+    meta_tag = f"<!-- KREATIV_META:{json.dumps(meta)} -->"
+    row["description"] = f"{clean_desc}\n{meta_tag}" if clean_desc else meta_tag
+    return row
 
 
 def _now() -> str:
@@ -94,26 +149,40 @@ class SupabaseStore(Store):
         if published_only:
             params["published"] = "eq.true"
         rows = await self._req("GET", "courses", params)
-        return rows or []
+        if not rows:
+            return []
+        return [_unpack_course(r) for r in rows if r]
 
     async def get_course(self, id_or_slug: str) -> Optional[Dict[str, Any]]:
         rows = await self._req("GET", "courses", {"or": f"(id.eq.{id_or_slug},slug.eq.{id_or_slug})", "limit": 1})
-        return rows[0] if rows else None
+        return _unpack_course(rows[0]) if rows else None
 
     async def get_course_by_channel_id(self, channel_id: str) -> Optional[Dict[str, Any]]:
         ch_str = str(channel_id).strip()
         ch_clean = ch_str.replace("-100", "").replace("-", "")
         rows = await self._req("GET", "courses", {"or": f"(telegram_channel_id.eq.{ch_str},telegram_channel_id.eq.-100{ch_clean},telegram_channel_id.eq.{ch_clean})", "limit": 1})
-        return rows[0] if rows else None
+        return _unpack_course(rows[0]) if rows else None
 
     async def upsert_course(self, course: Dict[str, Any]) -> Dict[str, Any]:
-        row = {k: v for k, v in course.items() if k in COURSE_COLUMNS}
+        row = _pack_course_for_supabase(course)
+        course_id = row.get("id")
+        
+        # 1. Mavjud kursni PATCH (update) qilishga urinamiz
+        if course_id:
+            patch_res = await self._req("PATCH", "courses", {"id": f"eq.{course_id}"}, json_body=row)
+            if patch_res:
+                return _unpack_course(patch_res[0] if isinstance(patch_res, list) else patch_res)
+                
+        # 2. Yangi kurs bo'lsa INSERT qilamiz
         rows = await self._req("POST", "courses", json_body=row)
         if rows:
-            return rows[0]
-        # INSERT muvaffaqiyatsiz (allaqachon mavjud) — UPDATE urinib ko'ramiz
-        await self._req("PATCH", "courses", {"id": f"eq.{row.get('id')}"}, json_body=row)
-        return row
+            return _unpack_course(rows[0] if isinstance(rows, list) else rows)
+            
+        # 3. Fallback: agar POST ham, PATCH ham bo'lsa
+        if course_id:
+            await self._req("PATCH", "courses", {"id": f"eq.{course_id}"}, json_body=row)
+            
+        return _unpack_course(row)
 
     async def delete_course(self, course_id: str) -> bool:
         res = await self._req("DELETE", "courses", {"or": f"(id.eq.{course_id},slug.eq.{course_id})"})

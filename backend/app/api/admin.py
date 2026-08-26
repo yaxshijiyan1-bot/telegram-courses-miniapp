@@ -1,8 +1,9 @@
 import uuid
 import json
+import base64
 import logging
 import httpx
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Any, Optional, List
 from app.core.security import get_current_admin
@@ -371,6 +372,84 @@ async def delete_course(
     if not ok:
         raise HTTPException(status_code=404, detail="Kurs topilmadi")
     return {"success": True, "message": "Kurs o'chirildi"}
+
+class UploadBase64Payload(BaseModel):
+    data: str
+    filename: Optional[str] = "image.jpg"
+    folder: Optional[str] = "courses"
+
+@router.post("/upload-base64")
+async def upload_base64_to_r2(
+    payload: UploadBase64Payload,
+    admin: dict = Depends(get_current_admin)
+):
+    """
+    Base64 formatdagi rasm yoki faylni to'g'ridan-to'g'ri Cloudflare R2 ga yuklaydi va public URL qaytaradi.
+    """
+    raw = payload.data.strip()
+    content_type = "image/jpeg"
+    ext = "jpg"
+    
+    if raw.startswith("data:"):
+        try:
+            header, b64data = raw.split(",", 1)
+            if ";" in header:
+                content_type = header.split(";")[0].replace("data:", "")
+                if "/" in content_type:
+                    ext = content_type.split("/")[-1]
+            image_bytes = base64.b64decode(b64data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Base64 dekodlashda xatolik: {e}")
+    else:
+        try:
+            image_bytes = base64.b64decode(raw)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Base64 dekodlashda xatolik: {e}")
+
+    unique_key = f"{payload.folder}/{uuid.uuid4().hex[:12]}.{ext}"
+    public_url = r2_client.upload_bytes(unique_key, image_bytes, content_type=content_type)
+    
+    if not public_url:
+        raise HTTPException(status_code=500, detail="Cloudflare R2 ga yuklab bo'lmadi — R2 kalitlarini tekshiring")
+
+    return {
+        "success": True,
+        "url": public_url,
+        "object_key": unique_key,
+        "storage": "Cloudflare R2"
+    }
+
+@router.post("/upload-file")
+async def upload_file_to_r2(
+    file: UploadFile = File(...),
+    folder: str = "courses",
+    admin: dict = Depends(get_current_admin)
+):
+    """
+    Faylni multipart/form-data orqali to'g'ridan-to'g'ri Cloudflare R2 ga yuklash.
+    """
+    try:
+        content = await file.read()
+        filename = file.filename or "file.jpg"
+        ext = filename.split(".")[-1] if "." in filename else "jpg"
+        unique_key = f"{folder}/{uuid.uuid4().hex[:12]}.{ext}"
+        content_type = file.content_type or "image/jpeg"
+        
+        public_url = r2_client.upload_bytes(unique_key, content, content_type=content_type)
+        if not public_url:
+            raise HTTPException(status_code=500, detail="Cloudflare R2 ga yuklab bo'lmadi")
+            
+        return {
+            "success": True,
+            "url": public_url,
+            "object_key": unique_key,
+            "storage": "Cloudflare R2"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Fayl yuklashda xatolik: {e}")
 
 @router.post("/upload-to-r2")
 async def upload_media_to_r2(

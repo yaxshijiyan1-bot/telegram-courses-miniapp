@@ -68,15 +68,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
     }
   ];
 
-  const rawGallery = Array.isArray(course.gallery_urls) && course.gallery_urls.length > 0
-    ? course.gallery_urls
-    : [
-        course.cover_url || '/images/hero_books.jpg',
-        '/images/course_design.jpg',
-        '/images/course_marketing.jpg',
-        '/images/course_biz.jpg'
-      ].filter(Boolean);
-
+  const rawGallery = Array.isArray(course.gallery_urls) ? course.gallery_urls : [];
   const galleryList = rawGallery.filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
   const testimonialList = Array.isArray(course.testimonials) ? course.testimonials : [];
   const customInfoList = Array.isArray(course.custom_info) ? course.custom_info : [];
