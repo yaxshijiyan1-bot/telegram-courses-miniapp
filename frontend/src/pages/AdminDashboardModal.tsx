@@ -475,27 +475,69 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
-  const handleCustomImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } else {
+            resolve(event.target?.result as string);
+          }
+        };
+        img.onerror = (e) => reject(e);
+      };
+      reader.onerror = (e) => reject(e);
+    });
+  };
+
+  const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCourseCoverUrl(reader.result as string);
+      try {
+        const compressed = await compressImage(file, 800, 800, 0.7);
+        setCourseCoverUrl(compressed);
         haptic?.notification?.('success');
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        showError('Rasmni yuklashda xatolik yuz berdi');
+      }
     }
   };
 
-  const handleCustomGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCourseGallery([...courseGallery, reader.result as string]);
+      try {
+        const compressed = await compressImage(file, 1024, 1024, 0.75);
+        setCourseGallery([...courseGallery, compressed]);
         haptic?.notification?.('success');
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        showError('Rasmni yuklashda xatolik yuz berdi');
+      }
     }
   };
 

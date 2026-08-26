@@ -33,9 +33,19 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
 }) => {
   const { haptic } = useTelegram();
 
-  if (!isOpen) return null;
-
   const unread = notifications.filter((n) => !n.is_read).length;
+
+  React.useEffect(() => {
+    if (isOpen && unread > 0) {
+      import('../services/api').then(({ api }) => {
+        api.markNotificationsRead();
+      });
+      // Optimistic update locally
+      notifications.forEach(n => n.is_read = true);
+    }
+  }, [isOpen, unread, notifications]);
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -83,7 +93,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                 Hozircha yangi bildirishnomalar yo‘q
               </p>
               <p className="text-[10px] text-slate-400 max-w-[220px] mx-auto leading-relaxed">
-                Kurs tasdiqlanishi, yangi darslar va sertifikatlar shu yerda ko‘rinadi
+                Kurs tasdiqlanishi, yangi darslar va foydali ma'lumotlar shu yerda ko'rinadi
               </p>
             </div>
           ) : (

@@ -75,6 +75,12 @@ class CourseCard(BaseModel):
     instructor_avatar: Optional[str] = None
     rating: float = 5.0
     student_count: int = 0
+    gallery_urls: List[str] = []
+    testimonials: List[Dict[str, Any]] = []
+    custom_info: List[Dict[str, str]] = []
+    show_instructor: bool = True
+    show_outcomes: bool = True
+    learning_outcomes: List[str] = []
 
 class CourseDetailResponse(CourseCard):
     description: str

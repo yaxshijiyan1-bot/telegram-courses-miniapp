@@ -108,7 +108,7 @@ export const AppContent: React.FC = () => {
   }, [user?.role, user?.telegram_id]);
 
   // Data states
-  const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -246,11 +246,6 @@ export const AppContent: React.FC = () => {
     return (
       <PurchaseSuccessPage
         course={purchasedCourse}
-        onStartLearning={() => {
-          setPurchasedCourse(null);
-          setSelectedCourse(null);
-          setActiveTab('learning');
-        }}
         onGoHome={() => {
           setPurchasedCourse(null);
           setSelectedCourse(null);

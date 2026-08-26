@@ -140,93 +140,44 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </motion.div>
 
-      {/* ==== 2. Hero banner (avto-slayd, swipe) ==== */}
+      {/* ==== 2. Modern Hero Banner ==== */}
       <motion.section
         variants={item}
-        className="glass rounded-[26px] relative overflow-hidden"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
+        className="relative w-full rounded-[24px] overflow-hidden bg-slate-900 shadow-xl min-h-[190px]"
       >
-        <div className="min-h-[196px] flex items-stretch">
-          {/* Matn qismi */}
-          <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col justify-center space-y-2">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={slide.id}
-                initial={{ opacity: 0, x: -18 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 18 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="space-y-2"
-              >
-                <p className="text-[9px] font-extrabold tracking-[0.18em] text-cyan/90 uppercase">
-                  {slide.eyebrow}
-                </p>
-                <h2 className="text-[22px] sm:text-2xl font-extrabold text-ink leading-[1.15] tracking-tight">
-                  {slide.title}
-                  <br />
-                  <em className="serif-accent">{slide.accent}</em>
-                </h2>
-                <p className="text-[11px] text-ink-secondary leading-relaxed max-w-[190px]">
-                  {slide.text}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    haptic.impact('medium');
-                    slide.action();
-                  }}
-                  className="mt-1 inline-flex items-center space-x-1.5 px-4 py-2 bg-cyan text-white rounded-xl text-[11px] font-extrabold shadow-cyanGlowSm active:scale-95 transition-transform"
-                >
-                  <span>{slide.cta}</span>
-                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                </button>
-              </motion.div>
-            </AnimatePresence>
+        <img 
+          src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop" 
+          alt="Student Banner" 
+          className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 to-slate-900/20" />
+        
+        <div className="relative z-10 p-5 flex flex-col h-full min-h-[190px] justify-center">
+          <div className="inline-flex items-center space-x-1 mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+            <span className="text-[10px] font-bold tracking-widest text-cyan uppercase">
+              Kreativ AI · 2026
+            </span>
           </div>
+          
+          <h2 className="text-2xl sm:text-[26px] font-extrabold text-white leading-tight mb-2 tracking-tight max-w-[240px]">
+            Kelajak kasblarini <span className="text-cyan">biz bilan</span> o'rganing
+          </h2>
+          
+          <p className="text-xs text-slate-300 font-medium mb-5 max-w-[210px] leading-relaxed opacity-90">
+            Dasturlash va sun'iy intellekt orqali daromadingizni oshiring.
+          </p>
 
-          {/* 3D artwork — foyydalanuvchi yuklagan rasmlar */}
-          <div className="w-[44%] relative flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_45%,rgba(2,132,199,0.12),transparent_65%)]" />
-            <AnimatePresence mode="popLayout">
-              <motion.img
-                key={slide.id}
-                src={slide.artwork}
-                alt=""
-                draggable={false}
-                initial={{ opacity: 0, scale: 0.85, rotate: -3 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 0.9, rotate: 3 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 24 }}
-                className="relative z-10 w-[115%] max-w-none object-contain animate-floaty pointer-events-none select-none"
-                style={{ maskImage: 'radial-gradient(ellipse 92% 92% at 50% 50%, black 62%, transparent 98%)', WebkitMaskImage: 'radial-gradient(ellipse 92% 92% at 50% 50%, black 62%, transparent 98%)' }}
-              />
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Progress indikatorlar */}
-        <div className="absolute bottom-3 left-4 flex items-center space-x-1.5 z-20">
-          {slides.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => { haptic?.selection?.(); setSlideIdx(i); }}
-              className="h-1 rounded-full overflow-hidden bg-slate-200 transition-all duration-500"
-              style={{ width: i === slideIdx ? 28 : 10 }}
-              aria-label={`Banner ${i + 1}`}
-            >
-              {i === slideIdx && (
-                <motion.div
-                  key={`${slideIdx}-${paused}`}
-                  className="h-full bg-cyan rounded-full"
-                  initial={{ width: paused ? '100%' : '0%' }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: paused ? 0 : SLIDE_MS / 1000, ease: 'linear' }}
-                />
-              )}
-            </button>
-          ))}
+          <button
+            onClick={() => {
+              haptic?.impact?.('light');
+              onNavigateToCatalog();
+            }}
+            className="self-start inline-flex items-center space-x-2 bg-white text-slate-900 px-5 py-2.5 rounded-[14px] text-xs font-bold active:scale-95 transition-transform"
+          >
+            <span>Kurslarni ko'rish</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </motion.section>
 

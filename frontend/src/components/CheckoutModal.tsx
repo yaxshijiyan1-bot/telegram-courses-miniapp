@@ -40,9 +40,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [cardInfo, setCardInfo] = useState<{ card_number: string; card_holder: string; bank_name?: string }>({
-    card_number: '8600 5304 1234 5678',
-    card_holder: 'Yaxshi Bola / Zuhra Olimova',
-    bank_name: 'Uzcard / Humo'
+    card_number: '',
+    card_holder: '',
+    bank_name: ''
   });
   const { haptic, user } = useTelegram();
 

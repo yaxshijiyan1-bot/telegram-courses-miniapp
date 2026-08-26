@@ -1,7 +1,8 @@
 {
-  "name": "telegram-courses-root",
-  "private": true,
+  "name": "kurs-miniapp-root",
+  "version": "1.0.0",
   "scripts": {
-    "build": "npm --prefix frontend install && npm --prefix frontend run build"
+    "build": "cd frontend && npm install && npm run build",
+    "install": "cd frontend && npm install"
   }
 }

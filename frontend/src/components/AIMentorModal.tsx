@@ -95,7 +95,7 @@ export const AIMentorModal: React.FC<AIMentorModalProps> = ({
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: "Kechirasiz, tarmoqda nosozlik yuz berdi. Iltimos qaytadan urinib ko'ring.",
+          content: "⚠️ **Tarmoqda nosozlik yuz berdi.** \n\nHozircha men oflayn rejimdaman yoki API kalitlar sozlanmagan. Iltimos, keyinroq qayta urinib ko'ring yoki administratorga xabar bering.",
         },
       ]);
     }
