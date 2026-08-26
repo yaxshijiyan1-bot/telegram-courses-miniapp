@@ -177,42 +177,23 @@ class ApiService {
   }
 
   async getCourses(category?: string, search?: string): Promise<Course[]> {
-    try {
-      const params = new URLSearchParams();
-      if (category && category !== 'Barchasi') params.append('category', category);
-      if (search) params.append('search', search);
+    const params = new URLSearchParams();
+    if (category && category !== 'Barchasi') params.append('category', category);
+    if (search) params.append('search', search);
 
-      const res = await fetch(`${API_BASE_URL}/courses?${params.toString()}`, {
-        headers: this.getHeaders()
-      });
-      if (res.ok) return await res.json();
-    } catch {
-      // Fallback
-    }
-
-    let filtered = [...MOCK_COURSES];
-    if (category && category !== 'Barchasi') {
-      filtered = filtered.filter(c => c.category.toLowerCase() === category.toLowerCase());
-    }
-    if (search) {
-      const s = search.toLowerCase();
-      filtered = filtered.filter(c => c.title.toLowerCase().includes(s) || c.instructor_name.toLowerCase().includes(s));
-    }
-    return filtered;
+    const res = await fetch(`${API_BASE_URL}/courses?${params.toString()}`, {
+      headers: this.getHeaders()
+    });
+    if (res.ok) return await res.json();
+    throw new Error('Kurslarni yuklashda xatolik');
   }
 
   async getCourseDetail(slugOrId: string): Promise<Course> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/courses/${slugOrId}`, {
-        headers: this.getHeaders()
-      });
-      if (res.ok) return await res.json();
-    } catch {
-      // Fallback
-    }
-    const found = MOCK_COURSES.find(c => c.slug === slugOrId || c.id === slugOrId);
-    if (!found) throw new Error('Kurs topilmadi');
-    return found;
+    const res = await fetch(`${API_BASE_URL}/courses/${slugOrId}`, {
+      headers: this.getHeaders()
+    });
+    if (res.ok) return await res.json();
+    throw new Error('Kurs topilmadi yoki tarmoq xatosi');
   }
 
   async login(login: string, password: string): Promise<{ token: string; user: User }> {
@@ -280,34 +261,11 @@ class ApiService {
     continue_learning: ContinueLearningData | null;
     enrolled_courses: EnrolledCourse[];
   }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/student/dashboard`, {
-        headers: this.getHeaders()
-      });
-      if (res.ok) return await res.json();
-      if (res.status === 401 || res.status === 403) {
-        // Token yaroqsiz — soxta ma'lumot ko'rsatmaymiz
-        return {
-          user_name: 'Talaba',
-          overall_progress_percent: 0,
-          completed_lessons_count: 0,
-          total_lessons_count: 0,
-          continue_learning: null,
-          enrolled_courses: []
-        };
-      }
-    } catch {
-      // Fallback
-    }
-
-    return {
-      user_name: 'Talaba',
-      overall_progress_percent: 0,
-      completed_lessons_count: 0,
-      total_lessons_count: 0,
-      continue_learning: null,
-      enrolled_courses: []
-    };
+    const res = await fetch(`${API_BASE_URL}/student/dashboard?t=${Date.now()}`, {
+      headers: this.getHeaders()
+    });
+    if (res.ok) return await res.json();
+    throw new Error('Dashboard ma\'lumotlarini yuklashda xatolik');
   }
 
   async getProtectedLesson(courseId: string, lessonId: string): Promise<{
@@ -386,23 +344,13 @@ class ApiService {
   }
 
   async createOrder(courseId: string, paymentMethod: string): Promise<{ order_id: string; amount: number; course_title: string }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/checkout/create-order`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({ course_id: courseId, payment_method: paymentMethod })
-      });
-      if (res.ok) return await res.json();
-    } catch {
-      // Fallback
-    }
-
-    const course = MOCK_COURSES.find(c => c.id === courseId) || MOCK_COURSES[0];
-    return {
-      order_id: 'ord_' + Math.random().toString(36).substring(2, 10),
-      amount: course.price,
-      course_title: course.title
-    };
+    const res = await fetch(`${API_BASE_URL}/checkout/create-order`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ course_id: courseId, payment_method: paymentMethod })
+    });
+    if (res.ok) return await res.json();
+    throw new Error('To\'lov tizimi xatosi');
   }
 
   async submitReceipt(payload: {
@@ -585,13 +533,15 @@ class ApiService {
 
   async getPaymentInfo(): Promise<PaymentInfo | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/checkout/payment-info`);
+      const res = await fetch(`${API_BASE_URL}/checkout/payment-info?t=${Date.now()}`);
       if (res.ok) return await res.json();
     } catch {}
     return null;
   }
 
   // ===== SESSION TEKSHIRUVI =====
+
+
 
   async verifyToken(): Promise<'valid' | 'invalid' | 'offline'> {
     try {

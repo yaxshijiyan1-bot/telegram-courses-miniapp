@@ -54,6 +54,12 @@ class CourseUpsertRequest(BaseModel):
     student_count: Optional[int] = Field(default=None, ge=0)
     telegram_channel_id: Optional[str] = Field(default=None, max_length=32)
     published: Optional[bool] = None
+    gallery_urls: Optional[List[str]] = Field(default=None)
+    testimonials: Optional[List[Dict[str, Any]]] = Field(default=None)
+    custom_info: Optional[List[Dict[str, str]]] = Field(default=None)
+    show_instructor: Optional[bool] = Field(default=None)
+    show_outcomes: Optional[bool] = Field(default=None)
+    learning_outcomes: Optional[List[str]] = Field(default=None)
 
     @field_validator("slug")
     @classmethod

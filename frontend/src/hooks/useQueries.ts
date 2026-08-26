@@ -11,7 +11,7 @@ export const useCoursesQuery = () => {
   return useQuery<Course[]>({
     queryKey: ['courses'],
     queryFn: () => api.getCourses(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Har safar yangisini tortish
   });
 };
 
@@ -24,7 +24,7 @@ export const useCourseDetailQuery = (courseIdOrSlug: string | undefined) => {
       return api.getCourseDetail(courseIdOrSlug);
     },
     enabled: !!courseIdOrSlug,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 0,
   });
 };
 

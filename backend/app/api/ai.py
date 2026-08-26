@@ -287,20 +287,18 @@ Javobni FAQAT to'g'ri JSON formatida bering (hech qanday markdown ```json belgis
         raw_response = call_groq_api(messages)
 
     if raw_response:
-        clean_json = raw_response.strip()
-        if clean_json.startswith("```json"):
-            clean_json = clean_json[7:]
-        elif clean_json.startswith("```"):
-            clean_json = clean_json[3:]
-        if clean_json.endswith("```"):
-            clean_json = clean_json[:-3]
-        clean_json = clean_json.strip()
-
+        import re
         try:
-            parsed = json.loads(clean_json)
-            return {"success": True, "data": parsed, "model": "stealth/ox-alpha"}
+            # Extract only the JSON part by finding first { and last }
+            json_match = re.search(r'\{.*\}', raw_response.strip(), re.DOTALL)
+            if json_match:
+                clean_json = json_match.group(0)
+                parsed = json.loads(clean_json)
+                return {"success": True, "data": parsed, "model": "stealth/ox-alpha"}
+            else:
+                raise ValueError("JSON block topilmadi")
         except Exception as err:
-            print(f"[AI] JSON parsing error: {err}")
+            print(f"[AI] JSON parsing error: {err} | Raw: {raw_response[:200]}")
 
     # Fallback template if AI fails
     fallback_data = {
