@@ -22,6 +22,7 @@ import {
   MessageSquare,
   FileText,
   Maximize2,
+  ShieldAlert,
   X
 } from 'lucide-react';
 import { Course, Lesson } from '../types';
@@ -52,19 +53,23 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
   const totalLessons = course.modules?.reduce((acc, m) => acc + m.lessons.length, 0) ?? course.lesson_count;
 
-  // Faqs (Sertifikat haqidagi savol olib tashlandi)
+  // Faqs — Yopiq kanal, bir martalik link va mualliflik huquqi qoidalari
   const faqs = [
     {
-      q: "Kursni qachon va qayerda ko‘rsam bo‘ladi?",
-      a: "To‘lov tasdiqlanishi bilan barcha darslar ushbu Telegram Mini App ichida ochiladi. Darslarni istalgan vaqtda va istalgan qurilmada ko‘rishingiz mumkin."
+      q: "Darslar qayerda va qanday ko‘riladi?",
+      a: "To‘lov tasdiqlanishi bilan Telegram botimiz orqali sizga rasmiy yopiq kanalga bir martalik maxsus havola (invite link) yuboriladi. Barcha darslar to‘liq shu yopiq kanalda joylashtirilgan va o‘sha yerda tomosha qilinadi."
     },
     {
-      q: "Savollarim bo‘lsa kimdan yordam olaman?",
-      a: "Har bir talaba uchun AI Mentor va maxsus yopiq Telegram guruh mavjud bo‘lib, u yerda barcha savollaringizga javob olasiz."
+      q: "Darslarni saqlab olish yoki tarqatish mumkinmi?",
+      a: "Qat'iyan taqiqlanadi! Barcha video va materiallar mualliflik huquqi bilan himoyalangan. Darslarni saqlab olish, yozib olish yoki tarqatish qat'iy man etiladi."
     },
     {
-      q: "Darslar qancha muddatga beriladi?",
-      a: "Darslarga 1 yil davomida to'liq cheksiz kirish imkoniyati beriladi — istalgan paytda takrorlash uchun qaytishingiz mumkin."
+      q: "Yopiq kanalga kirish muddati qancha?",
+      a: "Bir martalik havola orqali yopiq kanalga kirib, barcha darslardan doimiy va cheksiz foydalanishingiz mumkin."
+    },
+    {
+      q: "Savollar bo‘yicha kimga murojaat qilinadi?",
+      a: "Darslar bo‘yicha barcha savollaringizga kanal admini va qo‘llab-quvvatlash mutaxassislari to‘g‘ridan-to‘g‘ri yordam beradi."
     }
   ];
 
@@ -335,6 +340,15 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             </span>
           </div>
 
+          {/* Yopiq kanal haqida ma'lumot */}
+          <div className="bg-sky-50/80 border border-sky-200/90 rounded-2xl p-3 flex items-start space-x-2.5 text-xs text-sky-900 leading-relaxed shadow-sm">
+            <ShieldAlert className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <b className="font-extrabold block text-sky-950 mb-0.5">Yopiq kanal orqali o‘rganish:</b>
+              Barcha to‘liq video darslar xavfsiz Telegram yopiq kanalida joylashgan. To‘lov tasdiqlangach, bot sizga bir martalik kirish havolasini yuboradi. Darslarni saqlab olish yoki tarqatish qat'iyan taqiqlanadi.
+            </div>
+          </div>
+
           <div className="space-y-2">
             {course.modules?.map((module, mIdx) => {
               const isOpen = openModuleId === module.id;
@@ -464,16 +478,14 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           onClick={() => {
             haptic?.impact?.('medium');
             if (course.is_enrolled) {
-              if (course.modules?.[0]?.lessons?.[0]) {
-                onPlayLesson(course, course.modules[0].lessons[0]);
-              }
+              haptic?.notification?.('success');
             } else {
               onPurchase(course);
             }
           }}
           className="btn-primary w-full py-3.5 px-4 text-xs sm:text-sm font-extrabold flex items-center justify-center space-x-2 shadow-skyGlow"
         >
-          <span>{course.is_enrolled ? 'Darslarni davom ettirish' : 'Kursni xarid qilish'}</span>
+          <span>{course.is_enrolled ? "Kanalga a'zo bo'lingan (Darslar kanalda)" : 'Kursni xarid qilish'}</span>
           <Sparkles className="w-4 h-4" />
         </button>
       </div>

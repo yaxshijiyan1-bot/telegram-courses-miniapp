@@ -60,8 +60,8 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
             <BookOpen className="w-6 h-6" strokeWidth={2} />
           </div>
           <b className="text-sm text-ink block">Hozircha aktiv kurs yo‘q</b>
-          <p className="text-[11px] text-ink-muted leading-relaxed max-w-[240px] mx-auto">
-            Kurs sotib olgach yoki admin granti ochgach, barcha darslar shu yerda ko‘rinadi.
+          <p className="text-[11px] text-ink-muted leading-relaxed max-w-[260px] mx-auto">
+            Kurs xarid qilgach, Telegram bot orqali yopiq kanalga bir martalik kirish havolasi beriladi.
           </p>
         </motion.div>
       ) : (

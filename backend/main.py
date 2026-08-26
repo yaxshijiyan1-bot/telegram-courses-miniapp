@@ -63,6 +63,15 @@ async def root():
         "docs_url": "/docs"
     }
 
+from fastapi.responses import RedirectResponse
+from app.core.r2 import r2_client
+
+@app.get("/api/media/{object_key:path}")
+async def serve_media(object_key: str):
+    """Cloudflare R2 dagi rasmlar va medialarni xavfsiz va to'g'ridan-to'g'ri ochib berish"""
+    presigned = r2_client.generate_presigned_url(object_key, expires_in=86400 * 7)
+    return RedirectResponse(url=presigned, status_code=307)
+
 @app.get("/health")
 async def health_check():
     try:

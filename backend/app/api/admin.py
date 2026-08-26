@@ -407,14 +407,17 @@ async def upload_base64_to_r2(
             raise HTTPException(status_code=400, detail=f"Base64 dekodlashda xatolik: {e}")
 
     unique_key = f"{payload.folder}/{uuid.uuid4().hex[:12]}.{ext}"
-    public_url = r2_client.upload_bytes(unique_key, image_bytes, content_type=content_type)
+    uploaded = r2_client.upload_bytes(unique_key, image_bytes, content_type=content_type)
     
-    if not public_url:
+    if not uploaded:
         raise HTTPException(status_code=500, detail="Cloudflare R2 ga yuklab bo'lmadi — R2 kalitlarini tekshiring")
+
+    # Brauzerda xatosiz ochilishi uchun to'liq ruxsatli havola
+    media_url = r2_client.generate_presigned_url(unique_key, expires_in=86400 * 30)
 
     return {
         "success": True,
-        "url": public_url,
+        "url": media_url,
         "object_key": unique_key,
         "storage": "Cloudflare R2"
     }
@@ -435,13 +438,15 @@ async def upload_file_to_r2(
         unique_key = f"{folder}/{uuid.uuid4().hex[:12]}.{ext}"
         content_type = file.content_type or "image/jpeg"
         
-        public_url = r2_client.upload_bytes(unique_key, content, content_type=content_type)
-        if not public_url:
+        uploaded = r2_client.upload_bytes(unique_key, content, content_type=content_type)
+        if not uploaded:
             raise HTTPException(status_code=500, detail="Cloudflare R2 ga yuklab bo'lmadi")
             
+        media_url = r2_client.generate_presigned_url(unique_key, expires_in=86400 * 30)
+
         return {
             "success": True,
-            "url": public_url,
+            "url": media_url,
             "object_key": unique_key,
             "storage": "Cloudflare R2"
         }
