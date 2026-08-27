@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Header } from './components/Header';
 import { BottomNav, NavTab } from './components/BottomNav';
 import { DesktopWrapper } from './components/DesktopWrapper';
@@ -44,6 +44,8 @@ export const AppContent: React.FC = () => {
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
+  // Chek yuborilgan, lekin admin hali tasdiqlamagan kurslar (dashboard yangilanguncha yashirish uchun)
+  const [paidCourseIds, setPaidCourseIds] = useState<string[]>([]);
 
   // ---- ORTQA QAYTISH HIMOYASI ----
   const navStateRef = useRef({ selectedCourse, selectedLesson, purchasedCourse });
@@ -198,6 +200,15 @@ export const AppContent: React.FC = () => {
     }
   };
 
+  // Sotib olingan kurslar ID'lari — sotuv bo'limlarida ko'rsatilmaydi
+  const purchasedCourseIds = useMemo(() => {
+    const ids = new Set<string>(paidCourseIds);
+    (dashboardData?.enrolled_courses || []).forEach((c: any) => {
+      if (c?.id) ids.add(String(c.id));
+    });
+    return ids;
+  }, [paidCourseIds, dashboardData]);
+
   const handleContinueLesson = useCallback(async (courseId: string, lessonId: string) => {
     const course = courses.find((c) => c.id === courseId);
     if (!course) return;
@@ -274,6 +285,7 @@ export const AppContent: React.FC = () => {
             onClose={() => setIsCheckoutOpen(false)}
             onSuccess={(c) => {
               setIsCheckoutOpen(false);
+              setPaidCourseIds((prev) => (prev.includes(c.id) ? prev : [...prev, c.id]));
               setPurchasedCourse(c);
             }}
           />
@@ -310,6 +322,7 @@ export const AppContent: React.FC = () => {
         {activeTab === 'home' && (
           <HomePage
             courses={courses}
+            purchasedCourseIds={purchasedCourseIds}
             continueData={dashboardData?.continue_learning || null}
             stats={dashboardData ? {
               completed_lessons_count: dashboardData.completed_lessons_count ?? 0,
@@ -326,7 +339,9 @@ export const AppContent: React.FC = () => {
         {activeTab === 'courses' && (
           <CatalogPage
             courses={courses}
+            purchasedCourseIds={purchasedCourseIds}
             onSelectCourse={(c) => setSelectedCourse(c)}
+            onNavigateToLearning={() => setActiveTab('learning')}
           />
         )}
 

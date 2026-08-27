@@ -1,33 +1,44 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Search, Compass, X, Sparkles, SlidersHorizontal, BookOpen } from 'lucide-react';
+import { Search, Compass, X, Sparkles, SlidersHorizontal, BookOpen, GraduationCap } from 'lucide-react';
 import { Course } from '../types';
 import { CourseCard } from '../components/CourseCard';
 import { useTelegram } from '../context/TelegramContext';
 
 interface CatalogPageProps {
   courses: Course[];
+  purchasedCourseIds?: Set<string>;
   onSelectCourse: (course) => void;
+  onNavigateToLearning?: () => void;
   isLoading?: boolean;
 }
 
 export const CatalogPage: React.FC<CatalogPageProps> = ({
   courses,
+  purchasedCourseIds,
   onSelectCourse,
+  onNavigateToLearning,
 }) => {
   const { haptic } = useTelegram();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Barchasi');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Kategoriyalar kurslardan avtomatik yig'iladi
+  // Sotuv bo'limida sotib olingan kurslar ko'rsatilmaydi
+  const availableCourses = useMemo(
+    () => courses.filter((c) => !purchasedCourseIds?.has(c.id)),
+    [courses, purchasedCourseIds]
+  );
+  const allPurchased = courses.length > 0 && availableCourses.length === 0;
+
+  // Kategoriyalar faqat sotuvdagi kurslardan yig'iladi
   const categories = useMemo(() => {
-    const set = new Set<string>(courses.map((c) => c.category?.trim()).filter(Boolean) as string[]);
+    const set = new Set<string>(availableCourses.map((c) => c.category?.trim()).filter(Boolean) as string[]);
     return ['Barchasi', ...Array.from(set)];
-  }, [courses]);
+  }, [availableCourses]);
 
   const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
+    return availableCourses.filter((course) => {
       const matchesCategory =
         selectedCategory === 'Barchasi' ||
         course.category?.toLowerCase() === selectedCategory.toLowerCase();
@@ -40,7 +51,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         course.category?.toLowerCase().includes(q);
       return matchesCategory && matchesSearch;
     });
-  }, [courses, selectedCategory, searchQuery]);
+  }, [availableCourses, selectedCategory, searchQuery]);
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -63,6 +74,30 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         </h1>
       </div>
 
+      {allPurchased ? (
+        <div className="py-14 text-center glass rounded-3xl space-y-3 p-6 animate-fade-up">
+          <div className="w-12 h-12 rounded-2xl bg-cyan/10 flex items-center justify-center mx-auto text-cyan">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <b className="text-sm text-slate-900 block">Barcha kurslar sizda!</b>
+          <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+            Sotib olingan kurslaringiz «Darslarim» bo‘limida — barcha darslar yopiq kanalda. Yangi kurslar chiqishi bilan bu yerda ko‘rasiz.
+          </p>
+          {onNavigateToLearning && (
+            <button
+              type="button"
+              onClick={() => {
+                haptic?.impact?.('medium');
+                onNavigateToLearning();
+              }}
+              className="px-5 py-2.5 bg-cyan text-white font-bold rounded-xl text-xs shadow-cyanGlowSm active:scale-95 transition-transform"
+            >
+              Darslarimga o‘tish
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
       {/* Mukammal Qidiruv Maydoni */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -158,6 +193,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             />
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -16,6 +16,7 @@ import { getToday } from '../utils/format';
 
 interface HomePageProps {
   courses: Course[];
+  purchasedCourseIds?: Set<string>;
   continueData?: ContinueLearningData | null;
   stats?: {
     completed_lessons_count: number;
@@ -41,6 +42,7 @@ const item = {
 
 export const HomePage: React.FC<HomePageProps> = ({
   courses,
+  purchasedCourseIds,
   continueData,
   stats,
   onSelectCourse,
@@ -96,8 +98,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   // Continue-learning kursini courses ro'yxatidan topamiz
   const continueCourse = continueData ? courses.find((c) => c.id === continueData.course_id) : undefined;
 
+  // Sotuv bo'limida sotib olingan kurslar ko'rsatilmaydi
   const recommendedCourses = courses
-    .filter((c) => c.id !== continueData?.course_id)
+    .filter((c) => c.id !== continueData?.course_id && !purchasedCourseIds?.has(c.id))
     .slice(0, 4);
 
   return (
@@ -306,7 +309,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.button>
       )}
 
-      {/* ==== 6. Sizga mos kurslar ==== */}
+      {/* ==== 6. Sizga mos kurslar (sotib olinganlar ko'rsatilmaydi) ==== */}
+      {recommendedCourses.length > 0 && (
       <motion.div variants={item} className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
           <h2 className="text-sm font-bold text-ink flex items-center gap-1.5">
@@ -337,6 +341,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           ))}
         </div>
       </motion.div>
+      )}
     </motion.div>
   );
 };
