@@ -47,7 +47,7 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(2,132,199,0.14),transparent_65%)]" />
           <motion.img
-            src="/images/splash_hero.webp"
+            src="/images/splash_hero_v2.webp"
             alt=""
             draggable={false}
             className="relative z-10 w-full h-full object-contain animate-floaty pointer-events-none drop-shadow-xl"
