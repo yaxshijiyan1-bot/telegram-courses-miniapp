@@ -30,7 +30,7 @@ def call_openrouter_api(messages: List[Dict[str, str]], model_override: Optional
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://kurslarimiz-platforma.vercel.app",
+        "HTTP-Referer": "https://telegram-courses-miniapp2.pages.dev",
         "X-Title": "Course Academy Telegram MiniApp"
     }
     payload = {
