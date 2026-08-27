@@ -85,11 +85,14 @@ export const AppContent: React.FC = () => {
   const [cachedPurchasedIds, setCachedPurchasedIds] = useState<string[]>(readPurchasedCache);
   const [sessionPurchasedIds, setSessionPurchasedIds] = useState<string[]>([]);
 
-  // ---- ORTQA QAYTISH (telefon "Nazad" tugmasi) ----
-  // Android'da "orqaga" tugmasi WebView'da history.back() qiladi. Tarix bo'sh
-  // bo'lsa mini-app yopilib ketadi — shuning uchun tarixda doim kamida bitta
-  // yozuv (sentinel) ushlab turamiz: back hech qachon appdan chiqarmaydi,
-  // faqat bir qadam orqaga qaytaradi (modal/ichki sahifa/ tab).
+  // ---- ORTQA QAYTISH (telefonning "Nazad" tugmasi) ----
+  // Android Telegram'da tizim "nazad" tugmasi Telegram BackButton'i ko'rinib
+  // turganda bosilsa — backButtonClicked hodisasi orqali app ichida qaytaradi,
+  // BackButton yashirin bo'lsa — miniapp'ni darhol yopib yuboradi. Shuning
+  // uchun qaytish mumkin bo'lgan HAR QANDAY holatda (ichki sahifa, modal,
+  // home'dan boshqa tab) BackButton ko'rsatiladi. Eski mijozlar uchun zaxira:
+  // tarixda doim kamida bitta yozuv (sentinel) saqlanadi — back bosilganda
+  // chiqib ketmaydi, popstate orqali bir qatlam yopiladi.
   const navStateRef = useRef({
     selectedCourse, selectedLesson, purchasedCourse,
     isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
@@ -98,30 +101,40 @@ export const AppContent: React.FC = () => {
     selectedCourse, selectedLesson, purchasedCourse,
     isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
   };
-  const innerEntryRef = useRef(false);
 
-  const isInnerPage = !!(selectedCourse || selectedLesson || purchasedCourse);
+  const canGoBack = !!(
+    selectedCourse || selectedLesson || purchasedCourse ||
+    isCheckoutOpen || isAdminOpen || isNotifsOpen
+  ) || activeTab !== 'home';
 
   const ensureSentinel = useCallback(() => {
-    if (!(window.history.state && window.history.state.appNav)) {
-      window.history.pushState({ appNav: true }, '');
-    }
+    try {
+      if (window.history.length < 2) {
+        window.history.pushState({ appNav: true }, '');
+      }
+    } catch {}
   }, []);
 
   useEffect(() => {
     ensureSentinel();
+    // Sug'urta: Telegram ayrim versiyalarda WebView tarixini tozalab qo'yishi
+    // mumkin — sentinel yo'qolib qolsa, birinchi back'dayoq app yopiladi.
+    const reEnsure = () => setTimeout(ensureSentinel, 50);
+    const onVisible = () => { if (!document.hidden) reEnsure(); };
+    const timer = window.setInterval(ensureSentinel, 2000);
+    window.addEventListener('pageshow', reEnsure);
+    window.addEventListener('focus', reEnsure);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('pageshow', reEnsure);
+      window.removeEventListener('focus', reEnsure);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [ensureSentinel]);
 
-  useEffect(() => {
-    if (isInnerPage && !innerEntryRef.current) {
-      window.history.pushState({ appInner: true }, '');
-      innerEntryRef.current = true;
-    } else if (!isInnerPage) {
-      innerEntryRef.current = false;
-    }
-  }, [isInnerPage]);
-
-  const closeTopLevel = useCallback(() => {
+  // Bir bosishda faqat bitta eng ustki qatlamni yopadi
+  const closeTopLevel = useCallback((): boolean => {
     const s = navStateRef.current;
     if (s.isCheckoutOpen) setIsCheckoutOpen(false);
     else if (s.isNotifsOpen) setIsNotifsOpen(false);
@@ -130,38 +143,26 @@ export const AppContent: React.FC = () => {
     else if (s.purchasedCourse) setPurchasedCourse(null);
     else if (s.selectedCourse) setSelectedCourse(null);
     else if (s.activeTab !== 'home') setActiveTab('home');
+    else return false;
+    return true;
   }, []);
 
   useEffect(() => {
     const onPopState = () => {
-      closeTopLevel();
-      setTimeout(() => {
-        const s = navStateRef.current;
-        const inner = !!(s.selectedCourse || s.selectedLesson || s.purchasedCourse);
-        if (inner && !innerEntryRef.current) {
-          window.history.pushState({ appInner: true }, '');
-          innerEntryRef.current = true;
-        }
-        if (!inner) innerEntryRef.current = false;
-        ensureSentinel();
-      }, 60);
+      const closed = closeTopLevel();
+      if (closed) {
+        // Tarix chuqurligi yo'qolmasin: keyingi back ham chiqish emas,
+        // yana bir qadam orqaga bo'lsin
+        try { window.history.pushState({ appNav: true }, ''); } catch {}
+      }
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [closeTopLevel, ensureSentinel]);
+  }, [closeTopLevel]);
 
   const goBack = useCallback(() => {
-    const s = navStateRef.current;
-    const anythingOpen = !!(
-      s.selectedLesson || s.purchasedCourse || s.selectedCourse ||
-      s.isCheckoutOpen || s.isAdminOpen || s.isNotifsOpen
-    );
-    if (anythingOpen) {
-      window.history.back();
-    } else if (s.activeTab !== 'home') {
-      setActiveTab('home');
-    }
-  }, []);
+    closeTopLevel();
+  }, [closeTopLevel]);
 
   // #admin hash — bot'dagi "Superadmin Dashboard" tugmasi shu yerga ochiladi
   useEffect(() => {
@@ -276,14 +277,16 @@ export const AppContent: React.FC = () => {
     // sotib olishlar tasdig'i iloji boricha tez aniqlanadi
   }, [isAuthenticated, authVersion, refreshDashboard, refreshNotifications, refreshCertificates]);
 
-  // Telegram BackButton boshqaruvi
+  // Telegram BackButton boshqaruvi: qaytish bor har qanday holatda ko'rinadi —
+  // Android tizim "nazad" tugmasi aynan shu tugma ko'rsatilganda app ichida
+  // qaytaradi (yashirin bo'lsa miniapp'ni yopadi)
   useEffect(() => {
-    if (selectedCourse || selectedLesson || purchasedCourse) {
+    if (canGoBack) {
       showBackButton(goBack);
     } else {
       hideBackButton();
     }
-  }, [selectedCourse, selectedLesson, purchasedCourse, showBackButton, hideBackButton, goBack]);
+  }, [canGoBack, showBackButton, hideBackButton, goBack]);
 
   const handlePlayLesson = async (course: Course, lesson: Lesson) => {
     try {
