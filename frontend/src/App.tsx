@@ -47,25 +47,51 @@ export const AppContent: React.FC = () => {
   // Chek yuborilgan, lekin admin hali tasdiqlamagan kurslar (dashboard yangilanguncha yashirish uchun)
   const [paidCourseIds, setPaidCourseIds] = useState<string[]>([]);
 
-  // ---- ORTQA QAYTISH HIMOYASI ----
-  const navStateRef = useRef({ selectedCourse, selectedLesson, purchasedCourse });
-  navStateRef.current = { selectedCourse, selectedLesson, purchasedCourse };
-  const historyDepthRef = useRef(0);
+  // ---- ORTQA QAYTISH (telefon "Nazad" tugmasi) ----
+  // Android'da "orqaga" tugmasi WebView'da history.back() qiladi. Tarix bo'sh
+  // bo'lsa mini-app yopilib ketadi — shuning uchun tarixda doim kamida bitta
+  // yozuv (sentinel) ushlab turamiz: back hech qachon appdan chiqarmaydi,
+  // faqat bir qadam orqaga qaytaradi (modal/ichki sahifa/ tab).
+  const navStateRef = useRef({
+    selectedCourse, selectedLesson, purchasedCourse,
+    isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
+  });
+  navStateRef.current = {
+    selectedCourse, selectedLesson, purchasedCourse,
+    isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
+  };
+  const innerEntryRef = useRef(false);
 
   const isInnerPage = !!(selectedCourse || selectedLesson || purchasedCourse);
 
+  const ensureSentinel = useCallback(() => {
+    if (!(window.history.state && window.history.state.appNav)) {
+      window.history.pushState({ appNav: true }, '');
+    }
+  }, []);
+
   useEffect(() => {
-    if (isInnerPage && historyDepthRef.current === 0) {
+    ensureSentinel();
+  }, [ensureSentinel]);
+
+  useEffect(() => {
+    if (isInnerPage && !innerEntryRef.current) {
       window.history.pushState({ appInner: true }, '');
-      historyDepthRef.current = 1;
+      innerEntryRef.current = true;
+    } else if (!isInnerPage) {
+      innerEntryRef.current = false;
     }
   }, [isInnerPage]);
 
   const closeTopLevel = useCallback(() => {
     const s = navStateRef.current;
-    if (s.selectedLesson) setSelectedLesson(null);
+    if (s.isCheckoutOpen) setIsCheckoutOpen(false);
+    else if (s.isNotifsOpen) setIsNotifsOpen(false);
+    else if (s.isAdminOpen) setIsAdminOpen(false);
+    else if (s.selectedLesson) setSelectedLesson(null);
     else if (s.purchasedCourse) setPurchasedCourse(null);
     else if (s.selectedCourse) setSelectedCourse(null);
+    else if (s.activeTab !== 'home') setActiveTab('home');
   }, []);
 
   useEffect(() => {
@@ -73,24 +99,31 @@ export const AppContent: React.FC = () => {
       closeTopLevel();
       setTimeout(() => {
         const s = navStateRef.current;
-        if (s.selectedCourse || s.selectedLesson || s.purchasedCourse) {
+        const inner = !!(s.selectedCourse || s.selectedLesson || s.purchasedCourse);
+        if (inner && !innerEntryRef.current) {
           window.history.pushState({ appInner: true }, '');
-        } else {
-          historyDepthRef.current = 0;
+          innerEntryRef.current = true;
         }
+        if (!inner) innerEntryRef.current = false;
+        ensureSentinel();
       }, 60);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [closeTopLevel]);
+  }, [closeTopLevel, ensureSentinel]);
 
   const goBack = useCallback(() => {
-    if (historyDepthRef.current > 0 && navStateRef.current.selectedCourse) {
+    const s = navStateRef.current;
+    const anythingOpen = !!(
+      s.selectedLesson || s.purchasedCourse || s.selectedCourse ||
+      s.isCheckoutOpen || s.isAdminOpen || s.isNotifsOpen
+    );
+    if (anythingOpen) {
       window.history.back();
-    } else {
-      closeTopLevel();
+    } else if (s.activeTab !== 'home') {
+      setActiveTab('home');
     }
-  }, [closeTopLevel]);
+  }, []);
 
   // #admin hash — bot'dagi "Superadmin Dashboard" tugmasi shu yerga ochiladi
   useEffect(() => {

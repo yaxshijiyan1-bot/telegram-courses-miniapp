@@ -396,14 +396,48 @@ class SupabaseStore(Store):
         return [r for r in (rows or []) if r.get("telegram_id")]
 
     # ---------------- APP SETTINGS ----------------
+    # Supabase'da app_settings jadvali yaratilmagan bo'lsa, mavjud bo'sh 'banners'
+    # jadvalini kalit-qiymat ombori sifatida ishlatamiz: tag=kalit, image_url=qiymat
+    # (TEXT — uzun JSON sig'adi), title=kalit (NOT NULL talab qilinadi).
+    async def _settings_mode(self) -> str:
+        mode = getattr(self, "_settings_mode_cached", None)
+        if mode:
+            return mode
+        try:
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                res = await client.request(
+                    "GET", f"{self.base_url}/app_settings",
+                    headers=self.headers, params={"limit": 1}
+                )
+            if res.status_code == 200:
+                self._settings_mode_cached = "app_settings"
+            elif res.status_code == 404:
+                self._settings_mode_cached = "kv_banners"
+                logger.warning("Supabase'da app_settings jadvali yo'q — sozlamalar 'banners' jadvalida saqlanadi (tag/image_url)")
+            else:
+                return "kv_banners"  # noaniq holat — zaxira rejim, keshlanmaydi
+        except Exception:
+            return "kv_banners"
+        return self._settings_mode_cached
+
     async def get_setting(self, key: str) -> Optional[str]:
-        rows = await self._req("GET", "app_settings", {"key": f"eq.{key}", "limit": 1})
-        return rows[0].get("value") if rows else None
+        if await self._settings_mode() == "app_settings":
+            rows = await self._req("GET", "app_settings", {"key": f"eq.{key}", "limit": 1})
+            return rows[0].get("value") if rows else None
+        rows = await self._req("GET", "banners", {"tag": f"eq.{key}", "limit": 1})
+        return rows[0].get("image_url") if rows else None
 
     async def set_setting(self, key: str, value: str) -> bool:
-        row = {"key": key, "value": value, "updated_at": _now()}
-        rows = await self._req("POST", "app_settings", json_body=row)
-        if rows:
+        if await self._settings_mode() == "app_settings":
+            row = {"key": key, "value": value, "updated_at": _now()}
+            rows = await self._req("POST", "app_settings", json_body=row)
+            if rows:
+                return True
+            res = await self._req("PATCH", "app_settings", {"key": f"eq.{key}"}, json_body={"value": value, "updated_at": _now()})
+            return res is not None
+        # KV rejimi: avval yangilash, qator yo'q bo'lsa yangi qator qo'shish
+        res = await self._req("PATCH", "banners", {"tag": f"eq.{key}"}, json_body={"title": key, "image_url": value})
+        if res:
             return True
-        res = await self._req("PATCH", "app_settings", {"key": f"eq.{key}"}, json_body={"value": value, "updated_at": _now()})
-        return res is not None
+        rows = await self._req("POST", "banners", json_body={"tag": key, "title": key, "image_url": value})
+        return bool(rows)
