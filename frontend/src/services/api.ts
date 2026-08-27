@@ -286,6 +286,15 @@ class ApiService {
     throw new Error('Dashboard ma\'lumotlarini yuklashda xatolik');
   }
 
+  async getChannelLink(courseId: string): Promise<{ is_member: boolean; url: string; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/student/courses/${courseId}/channel-link?t=${Date.now()}`, {
+      headers: this.getHeaders()
+    });
+    if (res.ok) return await res.json();
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Kanal havolasini olishda xatolik');
+  }
+
   async getProtectedLesson(courseId: string, lessonId: string): Promise<{
     lesson: Lesson;
     module_title: string;

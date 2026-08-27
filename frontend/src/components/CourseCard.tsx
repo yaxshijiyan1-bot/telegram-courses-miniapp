@@ -95,7 +95,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           </span>
 
           {course.is_enrolled ? (
-            <span className="text-emerald-400 flex items-center gap-0.5 text-[10px] font-extrabold">
+            <span className="text-emerald-600 flex items-center gap-0.5 text-[10px] font-extrabold">
               <Check className="w-3 h-3 stroke-[3]" />
               Faol
             </span>

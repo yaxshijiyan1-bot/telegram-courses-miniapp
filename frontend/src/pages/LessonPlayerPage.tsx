@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -42,6 +42,18 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
   const [isCompleted, setIsCompleted] = useState(lesson.completed || false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const { haptic } = useTelegram();
+
+  // Zoom rejimida orqa sahifa scroll bo'lmasligi uchun tanani qulflash
+  useEffect(() => {
+    if (!isImageZoomed) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehavior = '';
+    };
+  }, [isImageZoomed]);
 
   const handleMarkComplete = async () => {
     haptic.impact('medium');
@@ -247,26 +259,30 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
         </button>
       </div>
 
-      {/* Lightbox Modal for Zoomed Image */}
+      {/* Lightbox — to'liq ekran, sahifa scrolli qulflangan, surat qimirlamaydi */}
       {isImageZoomed && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center animate-fade-in touch-none select-none"
           onClick={() => setIsImageZoomed(false)}
         >
-          <div className="relative max-w-lg w-full bg-slate-900 rounded-3xl overflow-hidden border border-white/10 p-2 shadow-2xl">
-            <button
-              type="button"
-              onClick={() => setIsImageZoomed(false)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <img
-              src={lessonImage}
-              alt={lesson.title}
-              className="w-full h-auto max-h-[80vh] object-contain rounded-2xl"
-            />
-          </div>
+          <img
+            src={lessonImage}
+            alt={lesson.title}
+            draggable={false}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full h-full object-contain animate-zoom-in"
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsImageZoomed(false);
+            }}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
+            aria-label="Yopish"
+          >
+            <X className="w-5 h-5" strokeWidth={2.4} />
+          </button>
         </div>
       )}
     </div>

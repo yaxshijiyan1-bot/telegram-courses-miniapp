@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -23,12 +23,16 @@ import {
   FileText,
   Maximize2,
   ShieldAlert,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  Loader2
 } from 'lucide-react';
 import { Course, Lesson } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { formatPrice } from '../utils/format';
-import { toMediaUrl } from '../services/api';
+import { api, toMediaUrl } from '../services/api';
 
 interface CourseDetailPageProps {
   course: Course;
@@ -45,12 +49,51 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 }) => {
   const [openModuleId, setOpenModuleId] = useState<string | null>(course.modules?.[0]?.id || null);
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
-  const [activePreviewImage, setActivePreviewImage] = useState<string | null>(null);
+  const [activePreviewIdx, setActivePreviewIdx] = useState<number | null>(null);
+  const swipeStartX = useRef<number | null>(null);
   const { haptic } = useTelegram();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [course.id]);
+
+  // Lightbox ochiq bo'lganda orqa sahifa scroll bo'lmasligi uchun tanani qulflash
+  useEffect(() => {
+    if (activePreviewIdx === null) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehavior = '';
+    };
+  }, [activePreviewIdx]);
+
+  const [channelLoading, setChannelLoading] = useState(false);
+  const [channelError, setChannelError] = useState<string | null>(null);
+
+  // Xarid qilingan kurs kanali: a'zo bo'lsa kanal ochiladi, aks holda yangi bir martalik link
+  const openChannel = async () => {
+    if (channelLoading) return;
+    haptic?.impact?.('light');
+    setChannelLoading(true);
+    setChannelError(null);
+    try {
+      const data = await api.getChannelLink(course.id);
+      haptic?.notification?.('success');
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg?.openTelegramLink) {
+        tg.openTelegramLink(data.url);
+      } else {
+        window.open(data.url, '_blank');
+      }
+    } catch (err: any) {
+      haptic?.notification?.('error');
+      setChannelError(err?.message || "Kanal havolasini olishda xatolik");
+    } finally {
+      setChannelLoading(false);
+    }
+  };
 
   const totalLessons = course.modules?.reduce((acc, m) => acc + m.lessons.length, 0) ?? course.lesson_count;
 
@@ -197,12 +240,17 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               {galleryList.map((imgUrl, idx) => (
                 <div
                   key={idx}
-                  onClick={() => setActivePreviewImage(imgUrl)}
+                  onClick={() => {
+                    haptic?.selection?.();
+                    setActivePreviewIdx(idx);
+                  }}
                   className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group shadow-sm"
                 >
                   <img
                     src={toMediaUrl(imgUrl)}
                     alt={`Kurs lavhasi ${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       const target = e.currentTarget as HTMLImageElement;
                       const fixed = toMediaUrl(target.src);
@@ -475,44 +523,111 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto bg-white/95 backdrop-blur-xl p-3 border-t border-slate-200/80 z-40 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto bg-white/95 backdrop-blur-xl p-3 border-t border-slate-200/80 z-40 shadow-lg space-y-1.5">
+        {channelError && (
+          <p className="text-[10px] font-semibold text-red-500 text-center leading-snug animate-fade-in">
+            {channelError}
+          </p>
+        )}
         <button
           type="button"
+          disabled={channelLoading}
           onClick={() => {
-            haptic?.impact?.('medium');
             if (course.is_enrolled) {
-              haptic?.notification?.('success');
+              openChannel();
             } else {
+              haptic?.impact?.('medium');
               onPurchase(course);
             }
           }}
-          className="btn-primary w-full py-3.5 px-4 text-xs sm:text-sm font-extrabold flex items-center justify-center space-x-2 shadow-skyGlow"
+          className="btn-primary w-full py-3.5 px-4 text-xs sm:text-sm font-extrabold flex items-center justify-center space-x-2 shadow-skyGlow disabled:opacity-60"
         >
-          <span>{course.is_enrolled ? "Kanalga a'zo bo'lingan (Darslar kanalda)" : 'Kursni xarid qilish'}</span>
-          <Sparkles className="w-4 h-4" />
+          {course.is_enrolled ? (
+            channelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" strokeWidth={2.4} />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+          <span>{course.is_enrolled ? "Kanalga o'tish — darslar shu yerda" : 'Kursni xarid qilish'}</span>
         </button>
       </div>
 
-      {/* Lightbox / Zoom Modal for Gallery Images */}
-      {activePreviewImage && (
+      {/* Lightbox — to'liq ekran, sahifa scrolli qulflangan, surat qimirlamaydi */}
+      {activePreviewIdx !== null && galleryList[activePreviewIdx] && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in"
-          onClick={() => setActivePreviewImage(null)}
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center animate-fade-in touch-none select-none"
+          onClick={() => setActivePreviewIdx(null)}
+          onTouchStart={(e) => {
+            swipeStartX.current = e.touches[0]?.clientX ?? null;
+          }}
+          onTouchEnd={(e) => {
+            const startX = swipeStartX.current;
+            swipeStartX.current = null;
+            if (startX === null || galleryList.length < 2) return;
+            const dx = (e.changedTouches[0]?.clientX ?? startX) - startX;
+            if (Math.abs(dx) < 48) return;
+            const nextIdx = dx < 0 ? activePreviewIdx + 1 : activePreviewIdx - 1;
+            if (nextIdx >= 0 && nextIdx < galleryList.length) {
+              haptic?.selection?.();
+              setActivePreviewIdx(nextIdx);
+            }
+          }}
         >
-          <div className="relative max-w-md w-full bg-slate-900 rounded-3xl overflow-hidden border border-white/10 p-2 shadow-2xl">
+          <img
+            key={activePreviewIdx}
+            src={toMediaUrl(galleryList[activePreviewIdx])}
+            alt={`Kurs lavhasi ${activePreviewIdx + 1}`}
+            draggable={false}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full h-full object-contain animate-zoom-in"
+          />
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActivePreviewIdx(null);
+            }}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
+            aria-label="Yopish"
+          >
+            <X className="w-5 h-5" strokeWidth={2.4} />
+          </button>
+
+          {galleryList.length > 1 && activePreviewIdx > 0 && (
             <button
               type="button"
-              onClick={() => setActivePreviewImage(null)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                haptic?.selection?.();
+                setActivePreviewIdx(activePreviewIdx - 1);
+              }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
+              aria-label="Oldingi surat"
             >
-              <X className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" strokeWidth={2.4} />
             </button>
-            <img
-              src={toMediaUrl(activePreviewImage)}
-              alt="Preview"
-              className="w-full h-auto max-h-[75vh] object-contain rounded-2xl"
-            />
-          </div>
+          )}
+
+          {galleryList.length > 1 && activePreviewIdx < galleryList.length - 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                haptic?.selection?.();
+                setActivePreviewIdx(activePreviewIdx + 1);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
+              aria-label="Keyingi surat"
+            >
+              <ChevronRight className="w-5 h-5" strokeWidth={2.4} />
+            </button>
+          )}
+
+          {galleryList.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-white/15 text-white text-[11px] font-bold pointer-events-none">
+              {activePreviewIdx + 1} / {galleryList.length}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -236,6 +236,13 @@ class SupabaseStore(Store):
         })
         return rows[0] if rows else None
 
+    async def get_approved_purchase_for(self, user_id: str, course_id: str) -> Optional[Dict[str, Any]]:
+        rows = await self._req("GET", "purchases", {
+            "user_id": f"eq.{user_id}", "course_id": f"eq.{course_id}",
+            "status": "eq.approved", "order": "created_at.desc", "limit": 1
+        })
+        return rows[0] if rows else None
+
     async def update_purchase(self, purchase_id: str, fields: Dict[str, Any]) -> bool:
         res = await self._req("PATCH", "purchases", {"id": f"eq.{purchase_id}"}, json_body=fields)
         return res is not None

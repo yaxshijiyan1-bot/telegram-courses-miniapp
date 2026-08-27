@@ -355,6 +355,15 @@ class SqliteStore(Store):
             ).fetchone()
             return dict(row) if row else None
 
+    async def get_approved_purchase_for(self, user_id: str, course_id: str) -> Optional[Dict[str, Any]]:
+        with self.lock, self._conn() as c:
+            row = c.execute(
+                "SELECT * FROM purchases WHERE user_id=? AND course_id=? AND status='approved' "
+                "ORDER BY created_at DESC LIMIT 1",
+                (user_id, course_id),
+            ).fetchone()
+            return dict(row) if row else None
+
     async def update_purchase(self, purchase_id: str, fields: Dict[str, Any]) -> bool:
         if not fields:
             return False

@@ -5,6 +5,7 @@ from typing import List
 from app.models.schemas import UpdateProgressRequest, CertificateResponse, NotificationResponse
 from app.core.security import get_current_user
 from app.core.r2 import r2_client
+from app.services.purchases import issue_channel_access
 from app.storage import get_store
 from seed_data import build_course_modules
 
@@ -140,6 +141,26 @@ async def get_my_courses(current_user: dict = Depends(get_current_user)):
             "granted_at": _fmt_date(enr.get("granted_at"))
         })
     return result
+
+@router.get("/courses/{course_id}/channel-link")
+async def get_channel_link(course_id: str, current_user: dict = Depends(get_current_user)):
+    """Kurs kanali havolasi — a'zolar kanalni ochadi, qolganlarga yangi bir martalik link beriladi"""
+    store = get_store()
+    user_id = current_user.get("sub")
+
+    enrollment = await store.get_enrollment(user_id, course_id)
+    if not enrollment:
+        raise HTTPException(
+            status_code=403,
+            detail="Bu kurs hisobingizga biriktirilmagan. Avval kursni xarid qiling."
+        )
+
+    try:
+        return await issue_channel_access(user_id, course_id, current_user.get("telegram_id"))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except PermissionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 @router.get("/courses/{course_id}/lessons/{lesson_id}")
 async def get_protected_lesson(

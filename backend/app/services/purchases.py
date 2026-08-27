@@ -311,3 +311,98 @@ async def revoke_join_request_link(
             )
     except Exception as exc:
         logger.warning("Invite link muddati bazada yangilanmadi: %s", exc)
+
+
+async def get_chat_member_status(channel_id: int, telegram_id: int) -> Optional[str]:
+    """Foydalanuvchining kanaldagi holatini qaytaradi (bot admin bo'lishi shart)."""
+    if not settings.BOT_TOKEN or not telegram_id:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            response = await client.post(
+                _api_url("getChatMember"),
+                json={"chat_id": channel_id, "user_id": int(telegram_id)},
+            )
+            data = response.json() if response.status_code == 200 else {}
+            if data.get("ok"):
+                return (data.get("result") or {}).get("status")
+            logger.warning("getChatMember xatosi: %s", response.text[:250])
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("getChatMember so'rovida xato: %s", exc)
+    return None
+
+
+def _channel_member_url(channel_id: int) -> str:
+    """A'zolar uchun kanalni to'g'ridan-to'g'ri ochadigan ichki havola."""
+    internal = str(channel_id)
+    if internal.startswith("-100"):
+        internal = internal[4:]
+    return f"https://t.me/c/{internal.lstrip('-')}/1"
+
+
+async def issue_channel_access(
+    user_id: str, course_id: str, telegram_id: Optional[int]
+) -> Dict[str, Any]:
+    """Xaridor uchun kanal havolasi: a'zo bo'lsa kanalni ochadi, aks holda yangi bir martalik link beradi.
+
+    LookupError — kurs topilmadi; PermissionError — foydalanuvchiga link berib bo'lmaydi.
+    """
+    store = get_store()
+    course = await store.get_course(str(course_id))
+    if not course:
+        raise LookupError("Kurs topilmadi")
+
+    try:
+        channel_id = int(str(course.get("telegram_channel_id") or "").strip())
+    except ValueError:
+        raise PermissionError("Bu kurs uchun yopiq kanal hali sozlanmagan. Adminlarga murojaat qiling.")
+
+    # 1) Allaqachon a'zo — bekor qilingan eski link kerak emas, kanal to'g'ridan-to'g'ri ochiladi.
+    status = await get_chat_member_status(channel_id, int(telegram_id or 0))
+    if status in {"creator", "administrator", "member"}:
+        return {
+            "is_member": True,
+            "url": _channel_member_url(channel_id),
+            "message": "Siz kanalga a'zosiz — darslar kanalda davom etmoqda",
+        }
+
+    # 2) A'zo emas — yangi bir martalik join-request havola yaratiladi.
+    purchase = await store.get_approved_purchase_for(user_id, str(course_id))
+    if purchase and not purchase.get("telegram_id") and telegram_id:
+        purchase = {**purchase, "telegram_id": int(telegram_id)}
+    if not purchase:
+        # Admin tomonidan qo'lda biriktirilgan (xaridsiz) talabalar uchun
+        user = await store.get_user(user_id)
+        purchase = {
+            "telegram_id": int(telegram_id or 0),
+            "student_name": (user or {}).get("name") or "Talaba",
+            "course_title": course.get("title"),
+        }
+    if not purchase.get("telegram_id"):
+        raise PermissionError("Telegram akkauntingiz bog'lanmagan. Adminlarga murojaat qiling.")
+
+    invite_link, expires_at = await _create_join_request_link(channel_id, purchase)
+    if not invite_link:
+        raise PermissionError("Taklif havolasini yaratib bo'lmadi. Bir ozdan so'ng qayta urining.")
+
+    if purchase.get("id"):
+        try:
+            await store.update_purchase(
+                purchase["id"],
+                {"channel_invite_link": invite_link, "invite_expires_at": expires_at},
+            )
+        except Exception as exc:
+            logger.warning("Yangi invite link bazaga saqlanmadi: %s", exc)
+
+    _prune_invite_cache()
+    _invite_authorization_cache[invite_link] = {
+        "chat_id": str(channel_id),
+        "telegram_id": int(purchase.get("telegram_id") or 0),
+        "expires_at": expires_at,
+        "course_title": course.get("title") or "kurs",
+    }
+    return {
+        "is_member": False,
+        "url": invite_link,
+        "message": "Tugmani bosib zayavka yuboring — admin tasdiqlashi bilan kanalda bo'lasiz",
+    }

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Plus, BookOpen, GraduationCap, Trophy, PlayCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Plus, BookOpen, GraduationCap, Trophy, PlayCircle, CheckCircle2, Send, Loader2 } from 'lucide-react';
 import { Course, EnrolledCourse } from '../types';
 import { useTelegram } from '../context/TelegramContext';
-import { toMediaUrl } from '../services/api';
+import { api, toMediaUrl } from '../services/api';
 
 interface MyCoursesPageProps {
   enrolledCourses: EnrolledCourse[];
@@ -28,11 +28,35 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
   onExploreCourses,
 }) => {
   const { haptic } = useTelegram();
+  const [channelLoadingId, setChannelLoadingId] = useState<string | null>(null);
+  const [channelError, setChannelError] = useState<{ id: string; message: string } | null>(null);
 
   // REAL statistika — enrolled_courses massividagi haqiqiy raqamlardan
   const totalCompleted = enrolledCourses.reduce((acc, c) => acc + (c.completed_lessons || 0), 0);
   const totalLessons = enrolledCourses.reduce((acc, c) => acc + (c.total_lessons || 0), 0);
   const completedCourses = enrolledCourses.filter((c) => c.status === 'completed').length;
+
+  const openChannel = async (courseId: string) => {
+    if (channelLoadingId) return;
+    haptic?.impact?.('light');
+    setChannelLoadingId(courseId);
+    setChannelError(null);
+    try {
+      const data = await api.getChannelLink(courseId);
+      haptic?.notification?.('success');
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg?.openTelegramLink) {
+        tg.openTelegramLink(data.url);
+      } else {
+        window.open(data.url, '_blank');
+      }
+    } catch (err: any) {
+      haptic?.notification?.('error');
+      setChannelError({ id: courseId, message: err?.message || 'Kanal havolasini olishda xatolik' });
+    } finally {
+      setChannelLoadingId(null);
+    }
+  };
 
   return (
     <motion.div
@@ -62,7 +86,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
           </div>
           <b className="text-sm text-ink block">Hozircha aktiv kurs yo‘q</b>
           <p className="text-[11px] text-ink-muted leading-relaxed max-w-[260px] mx-auto">
-            Kurs xarid qilgach, Telegram bot orqali yopiq kanalga bir martalik kirish havolasi beriladi.
+            Kurs xarid qilgach, bu yerda «Kanalga o'tish» tugmasi paydo bo'ladi — barcha darslar yopiq kanalda joylashgan.
           </p>
         </motion.div>
       ) : (
@@ -71,63 +95,94 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
             const full = courses.find((c) => c.id === enrolled.id);
             const isDone = enrolled.status === 'completed';
             return (
-              <motion.button
+              <motion.div
                 key={enrolled.id}
                 variants={item}
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={() => {
-                  haptic?.impact?.('medium');
-                  if (full) onSelectCourse(full);
-                }}
-                className="w-full glass rounded-[24px] p-4 text-left flex items-center space-x-3.5 relative overflow-hidden"
+                className="w-full glass rounded-[24px] p-4 text-left relative overflow-hidden space-y-3"
               >
                 <div className="absolute -right-10 -top-14 w-40 h-40 rounded-full bg-cyan/[0.06] blur-3xl pointer-events-none" />
 
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 flex items-center justify-center">
-                  <img
-                    src={toMediaUrl(enrolled.cover_url || full?.cover_url || '/images/hero_books.jpg')}
-                    alt=""
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
-                    }}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-
-                </div>
-
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-center space-x-1.5">
-                    <span className={`text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${isDone ? 'text-emerald-600' : 'text-cyan'}`}>
-                      {isDone ? <CheckCircle2 className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
-                      {isDone ? 'Yakunlangan' : 'Davom etmoqda'}
-                    </span>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    haptic?.impact?.('medium');
+                    if (full) onSelectCourse(full);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      haptic?.impact?.('medium');
+                      if (full) onSelectCourse(full);
+                    }
+                  }}
+                  className="flex items-center space-x-3.5 cursor-pointer active:opacity-70 transition-opacity relative"
+                >
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 flex items-center justify-center">
+                    <img
+                      src={toMediaUrl(enrolled.cover_url || full?.cover_url || '/images/hero_books.jpg')}
+                      alt=""
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
+                      }}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
-                  <h3 className="text-[13px] font-bold text-ink leading-snug clamp-1">
-                    {enrolled.title}
-                  </h3>
 
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-cyan to-violet-light'}`}
-                        style={{ width: `${enrolled.progress_percent}%` }}
-                      />
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center space-x-1.5">
+                      <span className={`text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${isDone ? 'text-emerald-600' : 'text-cyan'}`}>
+                        {isDone ? <CheckCircle2 className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
+                        {isDone ? 'Yakunlangan' : 'Davom etmoqda'}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-extrabold text-cyan tabular-nums w-8 text-right">
-                      {enrolled.progress_percent}%
-                    </span>
+                    <h3 className="text-[13px] font-bold text-ink leading-snug clamp-1">
+                      {enrolled.title}
+                    </h3>
+
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-cyan to-violet-light'}`}
+                          style={{ width: `${enrolled.progress_percent}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-extrabold text-cyan tabular-nums w-8 text-right">
+                        {enrolled.progress_percent}%
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] text-ink-muted clamp-1">
+                      {enrolled.completed_lessons}/{enrolled.total_lessons} dars
+                      {enrolled.last_lesson_title ? ` · ${enrolled.last_lesson_title}` : ''}
+                    </p>
                   </div>
 
-                  <p className="text-[10px] text-ink-muted clamp-1">
-                    {enrolled.completed_lessons}/{enrolled.total_lessons} dars
-                    {enrolled.last_lesson_title ? ` · ${enrolled.last_lesson_title}` : ''}
-                  </p>
+                  <ArrowRight className="w-4 h-4 text-ink-muted flex-shrink-0" />
                 </div>
 
-                <ArrowRight className="w-4 h-4 text-ink-muted flex-shrink-0" />
-              </motion.button>
+                {/* Kurs kanali — barcha darslar shu yerda. A'zo bo'lsa to'g'ridan-to'g'ri ochiladi */}
+                <button
+                  type="button"
+                  disabled={channelLoadingId === enrolled.id}
+                  onClick={() => openChannel(enrolled.id)}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan to-[#0369A1] text-white text-xs font-extrabold flex items-center justify-center space-x-2 shadow-cyanGlowSm active:scale-[0.97] transition-transform disabled:opacity-60 relative"
+                >
+                  {channelLoadingId === enrolled.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" strokeWidth={2.4} />
+                  )}
+                  <span>Kanalga o'tish — darslar shu yerda</span>
+                </button>
+
+                {channelError?.id === enrolled.id && (
+                  <p className="text-[10px] font-semibold text-red-500 text-center leading-snug animate-fade-in">
+                    {channelError.message}
+                  </p>
+                )}
+              </motion.div>
             );
           })}
         </div>

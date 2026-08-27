@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle2, Play, ArrowRight } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { toMediaUrl } from '../services/api';
 
 interface PurchaseSuccessPageProps {
   course: Course;
@@ -70,15 +71,18 @@ export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({
             To'lov adminga yuborildi!
           </h1>
           <p className="text-sm text-slate-500 leading-relaxed max-w-[280px] mx-auto font-medium">
-            Sizning to'lov chekingiz muvaffaqiyatli qabul qilindi. Admin tomonidan tasdiqlanishi bilan kurs avtomatik ravishda ochiladi.
+            Sizning to'lov chekingiz muvaffaqiyatli qabul qilindi. Admin tasdiqlashi bilan «Darslarim» bo'limida kanalga o'tish tugmasi paydo bo'ladi — barcha darslar yopiq kanalda.
           </p>
         </div>
 
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 w-full">
           <div className="flex items-center space-x-3 text-left">
             <img 
-              src={course.cover_url} 
-              alt="" 
+              src={toMediaUrl(course.cover_url)}
+              alt=""
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
+              }}
               className="w-12 h-12 rounded-xl object-cover border border-slate-200 flex-shrink-0" 
             />
             <div className="flex-1 min-w-0">

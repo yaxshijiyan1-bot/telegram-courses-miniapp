@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Course } from '../types';
-import { api } from '../services/api';
+import { api, toMediaUrl } from '../services/api';
 import { useTelegram } from '../context/TelegramContext';
 import { formatPrice } from '../utils/format';
 import { InlineLoader } from 'generative-loaders';
@@ -204,7 +204,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Course Card Preview */}
               <div className="glass-chip rounded-[20px] p-3.5 flex items-center justify-between">
                 <div className="min-w-0 pr-2 flex items-center space-x-2.5">
-                  <img src={course.cover_url} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-200 flex-shrink-0" />
+                  <img src={toMediaUrl(course.cover_url)} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-200 flex-shrink-0" />
                   <div className="min-w-0">
                     <span className="text-[9px] font-extrabold text-cyan uppercase tracking-[0.14em] block">
                       {course.category}

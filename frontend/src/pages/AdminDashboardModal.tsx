@@ -1466,7 +1466,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       >
                         <div className="flex items-center space-x-3 min-w-0">
                           <img
-                            src={c.cover_url}
+                            src={toMediaUrl(c.cover_url)}
                             alt={c.title}
                             className="w-12 h-12 rounded-xl object-cover border border-slate-200 flex-shrink-0"
                           />
