@@ -122,7 +122,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   // Instructor & Learning Outcomes Section States
   const [courseInstructorName, setCourseInstructorName] = useState('Kreativ AI');
   const [courseInstructorTitle, setCourseInstructorTitle] = useState('Katta Ekspert');
-  const [courseInstructorAvatar, setCourseInstructorAvatar] = useState('/images/yaxshi_bola.jpg');
+  const [courseInstructorAvatar, setCourseInstructorAvatar] = useState('/images/ustoz_yaxshi_bola.webp');
   const [showInstructor, setShowInstructor] = useState(true);
   const [showOutcomes, setShowOutcomes] = useState(true);
   const [courseLearningOutcomes, setCourseLearningOutcomes] = useState<string[]>([]);
@@ -298,7 +298,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseCustomInfo(Array.isArray(c.custom_info) ? c.custom_info : []);
     setCourseInstructorName(c.instructor_name || 'Kreativ AI');
     setCourseInstructorTitle(c.instructor_title || 'Katta Ekspert');
-    setCourseInstructorAvatar(c.instructor_avatar || '/images/yaxshi_bola.jpg');
+    setCourseInstructorAvatar(c.instructor_avatar || '/images/ustoz_yaxshi_bola.webp');
     setShowInstructor(c.show_instructor !== false);
     setShowOutcomes(c.show_outcomes !== false);
     setCourseLearningOutcomes(Array.isArray(c.learning_outcomes) ? c.learning_outcomes : []);
@@ -321,7 +321,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseCustomInfo([]);
     setCourseInstructorName('Kreativ AI');
     setCourseInstructorTitle('Katta Ekspert');
-    setCourseInstructorAvatar('/images/yaxshi_bola.jpg');
+    setCourseInstructorAvatar('/images/ustoz_yaxshi_bola.webp');
     setShowInstructor(true);
     setShowOutcomes(true);
     setCourseLearningOutcomes([]);
@@ -429,7 +429,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           custom_info: courseCustomInfo,
           instructor_name: courseInstructorName || 'Kreativ AI',
           instructor_title: courseInstructorTitle || 'Katta Ekspert',
-          instructor_avatar: courseInstructorAvatar || '/images/yaxshi_bola.jpg',
+          instructor_avatar: courseInstructorAvatar || '/images/ustoz_yaxshi_bola.webp',
           show_instructor: showInstructor,
           show_outcomes: showOutcomes,
           learning_outcomes: courseLearningOutcomes
@@ -456,7 +456,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           short_description: courseDesc.slice(0, 120) || courseTitle,
           instructor_name: courseInstructorName || 'Kreativ AI',
           instructor_title: courseInstructorTitle || 'Katta Ekspert',
-          instructor_avatar: courseInstructorAvatar || '/images/yaxshi_bola.jpg',
+          instructor_avatar: courseInstructorAvatar || '/images/ustoz_yaxshi_bola.webp',
           show_instructor: showInstructor,
           show_outcomes: showOutcomes,
           learning_outcomes: courseLearningOutcomes,
@@ -1545,7 +1545,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             type="text"
                             value={courseInstructorAvatar}
                             onChange={(e) => setCourseInstructorAvatar(e.target.value)}
-                            placeholder="/images/yaxshi_bola.jpg yoki https://..."
+                            placeholder="/images/ustoz_yaxshi_bola.webp yoki https://..."
                             className="glass-input text-xs w-full bg-white"
                           />
                         </div>

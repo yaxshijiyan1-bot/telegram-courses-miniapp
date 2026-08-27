@@ -161,8 +161,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         <div className="grid grid-cols-2 gap-2.5">
           {[
-            { name: 'Yaxshi Bola', tag: '@yomonboia', avatar: '/images/yaxshi_bola.jpg' },
-            { name: 'Zuhra Olimova', tag: '@sokin_notalar', avatar: '/images/zuhra_olimova.jpg' },
+            { name: 'Yaxshi Bola', tag: '@yomonboia', avatar: '/images/ustoz_yaxshi_bola.webp' },
+            { name: 'Zuhra Olimova', tag: '@sokin_notalar', avatar: '/images/ustoz_zuhra_olimova.webp' },
           ].map((mentor) => (
             <a
               key={mentor.tag}

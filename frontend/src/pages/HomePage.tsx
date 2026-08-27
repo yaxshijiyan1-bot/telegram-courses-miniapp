@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Course, ContinueLearningData, Banner } from '../types';
 import { CourseCard } from '../components/CourseCard';
+import { InstructorsSection } from '../components/InstructorsSection';
 import { useTelegram } from '../context/TelegramContext';
 import { getToday } from '../utils/format';
 import { api, toMediaUrl } from '../services/api';
@@ -413,6 +414,11 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </motion.div>
       )}
+
+      {/* ==== 7. Ustozlar haqida ==== */}
+      <motion.div variants={item}>
+        <InstructorsSection />
+      </motion.div>
     </motion.div>
   );
 };

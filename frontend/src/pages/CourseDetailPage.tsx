@@ -302,10 +302,10 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         {showInstructor && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm flex items-center space-x-3.5">
             <img
-              src={course.instructor_avatar || (course.instructor_name?.includes('Zuhra') ? '/images/zuhra_olimova.jpg' : '/images/yaxshi_bola.jpg')}
+              src={course.instructor_avatar || (course.instructor_name?.includes('Zuhra') ? '/images/ustoz_zuhra_olimova.webp' : '/images/ustoz_yaxshi_bola.webp')}
               alt={course.instructor_name || 'Muallif'}
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/images/yaxshi_bola.jpg';
+                (e.currentTarget as HTMLImageElement).src = '/images/ustoz_yaxshi_bola.webp';
               }}
               className="w-12 h-12 rounded-2xl object-cover border border-slate-200 flex-shrink-0"
             />
