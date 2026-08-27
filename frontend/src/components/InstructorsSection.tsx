@@ -96,7 +96,7 @@ export const INSTRUCTORS: Instructor[] = [
     socials: [
       { icon: Instagram, label: 'odobli.ai', url: 'https://www.instagram.com/odobli.ai?igsi=OWZlZnhiano2Z2x0' },
       { icon: Facebook, label: 'Facebook', url: 'https://www.facebook.com/share/1F1tuV2C9L/' },
-      { icon: Send, label: '@yomonboia', url: 'https://t.me/yomonboia' },
+      { icon: Send, label: '@yaxshiboIa', url: 'https://t.me/yaxshiboIa' },
     ],
   },
 ];

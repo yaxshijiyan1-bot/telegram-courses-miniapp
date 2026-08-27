@@ -547,7 +547,7 @@ async def _send_help(client: httpx.AsyncClient, chat_id: int) -> None:
         chat_id,
         "🤝 <b>Kreativ AI — Yordam markazi</b>\n\n"
         "To'lov, kurslar, yopiq kanallar yoki takliflar bo'yicha superadminlarga yozing:\n\n"
-        "👤 <b>Yaxshi Bola</b> — @yomonboia\n"
+        "👤 <b>Yaxshi Bola</b> — @yaxshiboIa\n"
         "👤 <b>Zuhra Olimova</b> — @sokin_notalar",
         {"inline_keyboard": [
             [{"text": "🚀 Kreativ AI Mini App", "web_app": {"url": settings.WEBAPP_URL}}],

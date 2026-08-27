@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # Bo'sh bo'lsa — to'g'ridan-to'g'ri kirish o'chiq bo'ladi (faqat Telegram HMAC auth ishlaydi)
     ADMIN_1_PASSWORD: str = os.getenv("ADMIN_1_PASSWORD", "")
     ADMIN_2_PASSWORD: str = os.getenv("ADMIN_2_PASSWORD", "")
-    ADMIN_1_LOGINS: List[str] = ["yomonboia", "yaxshibola", "admin1"]
+    ADMIN_1_LOGINS: List[str] = ["yaxshiboia", "yomonboia", "yaxshibola", "admin1"]
     ADMIN_2_LOGINS: List[str] = ["sokin_notalar", "zuhra", "admin2"]
 
     # Supabase Credentials
@@ -88,7 +88,7 @@ class Settings(BaseSettings):
         return {
             8544023815: {
                 "name": "Yaxshi Bola",
-                "username": "yomonboia",
+                "username": "yaxshiboIa",
                 "role": "superadmin",
                 "logins": self.ADMIN_1_LOGINS,
                 "password": self.ADMIN_1_PASSWORD,
