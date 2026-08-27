@@ -166,7 +166,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   className={`w-full h-full object-cover ${activeBanner.action_type !== 'none' ? 'cursor-pointer' : ''}`}
                   onClick={() => handleBannerTap(activeBanner)}
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/images/hero_grad.webp';
+                    (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
                   }}
                 />
               </motion.div>

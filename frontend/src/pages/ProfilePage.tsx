@@ -16,10 +16,6 @@ import {
 import { Certificate, NotificationItem } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { useAuth } from '../context/AuthContext';
-// Admin panel faqat kerak bo'lganda yuklanadi — asosiy bundle yengilroq bo'ladi
-const AdminDashboardModal = React.lazy(() =>
-  import('./AdminDashboardModal').then((m) => ({ default: m.AdminDashboardModal }))
-);
 import { relativeTime } from '../utils/format';
 
 interface ProfilePageProps {
@@ -28,6 +24,7 @@ interface ProfilePageProps {
   dashboardData: any;
   onNotificationsRead: () => void;
   onNavigateToCourses: () => void;
+  onOpenAdmin: () => void;
 }
 
 const container = {
@@ -45,10 +42,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   dashboardData,
   onNotificationsRead,
   onNavigateToCourses,
+  onOpenAdmin,
 }) => {
   const { user } = useAuth();
   const { haptic, user: tgUser } = useTelegram();
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [showCertModal, setShowCertModal] = useState(false);
 
   const isSuperadmin = user?.role === 'superadmin' || tgUser?.id === 8544023815 || tgUser?.id === 8112688757;
@@ -130,7 +127,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               type="button"
               onClick={() => {
                 haptic.impact('medium');
-                setIsAdminOpen(true);
+                onOpenAdmin();
               }}
               className="w-full p-3.5 flex items-center justify-between bg-cyan/[0.05] hover:bg-cyan/[0.09] transition-colors text-left"
             >
@@ -212,16 +209,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
 
 
-      {/* Superadmin */}
-      {isAdminOpen && (
-        <React.Suspense fallback={null}>
-          <AdminDashboardModal
-            isOpen={isAdminOpen}
-            onClose={() => setIsAdminOpen(false)}
-            adminName={displayName}
-          />
-        </React.Suspense>
-      )}
     </motion.div>
   );
 };

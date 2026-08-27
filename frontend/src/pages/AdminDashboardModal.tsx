@@ -60,14 +60,7 @@ const TABS: { id: AdminTab; label: string; icon: typeof Clock }[] = [
 
 const PRESET_COVERS = [
   { url: '/images/hero_books.jpg', label: '3D Kitoblar & Muhr' },
-  { url: '/images/course_design.jpg', label: '3D Dizayn & Lenta' },
-  { url: '/images/course_biz.jpg', label: '3D Biznes & Yulduz' },
-  { url: '/images/course_marketing.jpg', label: '3D Marketing Lamp' },
   { url: '/images/hero_seal.webp', label: '3D Gradient Muhr' },
-  { url: '/images/hero_grad.webp', label: '3D Bitiruv' },
-  { url: '/images/ai_course.jpg', label: '3D AI & Data' },
-  { url: '/images/code_course.jpg', label: '3D Kod Terminal' },
-  { url: '/images/market_course.jpg', label: '3D Growth Chart' },
 ];
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
@@ -266,11 +259,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         setCourseLevel(d.level || "Boshlang'ich va Professional");
         setCourseDesc(d.description || d.short_description || '');
         
-        if (d.category === 'Dizayn') setCourseCoverUrl('/images/course_design.jpg');
-        else if (d.category === 'Biznes') setCourseCoverUrl('/images/course_biz.jpg');
-        else if (d.category === 'Marketing') setCourseCoverUrl('/images/course_marketing.jpg');
-        else if (d.category === 'Dasturlash') setCourseCoverUrl('/images/code_course.jpg');
-        else setCourseCoverUrl('/images/ai_course.jpg');
+        setCourseCoverUrl('/images/hero_books.jpg');
 
         showNotification(`✨ Qwen kurs tuzilmasini yaratdi! Quyida tekshirib saqlang.`);
         setAiTopic('');
@@ -1295,7 +1284,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         type="text"
                         value={newGalleryUrl}
                         onChange={(e) => setNewGalleryUrl(e.target.value)}
-                        placeholder="Rasm URL manzili: masalan /images/ai_course.jpg yoki https://..."
+                        placeholder="Rasm URL manzili: masalan /images/hero_books.jpg yoki https://..."
                         className="glass-input flex-1 text-xs"
                       />
                       <button

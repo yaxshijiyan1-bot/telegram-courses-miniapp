@@ -17,9 +17,9 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
 
   return (
     <div className="min-h-screen flex-1 flex flex-col justify-between p-6 bg-white text-slate-900 select-none relative overflow-hidden">
-      {/* Ambient glows */}
-      <div className="absolute -top-32 -left-24 w-80 h-80 rounded-full bg-cyan/[0.08] blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-36 -right-24 w-96 h-96 rounded-full bg-violet/[0.06] blur-[110px] pointer-events-none" />
+      {/* Ambient glows — radial gradient (blur filterisiz, GPU'ga yuklama bermaydi) */}
+      <div className="blob blob-cyan absolute -top-32 -left-24 w-80 h-80 pointer-events-none" />
+      <div className="blob blob-violet absolute -bottom-36 -right-24 w-96 h-96 pointer-events-none" />
 
       {/* Top brand pill */}
       <motion.div

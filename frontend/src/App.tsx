@@ -91,6 +91,9 @@ export const AppContent: React.FC = () => {
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
+  // Qidiruv signali: Header'dagi lupa bosilganda Katalog tabiga o'tiladi va
+  // qidiruv maydoniga fokus beriladi (signal har bosishda oshiriladi)
+  const [searchFocusSignal, setSearchFocusSignal] = useState(0);
   // Sotib olingan kurslar: localStorage kesh (ochilishdayoq filtrlaydi) + joriy
   // sessiyada chek orqali qo'shilganlari. Dashboard yuklanishi bilan kesh yangilanadi.
   const [cachedPurchasedIds, setCachedPurchasedIds] = useState<string[]>(readPurchasedCache);
@@ -189,6 +192,15 @@ export const AppContent: React.FC = () => {
     window.addEventListener('hashchange', checkHash);
     return () => window.removeEventListener('hashchange', checkHash);
   }, [user?.role, user?.telegram_id]);
+
+  // Admin panel chunk'ini oldindan isitamiz (faqat adminlar uchun): ilova
+  // bo'sh vaqtida yuklab qo'yamiz, panel ochilganda kutish/qotish bo'lmaydi
+  const isAdminUser = user?.role === 'superadmin' || user?.telegram_id === 8544023815 || user?.telegram_id === 8112688757;
+  useEffect(() => {
+    if (!isAdminUser) return;
+    const t = window.setTimeout(() => { import('./pages/AdminDashboardModal'); }, 4000);
+    return () => window.clearTimeout(t);
+  }, [isAdminUser]);
 
   // Data states
   const [courses, setCourses] = useState<Course[]>([]);
@@ -422,7 +434,10 @@ export const AppContent: React.FC = () => {
       <div className="flex-shrink-0 z-30 relative">
         <Header
           onOpenNotifications={() => setIsNotifsOpen(true)}
-          onOpenSearch={() => setActiveTab('courses')}
+          onOpenSearch={() => {
+            setActiveTab('courses');
+            setSearchFocusSignal((n) => n + 1);
+          }}
           onOpenProfile={() => setActiveTab('profile')}
           unreadCount={unreadCount}
         />
@@ -459,6 +474,7 @@ export const AppContent: React.FC = () => {
             purchasesLoading={purchasesLoading}
             onSelectCourse={(c) => setSelectedCourse(c)}
             onNavigateToLearning={() => setActiveTab('learning')}
+            searchFocusSignal={searchFocusSignal}
           />
         </div>
 
@@ -486,6 +502,7 @@ export const AppContent: React.FC = () => {
               dashboardData={dashboardData}
               onNotificationsRead={refreshNotifications}
               onNavigateToCourses={() => setActiveTab('courses')}
+              onOpenAdmin={() => setIsAdminOpen(true)}
             />
           ) : (
             <LoginPage

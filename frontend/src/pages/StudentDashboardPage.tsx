@@ -62,7 +62,7 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({
             <div className="flex items-start space-x-3.5 relative z-10">
               <div className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200">
                 <img
-                  src={continueItem.course_cover || '/images/ai_course.jpg'}
+                  src={continueItem.course_cover || '/images/hero_books.jpg'}
                   alt={continueItem.course_title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 />

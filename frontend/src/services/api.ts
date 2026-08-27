@@ -30,7 +30,7 @@ export const MOCK_COURSES: Course[] = [
     category: 'AI',
     short_description: "Gemini 3.7, Claude va ChatGPT orqali biznes, dasturlash va avtomatizatsiyani 10x tezlashtirish.",
     description: "Ushbu keng qamrovli kursda siz zamonaviy LLM modellari, Antigravity agentlar tizimi, vizual generatsiya va AI orqali real loyihalarni noldan professional darajada boshqarishni o'rganasiz.",
-    cover_url: '/images/ai_course.jpg',
+    cover_url: '/images/hero_books.jpg',
     preview_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     price: 490000,
     old_price: 890000,
@@ -121,7 +121,7 @@ export const MOCK_COURSES: Course[] = [
     category: 'Dizayn',
     short_description: 'Figma, Design Systems va Apple Human Interface asosida mukammal mobil interfeyslar yaratish.',
     description: "Figma Masterclass, zamonaviy dizayn tokenlari, mikro-animatsiyalar, tipografiya va Telegram Mini App interfeyslarini xalqaro standartda yaratish bo'yicha to'liq amaliy qo'llanma.",
-    cover_url: '/images/design_course.jpg',
+    cover_url: '/images/hero_seal.webp',
     preview_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     price: 550000,
     old_price: 950000,
@@ -135,7 +135,7 @@ export const MOCK_COURSES: Course[] = [
     instructor_bio: "Fintech, EdTech va Telegram Mini App interfeyslari bo'yicha yetakchi Art Director.",
     rating: 5.0,
     student_count: 980,
-    gallery_urls: ['/images/course_design.jpg', '/images/design_course.jpg', '/images/hero_books.jpg']
+    gallery_urls: ['/images/hero_books.jpg', '/images/hero_seal.webp']
   },
   {
     id: 'c3333333-3333-3333-3333-333333333333',
@@ -144,7 +144,7 @@ export const MOCK_COURSES: Course[] = [
     category: 'Dasturlash',
     short_description: 'FastAPI, React, TypeScript va Telegram WebApp SDK orqali real Mini Applar va to‘lov tizimlarini qurish.',
     description: "Telegram platformasida Click, Payme, Supabase va Cloudflare R2 bilan ishlovchi to'liq tijoriy Mini Applarni ishlab chiqish, serverga deploy qilish va yuritish bo'yicha eng sara kurs.",
-    cover_url: '/images/code_course.jpg',
+    cover_url: '/images/hero_books.jpg',
     preview_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     price: 690000,
     old_price: 1200000,
@@ -158,7 +158,7 @@ export const MOCK_COURSES: Course[] = [
     instructor_bio: "High-load tizimlar va Telegram ekotizimi bo'yicha yetakchi dasturchi va arxitektor.",
     rating: 4.9,
     student_count: 1850,
-    gallery_urls: ['/images/code_course.jpg', '/images/hero_books.jpg', '/images/course_biz.jpg']
+    gallery_urls: ['/images/hero_books.jpg', '/images/hero_seal.webp']
 
   },
   {
@@ -168,7 +168,7 @@ export const MOCK_COURSES: Course[] = [
     category: 'Marketing',
     short_description: 'Telegram va Instagram kanallardan yuqori chekli mijozlarni jalb qilish va sotuv voronkalari.',
     description: "Kontent reja, auditoriyani isitish (lead warming), video reels skriptlari, psixologik triggerlar va to'g'ri narxlash orqali barqaror daromad qilish sirlari.",
-    cover_url: '/images/market_course.jpg',
+    cover_url: '/images/hero_seal.webp',
     preview_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     price: 390000,
     old_price: 700000,
