@@ -16,7 +16,7 @@ import { NotificationsPanel } from './components/NotificationsPanel';
 
 import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
-import { api, MOCK_COURSES } from './services/api';
+import { api, MOCK_COURSES, toMediaUrl } from './services/api';
 import { Course, Lesson, Certificate, NotificationItem, Banner } from './types';
 import { AdminDashboardModal } from './pages/AdminDashboardModal';
 import { TelegramGate } from './components/TelegramGate';
@@ -246,6 +246,14 @@ export const AppContent: React.FC = () => {
       const bn = await api.getBanners();
       setBanners(bn);
       writeBannersCache(bn);
+      // Rasm baytlarini oldindan isitamiz: slayd almashganda yoki tab qaytganda
+      // WebView keshdan oladi, R2 ga qayta murojaat qilmaydi
+      bn.forEach((b) => {
+        if (b.image_url) {
+          const img = new Image();
+          img.src = toMediaUrl(b.image_url);
+        }
+      });
     } catch {
       // Offline — keshdagi bannerlar qoladi
     } finally {

@@ -30,14 +30,21 @@ class R2StorageClient:
         """
         return f"{settings.API_PUBLIC_URL}/api/media/{object_key.lstrip('/')}"
 
-    def generate_presigned_url(self, object_key: str, expires_in: int = 7200) -> str:
-        """Video darsni xavfsiz tomosha qilish uchun presigned GET URL beradi"""
+    def generate_presigned_url(self, object_key: str, expires_in: int = 7200, response_cache_control: str | None = None) -> str:
+        """Video darsni xavfsiz tomosha qilish uchun presigned GET URL beradi.
+
+        response_cache_control berilsa, R2 javobiga shu Cache-Control qo'shiladi —
+        brauzer rasm baytlarini keshlab qoladi (banner/muqova kabi ommaviy rasmlar uchun).
+        """
         if not self.s3_client:
             return ""
         try:
+            params = {"Bucket": self.bucket_name, "Key": object_key}
+            if response_cache_control:
+                params["ResponseCacheControl"] = response_cache_control
             url = self.s3_client.generate_presigned_url(
                 "get_object",
-                Params={"Bucket": self.bucket_name, "Key": object_key},
+                Params=params,
                 ExpiresIn=expires_in
             )
             return url

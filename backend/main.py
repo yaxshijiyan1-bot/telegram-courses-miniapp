@@ -46,11 +46,15 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 # Dinamik API javoblari (bannerlar, kurslar, sotib olishlar) hech qayerda keshlanmasligi
 # kerak — aks holda Telegram WebView'da eski ma'lumot ko'rinib qoladi.
-# Rasm baytlari to'g'ridan-to'g'ri R2 dan oqadi, bu sarlavha yuklamani oshirmaydi.
+# /api/media/ bundan mustasno: u rasmlarga 307 redirect qaytaradi va ular keshlanishi
+# shart — aks holda har tab almashganda rasm R2 dan qayta yuklanib, sekin ochiladi.
 @app.middleware("http")
 async def no_cache_api(request: Request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith("/api/"):
+    path = request.url.path
+    if path.startswith("/api/media/"):
+        response.headers.setdefault("Cache-Control", "public, max-age=86400, immutable")
+    elif path.startswith("/api/"):
         response.headers.setdefault("Cache-Control", "no-store, max-age=0")
     return response
 
@@ -79,9 +83,18 @@ from app.core.r2 import r2_client
 
 @app.get("/api/media/{object_key:path}")
 async def serve_media(object_key: str):
-    """Cloudflare R2 dagi rasmlar va medialarni xavfsiz va to'g'ridan-to'g'ri ochib berish"""
+    """Cloudflare R2 dagi rasmlar va medialarni xavfsiz va to'g'ridan-to'g'ri ochib berish.
+
+    Presigned URL 25 soat amal qiladi, kesh esa 24 soat — shunda keshlangan
+    havola muddati hech qachon tugamagan holda qayta ishlatiladi. Fayl nomlari
+    tasodifiy (hash) bo'lgani uchun 'immutable' xavfsiz: yangi rasm = yangi URL.
+    """
     object_key = r2_client.normalize_key(object_key)
-    presigned = r2_client.generate_presigned_url(object_key, expires_in=3600)
+    presigned = r2_client.generate_presigned_url(
+        object_key,
+        expires_in=90000,
+        response_cache_control="public, max-age=86400, immutable",
+    )
     if not presigned:
         raise HTTPException(status_code=503, detail="Media xizmati vaqtincha ishlamayapti (R2 sozlanmagan)")
     return RedirectResponse(url=presigned, status_code=307)
