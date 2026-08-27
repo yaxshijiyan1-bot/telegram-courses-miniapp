@@ -217,7 +217,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       ) : (
         <motion.section
           variants={item}
-          className="relative w-full rounded-[24px] overflow-hidden bg-slate-900 shadow-xl min-h-[190px]"
+          className="relative w-full rounded-[24px] overflow-hidden bg-slate-900 shadow-xl aspect-[21/9]"
         >
           <img
             src="/images/hero_grad.webp"
@@ -226,32 +226,21 @@ export const HomePage: React.FC<HomePageProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 to-slate-900/20" />
 
-          <div className="relative z-10 p-5 flex flex-col h-full min-h-[190px] justify-center">
-            <div className="inline-flex items-center space-x-1 mb-3">
+          <div className="relative z-10 px-5 h-full flex flex-col justify-center">
+            <div className="inline-flex items-center space-x-1 mb-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
-              <span className="text-[10px] font-bold tracking-widest text-cyan uppercase">
+              <span className="text-[9px] font-bold tracking-widest text-cyan uppercase">
                 Kreativ AI · 2026
               </span>
             </div>
 
-            <h2 className="text-2xl sm:text-[26px] font-extrabold text-white leading-tight mb-2 tracking-tight max-w-[240px]">
+            <h2 className="text-lg sm:text-xl font-extrabold text-white leading-tight tracking-tight max-w-[250px]">
               Kelajak kasblarini <span className="text-cyan">biz bilan</span> o'rganing
             </h2>
 
-            <p className="text-xs text-slate-300 font-medium mb-5 max-w-[210px] leading-relaxed opacity-90">
+            <p className="text-[10px] text-slate-300 font-medium mt-1 max-w-[220px] leading-snug opacity-90">
               Dasturlash va sun'iy intellekt orqali daromadingizni oshiring.
             </p>
-
-            <button
-              onClick={() => {
-                haptic?.impact?.('light');
-                onNavigateToCatalog();
-              }}
-              className="self-start inline-flex items-center space-x-2 bg-white text-slate-900 px-5 py-2.5 rounded-[14px] text-xs font-bold active:scale-95 transition-transform"
-            >
-              <span>Kurslarni ko'rish</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
           </div>
         </motion.section>
       )}
