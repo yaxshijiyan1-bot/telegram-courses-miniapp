@@ -1,53 +1,31 @@
-import os
+import re
 import json
-import urllib.request
+import time
+import asyncio
+import logging
 import urllib.error
-from typing import Optional, List, Dict, Any
+import urllib.request
+from typing import Optional, List, Dict
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.core.config import settings
+from app.core.security import get_current_admin
 
-router = APIRouter(prefix="/ai", tags=["AI Assistant"])
-
-class ChatMessage(BaseModel):
-    role: str  # "user", "assistant", "system"
-    content: str
-
-class AIChatRequest(BaseModel):
-    message: str
-    history: Optional[List[ChatMessage]] = []
-    course_title: Optional[str] = None
-    lesson_title: Optional[str] = None
-    context: Optional[str] = None
-
-class AIChatResponse(BaseModel):
-    reply: str
-    provider: str
-    model: str
-    suggestions: List[str]
+# AI chat talabalar uchun olib tashlangan — bu modul faqat admin kurs generatorini saqlaydi.
+router = APIRouter(prefix="/ai", tags=["AI Course Generator (Admin)"])
+logger = logging.getLogger(__name__)
 
 class GenerateCourseRequest(BaseModel):
     topic: str
     category: Optional[str] = "AI"
     target_audience: Optional[str] = "Boshlang'ich va Professional"
 
-SYSTEM_PROMPT = """Siz — "Course Academy" (Kurslarimiz) platformasining 2026-yilgi professional Sun'iy Intellekt va Dasturlash bo'yicha shaxsiy AI Mentorisiz.
-Ismingiz: "Kurslar AI Yordamchisi (ox-alpha)".
-Siz talabalarga darslarni o'zlashtirishda, kod yozishda, xatolarni tuzatishda va amaliy loyihalarni rejalashtirishda yordam berasiz.
-
-Qoidalar:
-1. Doimo o'zbek tilida, do'stona, aniq, lo'nda va professional javob bering.
-2. Kod yozganda zamonaviy standartlardan (React 19, TypeScript, Python 3.12, FastAPI, Supabase, Tailwind CSS, Antigravity) foydalaning va tushunarli izohlar qoldiring.
-3. Agar foydalanuvchi ma'lum bir kurs yoki dars bo'yicha savol bersa, kontekstga moslab javob bering.
-4. Foydalanuvchiga qo'shimcha o'rganish uchun 2-3 ta qisqa taklif (keyingi qadam) bering.
-"""
-
 def call_openrouter_api(messages: List[Dict[str, str]], model_override: Optional[str] = None) -> Optional[str]:
-    """OpenRouter API inference (stealth/ox-alpha default)"""
+    """OpenRouter orqali Qwen inference; xato bo'lsa fallbackga yo'l beradi."""
     api_key = settings.OPENROUTER_API_KEY
     if not api_key:
         return None
-    model = model_override or settings.OPENROUTER_MODEL or "stealth/ox-alpha"
+    model = model_override or settings.OPENROUTER_MODEL or "qwen/qwen3.8-flash"
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -59,19 +37,32 @@ def call_openrouter_api(messages: List[Dict[str, str]], model_override: Optional
         "model": model,
         "messages": messages,
         "temperature": 0.6,
-        "max_tokens": 2000
+        "max_tokens": max(64, min(settings.OPENROUTER_MAX_TOKENS, 2000))
     }
-    try:
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=16) as response:
-            data = json.loads(response.read().decode("utf-8"))
-            return data["choices"][0]["message"]["content"]
-    except Exception as e:
-        print(f"[AI] OpenRouter error: {e}")
-        return None
+    retryable_statuses = {429, 500, 502, 503, 504}
+    attempts = max(1, min(settings.OPENROUTER_RETRY_ATTEMPTS + 1, 3))
+    for attempt in range(attempts):
+        try:
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=16) as response:
+                data = json.loads(response.read().decode("utf-8"))
+                return data["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as exc:
+            error_text = exc.read().decode("utf-8", "replace")[:500]
+            if exc.code in retryable_statuses and attempt < attempts - 1:
+                # 429 javobida token ishlatilmaydi; qisqa retry shared providerdagi
+                # vaqtinchalik navbatni chetlab o'tishi mumkin.
+                time.sleep(0.75 * (attempt + 1))
+                continue
+            logger.warning("OpenRouter %s xatosi: %s", exc.code, error_text)
+            return None
+        except Exception as exc:
+            logger.warning("OpenRouter so'rovi bajarilmadi: %s", exc)
+            return None
+    return None
 
 def call_groq_api(messages: List[Dict[str, str]]) -> Optional[str]:
-    """Groq Llama 3.3 70B inference via HTTP"""
+    """Groq Llama 3.3 70B inference via HTTP (faqat admin yoqqan fallback)"""
     api_key = settings.GROQ_API_KEY
     if not api_key:
         return None
@@ -92,143 +83,23 @@ def call_groq_api(messages: List[Dict[str, str]]) -> Optional[str]:
             data = json.loads(response.read().decode("utf-8"))
             return data["choices"][0]["message"]["content"]
     except Exception as e:
-        print(f"[AI] Groq call error: {e}")
+        logger.warning("[AI] Groq call error: %s", e)
         return None
-
-def call_gemini_api(prompt_text: str) -> Optional[str]:
-    """Gemini 2.5 Flash API via HTTP"""
-    api_key = settings.GEMINI_API_KEY
-    if not api_key:
-        return None
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-    headers = {"Content-Type": "application/json"}
-    payload = {
-        "contents": [
-            {"parts": [{"text": f"{SYSTEM_PROMPT}\n\nFoydalanuvchi savoli: {prompt_text}"}]}
-        ]
-    }
-    try:
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=12) as response:
-            data = json.loads(response.read().decode("utf-8"))
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception as e:
-        print(f"[AI] Gemini call error: {e}")
-        return None
-
-def smart_fallback_reply(query: str, course_title: Optional[str] = None, lesson_title: Optional[str] = None) -> str:
-    """Intelligent fallback knowledge engine when external API keys are not set"""
-    q_lower = query.lower()
-    ctx_info = f" ({course_title} kursi bo'yicha)" if course_title else ""
-    
-    if "prompt" in q_lower or "ai" in q_lower or "gemini" in q_lower or "claude" in q_lower:
-        return (
-            f"💡 **AI va Prompt Engineering bo'yicha maslahat{ctx_info}:**\n\n"
-            "Mukammal prompt yaratishning 4 oltin qoidasi:\n"
-            "1. **Rol (Persona):** AI ga aniq rolni bering (masalan: *Sen Senior Frontend muhandisisan*).\n"
-            "2. **Kontekst va Cheklov:** Nima qilish kerakligi va nima taqiqlanganini ayting (*Hech qanday tashqi kutubxonasiz toza CSS yoz*).\n"
-            "3. **Format:** Natijani qanday shaklda kutayotganingizni belgilang (*Faqat JSON yoki TypeScript interfeys*).\n"
-            "4. **Few-shot misollar:** 1-2 ta namuna kiriting.\n\n"
-            "🚀 *Keyingi qadam:* Buni darsdagi amaliy mashg'ulotda darhol sinab ko'ring!"
-        )
-    elif "kod" in q_lower or "misol" in q_lower or "react" in q_lower or "typescript" in q_lower:
-        return (
-            f"💻 **2026 Zamonaviy Kod namunasi{ctx_info}:**\n\n"
-            "```typescript\n"
-            "// TanStack Query va Zustand bilan ma'lumot olish namunasi\n"
-            "import { useQuery } from '@tanstack/react-query';\n"
-            "import { api } from '../services/api';\n\n"
-            "export const useCourseData = (courseId: string) => {\n"
-            "  return useQuery({\n"
-            "    queryKey: ['course', courseId],\n"
-            "    queryFn: () => api.getCourseById(courseId),\n"
-            "    staleTime: 1000 * 60 * 5, // 5 daqiqa keshda saqlash\n"
-            "  });\n"
-            "};\n"
-            "```\n\n"
-            "Ushbu yondashuv tarmoq trafigini 10x tejaydi va foydalanuvchiga ilovani bir zumda ochish imkonini beradi."
-        )
-    elif "test" in q_lower or "savol" in q_lower or "quiz" in q_lower:
-        return (
-            f"📝 **Dars bo'yicha mini-test savollari{ctx_info}:**\n\n"
-            "1. **TanStack Query server state uchun ishlatilsa, Zustand nima uchun ishlatiladi?**\n"
-            "   - *Javob:* Faqat brauzerning lokal UI holatlari (modal, theme, filtr) uchun.\n"
-            "2. **Supabase xavfsizligida qaysi kalit hech qachon frontendga chiqmasligi shart?**\n"
-            "   - *Javob:* `SUPABASE_SERVICE_ROLE_KEY`.\n"
-            "3. **Telegram Mini Appda back button hodisasi qanday to'g'ri ushlanadi?**\n"
-            "   - *Javob:* `window.Telegram.WebApp.BackButton.onClick(...)` orqali.\n\n"
-            "Barcha savollarga to'g'ri javob berdingizmi? Yangi darsga o'tishga tayyorsiz! 🎉"
-        )
-    else:
-        return (
-            f"Salom! Men sizning **Course Academy AI Yordamchingizman**{ctx_info}.\n\n"
-            f"Sizning savolingiz: *\"{query}\"*\n\n"
-            "Men sizga darslardagi tushunarsiz mavzularni oddiy tilda tushuntirib berishim, amaliy topshiriqlar uchun tayyor kod yozib berishim yoki dars bo'yicha bilimingizni sinovdan o'tkazishim mumkin.\n\n"
-            "Quyidagi mavzulardan birini tanlashingiz mumkin:\n"
-            "• *\"Mavzuni oddiy tilda tushuntirib ber\"*\n"
-            "• *\"Menga amaliy kod misoli ko'rsat\"*\n"
-            "• *\"Bilimimni tekshirish uchun 3 ta savol ber\"*"
-        )
-
-@router.post("/chat", response_model=AIChatResponse)
-async def chat_with_ai(req: AIChatRequest):
-    """
-    AI Course Mentor endpoint with primary OpenRouter stealth/ox-alpha routing
-    """
-    messages: List[Dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
-    
-    if req.course_title or req.lesson_title:
-        ctx_msg = f"Foydalanuvchi ayni paytda o'rganayotgan kurs: '{req.course_title or 'Noma\'lum'}', dars: '{req.lesson_title or 'Noma\'lum'}'."
-        messages.append({"role": "system", "content": ctx_msg})
-        
-    for h in req.history[-6:]:
-        messages.append({"role": h.role, "content": h.content})
-        
-    messages.append({"role": "user", "content": req.message})
-
-    # 1. Try OpenRouter (stealth/ox-alpha — Free, fast, high reasoning power)
-    reply = call_openrouter_api(messages)
-    provider = "openrouter"
-    model = settings.OPENROUTER_MODEL or "stealth/ox-alpha"
-
-    # 2. Fallback to Groq (Llama 3.3 70B)
-    if not reply:
-        reply = call_groq_api(messages)
-        provider = "groq"
-        model = "llama-3.3-70b-versatile"
-
-    # 3. Fallback to Gemini 2.5 Flash
-    if not reply:
-        reply = call_gemini_api(req.message)
-        provider = "gemini"
-        model = "gemini-2.5-flash"
-
-    # 4. Fallback to intelligent local engine
-    if not reply:
-        reply = smart_fallback_reply(req.message, req.course_title, req.lesson_title)
-        provider = "smart-engine"
-        model = "kurslar-mentor-v2"
-
-    suggestions = [
-        "Mavzuni soddaroq tushuntirib ber",
-        "Amaliy kod misoli ko'rsat",
-        "Mini-test savollarini ber",
-        "Ushbu darsdan qanday loyiha qilsa bo'ladi?"
-    ]
-
-    return AIChatResponse(
-        reply=reply,
-        provider=provider,
-        model=model,
-        suggestions=suggestions
-    )
 
 @router.post("/generate-course")
-async def generate_course_curriculum(req: GenerateCourseRequest):
+async def generate_course_curriculum(
+    req: GenerateCourseRequest,
+    admin: dict = Depends(get_current_admin)
+):
     """
-    AI Course Creator for Admin Panel using stealth/ox-alpha:
+    AI Course Creator for Admin Panel using Qwen:
     Generates complete course details, modules, lessons and outcomes in JSON format.
+    Faqat admin token bilan ochiladi — aks holda istalgan odam OpenRouter
+    kreditlarini sarflashi mumkin edi.
     """
+    if not (req.topic or "").strip():
+        raise HTTPException(status_code=400, detail="Kurs mavzusi bo'sh bo'lmasligi kerak")
+
     prompt = f"""Siz — professional o'quv dasturlari arxitektorisiz.
 Quyidagi mavzu bo'yicha 2026-yilgi zamonaviy, to'liq amaliy va bozorda yuqori talabga ega o'quv kursi dasturini JSON formatida tuzing:
 Mavzu: "{req.topic}"
@@ -282,23 +153,22 @@ Javobni FAQAT to'g'ri JSON formatida bering (hech qanday markdown ```json belgis
         {"role": "user", "content": prompt}
     ]
 
-    raw_response = call_openrouter_api(messages)
-    if not raw_response:
-        raw_response = call_groq_api(messages)
+    raw_response = await asyncio.to_thread(call_openrouter_api, messages)
+    if not raw_response and settings.ENABLE_AI_PROVIDER_FALLBACKS:
+        raw_response = await asyncio.to_thread(call_groq_api, messages)
 
     if raw_response:
-        import re
         try:
             # Extract only the JSON part by finding first { and last }
             json_match = re.search(r'\{.*\}', raw_response.strip(), re.DOTALL)
             if json_match:
                 clean_json = json_match.group(0)
                 parsed = json.loads(clean_json)
-                return {"success": True, "data": parsed, "model": "stealth/ox-alpha"}
+                return {"success": True, "data": parsed, "model": settings.OPENROUTER_MODEL}
             else:
                 raise ValueError("JSON block topilmadi")
         except Exception as err:
-            print(f"[AI] JSON parsing error: {err} | Raw: {raw_response[:200]}")
+            logger.warning("[AI] JSON parsing error: %s | Raw: %s", err, raw_response[:200])
 
     # Fallback template if AI fails
     fallback_data = {

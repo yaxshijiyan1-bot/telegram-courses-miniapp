@@ -2,7 +2,7 @@ import hmac
 import hashlib
 import json
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import jwt, JWTError
 from fastapi import HTTPException, Security, status
@@ -14,9 +14,9 @@ security_bearer = HTTPBearer(auto_error=False)
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
@@ -31,7 +31,8 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
 def validate_telegram_init_data(init_data_raw: str, bot_token: str) -> Optional[Dict[str, Any]]:
     """
     Telegram WebApp initData string hashini qat'iy HMAC-SHA256 bilan tekshiradi.
-    Foydalanuvchi ma'lumotlarini soxtalashtirishdan himoya qiladi.
+    Foydalanuvchi ma'lumotlarini soxtalashtirishdan va eski initData ni qayta
+    ishlatish (replay) hujumidan himoya qiladi.
     """
     if not init_data_raw:
         return None
@@ -40,14 +41,24 @@ def validate_telegram_init_data(init_data_raw: str, bot_token: str) -> Optional[
         hash_to_check = parsed_data.pop("hash", None)
         if not hash_to_check:
             return None
-        
+
+        # Replay himoyasi: initData TELEGRAM_AUTH_MAX_AGE_HOURS dan eski bo'lmasligi kerak
+        try:
+            auth_date = float(parsed_data.get("auth_date") or 0)
+        except ValueError:
+            return None
+        max_age_seconds = max(1, settings.TELEGRAM_AUTH_MAX_AGE_HOURS) * 3600
+        if not auth_date or datetime.now(timezone.utc).timestamp() - auth_date > max_age_seconds:
+            return None
+
         # Agar bot token mavjud bo'lsa, qat'iy HMAC-SHA256 tekshiruvi
         if bot_token:
             data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed_data.items()))
             secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
             calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
-            if calculated_hash != hash_to_check:
+            # compare_digest timing-attack ga qarshi doimiy vaqtda solishtiradi
+            if not hmac.compare_digest(calculated_hash, hash_to_check):
                 return None
 
         if "user" in parsed_data:

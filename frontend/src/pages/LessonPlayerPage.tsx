@@ -15,7 +15,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Course, Lesson } from '../types';
 import { useTelegram } from '../context/TelegramContext';
-import { api } from '../services/api';
+import { api, toMediaUrl } from '../services/api';
 
 interface LessonPlayerPageProps {
   course: Course;
@@ -25,7 +25,6 @@ interface LessonPlayerPageProps {
   nextLessonId: string | null;
   onBack: () => void;
   onSelectLesson: (course: Course, lessonId: string) => void;
-  onOpenAIMentor?: () => void;
 }
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -51,7 +50,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
     await api.markLessonComplete(course.id, lesson.id);
   };
 
-  const lessonImage = (lesson as any).cover_url || course.cover_url || '/images/hero_books.jpg';
+  const lessonImage = toMediaUrl((lesson as any).cover_url || course.cover_url || '/images/hero_books.jpg');
 
   return (
     <div className="flex-1 pb-safe bg-white text-slate-900 animate-fade-up flex flex-col justify-between">
@@ -176,7 +175,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                 <div className="p-3 bg-sky-50 rounded-2xl border border-sky-100 flex items-start space-x-2.5">
                   <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
                   <p className="text-[11px] text-sky-900 leading-relaxed font-medium">
-                    Darsdagi tushunarsiz joylar bo'lsa, pastdagi <b>AI Mentor</b> tugmasi orqali istalgan savolingizni berishingiz mumkin.
+                    Darsdagi tushunarsiz joylar bo'lsa, bemalol adminlarga murojaat qiling — ular sizga yordam berishadi.
                   </p>
                 </div>
               </motion.div>

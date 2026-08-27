@@ -13,7 +13,6 @@ import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { CheckoutModal } from './components/CheckoutModal';
 import { NotificationsPanel } from './components/NotificationsPanel';
-import { AIMentorModal } from './components/AIMentorModal';
 
 import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
@@ -45,7 +44,6 @@ export const AppContent: React.FC = () => {
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
-  const [isAIMentorOpen, setIsAIMentorOpen] = useState(false);
 
   // ---- ORTQA QAYTISH HIMOYASI ----
   const navStateRef = useRef({ selectedCourse, selectedLesson, purchasedCourse });
@@ -367,15 +365,13 @@ export const AppContent: React.FC = () => {
       </main>
 
       {/* Unbreakable Symmetrical Floating Bottom Navigation */}
-      {!isNotifsOpen && !isAdminOpen && !isAIMentorOpen && (
+      {!isNotifsOpen && !isAdminOpen && (
         <BottomNav
           activeTab={activeTab}
           onChangeTab={(tab) => setActiveTab(tab)}
           isAuthenticated={isAuthenticated}
         />
       )}
-
-      {/* Global AI Mentor Modal */}
 
       {/* Global Security Toast Alert */}
       {securityWarning && (

@@ -3,6 +3,24 @@ import { Course, EnrolledCourse, ContinueLearningData, Certificate, Notification
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://kurslar-backend-api.onrender.com/api';
 const IS_DEV = import.meta.env.DEV;
 
+/**
+ * Cloudflare R2 bucket PRIVATE: *.r2.dev havolalari 403 qaytaradi.
+ * R2 URL larini backendning /api/media/{key} proksi havolasiga aylantiradi —
+ * proksi har ochilishda yangi presigned havolaga yo'naltiradi.
+ */
+export function toMediaUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith('.r2.dev') || u.hostname.endsWith('.r2.cloudflarestorage.com')) {
+      const key = u.pathname.replace(/^\/+/, '');
+      if (key) return `${API_BASE_URL}/media/${key}`;
+    }
+  } catch {
+    // Nisbiy yoki noto'g'ri URL — o'zgarishsiz qoldiriladi
+  }
+  return url;
+}
+
 // Boshlang'ich Offline/Fallback ma'lumotlar
 export const MOCK_COURSES: Course[] = [
   {
@@ -411,42 +429,7 @@ class ApiService {
     }
   }
 
-  // ===== AI MENTOR CHAT =====
-
-  async chatWithAI(params: {
-    message: string;
-    history?: { role: string; content: string }[];
-    course_title?: string;
-    lesson_title?: string;
-  }): Promise<{ reply: string; provider: string; model: string; suggestions: string[] }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getHeaders(),
-        },
-        body: JSON.stringify(params),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('[AI] Error fetching AI response, using smart fallback', err);
-    }
-
-    // Client-side fallback if backend API is unreachable
-    return {
-      reply: `Salom! Men sizning **Kreativ AI Yordamchingizman**.\n\nSizning savolingiz: "${params.message}"\n\nBu mavzu bo'yicha maslahat: Darsdagi asosiy tushunchalarni amaliyotda qo'llab ko'ring va topshiriqlarni mustaqil bajarishga harakat qiling! 🚀`,
-      provider: 'openrouter',
-      model: 'stealth/ox-alpha',
-      suggestions: [
-        "Mavzuni sodda tushuntir",
-        "Amaliy misol kod yoz",
-        "Mini-test tuz"
-      ]
-    };
-  }
+  // ===== AI KURS GENERATORI (FAQAT ADMIN) =====
 
   async generateCourseWithAI(topic: string, category: string = 'AI', targetAudience: string = "Boshlang'ich va Professional"): Promise<{
     success: boolean;
@@ -525,7 +508,7 @@ class ApiService {
           }
         ]
       },
-      model: "stealth/ox-alpha"
+      model: "qwen/qwen3.8-flash"
     };
   }
 

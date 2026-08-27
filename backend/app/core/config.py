@@ -5,6 +5,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def _int_env(name: str, default: int) -> int:
+    """env'dagi son qiymatini xatosiz o'qiydi — buzilgan qiymat defaultga qaytadi."""
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        return int(str(raw).strip())
+    except ValueError:
+        return default
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Telegram Mini App — Premium Kurslar Platformasi API"
     VERSION: str = "2.0.0"
@@ -40,11 +50,16 @@ class Settings(BaseSettings):
     # Security & JWT
     JWT_SECRET: str = os.getenv("JWT_SECRET", "")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = _int_env("ACCESS_TOKEN_EXPIRE_MINUTES", 43200)
+
+    # initData HMAC tekshiruvida qabul qilinadigan eng eski auth_date (replay himoyasi)
+    TELEGRAM_AUTH_MAX_AGE_HOURS: int = _int_env("TELEGRAM_AUTH_MAX_AGE_HOURS", 24)
 
     # WebApp URL
     WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://telegram-courses-miniapp2.pages.dev")
     WELCOME_BANNER_URL: str = os.getenv("WELCOME_BANNER_URL", "")
+    # Backendning tashqi (public) manzili — /api/media/... havolalari shu yerdan beriladi
+    API_PUBLIC_URL: str = os.getenv("API_PUBLIC_URL", "https://kurslar-backend-api.onrender.com").rstrip("/")
 
     # CORS — faqat ishonchli manbalar (Telegram Mini App o'zi frontend domenda ishlaydi)
     CORS_ORIGINS_RAW: str = os.getenv(
@@ -97,7 +112,14 @@ class Settings(BaseSettings):
 
     # AI & OpenRouter sozlamalari
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "stealth/ox-alpha")
+    # OpenRouter'da `qwen/qwen3.8-max-free` nomli model yo'q. Flash varianti
+    # AI Mentor uchun tezkor va Max'ga nisbatan ancha tejamkor.
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "qwen/qwen3.8-flash")
+    OPENROUTER_MAX_TOKENS: int = _int_env("OPENROUTER_MAX_TOKENS", 900)
+    OPENROUTER_RETRY_ATTEMPTS: int = _int_env("OPENROUTER_RETRY_ATTEMPTS", 2)
+    # False bo'lsa Qwen ishlamagan paytda Groq/Gemini krediti sarflanmaydi;
+    # ichki yordamchi javobi qaytariladi.
+    ENABLE_AI_PROVIDER_FALLBACKS: bool = os.getenv("ENABLE_AI_PROVIDER_FALLBACKS", "false").lower() == "true"
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 

@@ -7,7 +7,6 @@ interface HeaderProps {
   onOpenNotifications: () => void;
   onOpenSearch: () => void;
   onOpenProfile: () => void;
-  onOpenAIMentor?: () => void;
   unreadCount?: number;
 }
 
@@ -15,7 +14,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
   onOpenSearch,
   onOpenProfile,
-  onOpenAIMentor,
   unreadCount = 0,
 }) => {
   const { haptic, user: tgUser } = useTelegram();

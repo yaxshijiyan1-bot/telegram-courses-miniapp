@@ -2,7 +2,7 @@ import os
 import asyncio
 import uvicorn
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
@@ -69,7 +69,10 @@ from app.core.r2 import r2_client
 @app.get("/api/media/{object_key:path}")
 async def serve_media(object_key: str):
     """Cloudflare R2 dagi rasmlar va medialarni xavfsiz va to'g'ridan-to'g'ri ochib berish"""
-    presigned = r2_client.generate_presigned_url(object_key, expires_in=86400 * 7)
+    object_key = r2_client.normalize_key(object_key)
+    presigned = r2_client.generate_presigned_url(object_key, expires_in=3600)
+    if not presigned:
+        raise HTTPException(status_code=503, detail="Media xizmati vaqtincha ishlamayapti (R2 sozlanmagan)")
     return RedirectResponse(url=presigned, status_code=307)
 
 @app.get("/health")

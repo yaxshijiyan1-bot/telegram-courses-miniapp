@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { Course, EnrolledCourse, Certificate, NotificationItem, PaymentInfo } from '../types';
 
@@ -61,17 +61,5 @@ export const usePaymentInfoQuery = () => {
     queryKey: ['payment-info'],
     queryFn: () => api.getPaymentInfo(),
     staleTime: 1000 * 60 * 30,
-  });
-};
-
-// 7. AI Chat Mutation
-export const useAIChatMutation = () => {
-  return useMutation({
-    mutationFn: (params: {
-      message: string;
-      history?: { role: string; content: string }[];
-      course_title?: string;
-      lesson_title?: string;
-    }) => api.chatWithAI(params),
   });
 };

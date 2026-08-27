@@ -21,6 +21,25 @@ logger = logging.getLogger(__name__)
 # Tasdiqlangandan keyin bot va API odatda bitta jarayonda ishlaydi. Shu kichik
 # TTL kesh join requestni bazaga qayta borishsiz darhol qabul qilish imkonini beradi.
 _invite_authorization_cache: Dict[str, Dict[str, Any]] = {}
+_CACHE_MAX_SIZE = 500
+
+
+def _prune_invite_cache() -> None:
+    """Muddati o'tgan yozuvlarni olib tashlab, kesh hajmini cheklangan saqlaydi."""
+    if len(_invite_authorization_cache) < _CACHE_MAX_SIZE:
+        return
+    now = datetime.now(timezone.utc)
+    expired = []
+    for link, entry in _invite_authorization_cache.items():
+        try:
+            if datetime.fromisoformat(str(entry["expires_at"])) <= now:
+                expired.append(link)
+        except (KeyError, TypeError, ValueError):
+            expired.append(link)
+    for link in expired:
+        _invite_authorization_cache.pop(link, None)
+    while len(_invite_authorization_cache) >= _CACHE_MAX_SIZE:
+        _invite_authorization_cache.pop(next(iter(_invite_authorization_cache)), None)
 
 
 def _api_url(method: str) -> str:
@@ -145,6 +164,7 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
             if not saved:
                 raise RuntimeError("invite link bazaga saqlanmadi")
             if enrollment_granted:
+                _prune_invite_cache()
                 _invite_authorization_cache[invite_link] = {
                     "chat_id": str((course or {}).get("telegram_channel_id")),
                     "telegram_id": int(purchase.get("telegram_id") or 0),
@@ -257,3 +277,37 @@ async def is_join_request_authorized(
     user = await store.get_user_by_tg(telegram_id)
     enrollment = await store.get_enrollment(user["id"], course["id"]) if user else None
     return bool(enrollment and enrollment.get("status") == "active"), purchase
+
+
+async def revoke_join_request_link(
+    client: "httpx.AsyncClient", chat_id: int, invite_link: str
+) -> None:
+    """Join request tasdiqlangach havolani bekor qiladi — link bir martalik bo'ladi.
+
+    Bekor qilingan link orqali yangi zayavka yuborib bo'lmaydi; kanalga kirgan
+    xaridor esa kanalda qoladi. Xato bo'lsa link 72 soatlik muddati bilan
+    baribir o'chadi, shuning uchun oqim to'xtamaydi.
+    """
+    _invite_authorization_cache.pop(invite_link, None)
+    if not settings.BOT_TOKEN:
+        return
+    try:
+        response = await client.post(
+            _api_url("revokeChatInviteLink"),
+            json={"chat_id": chat_id, "invite_link": invite_link},
+        )
+        data = response.json() if response.status_code == 200 else {}
+        if not data.get("ok"):
+            logger.warning("Invite link bekor qilinmadi: %s", response.text[:250])
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.error("Invite linkni bekor qilishda xato: %s", exc)
+
+    store = get_store()
+    try:
+        purchase = await store.get_purchase_by_invite_link(invite_link)
+        if purchase:
+            await store.update_purchase(
+                purchase["id"], {"invite_expires_at": datetime.now(timezone.utc).isoformat()}
+            )
+    except Exception as exc:
+        logger.warning("Invite link muddati bazada yangilanmadi: %s", exc)

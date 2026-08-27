@@ -15,13 +15,13 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from app.api.ai import SYSTEM_PROMPT, call_groq_api, call_openrouter_api
 from app.core.config import settings
 from app.core.r2 import r2_client
 from app.services.purchases import (
     approve_purchase,
     is_join_request_authorized,
     reject_purchase,
+    revoke_join_request_link,
 )
 from app.storage import get_store
 
@@ -100,6 +100,16 @@ async def send_tg_photo(
 
 async def send_tg_chat_action(client: httpx.AsyncClient, chat_id: int, action: str = "typing") -> None:
     await _telegram_call(client, "sendChatAction", {"chat_id": chat_id, "action": action})
+
+
+def _resolve_media_url(url: str) -> str:
+    """R2 media havolalarini Telegram yubora oladigan to'g'ridan-to'g'ri URL ga aylantiradi.
+
+    /api/media/{key} havolalari 307 redirect qaytaradi, Telegram sendPhoto esa
+    redirectlarni kuzatmaydi — shuning uchun kalit bo'yicha presigned URL ochamiz.
+    """
+    resolved = r2_client.resolve_stream_url(url, expires_in=86400)
+    return str(resolved or "").strip()
 
 
 async def _answer_callback(client: httpx.AsyncClient, query_id: str, text: str = "") -> None:
@@ -191,7 +201,7 @@ async def show_course_card(client: httpx.AsyncClient, chat_id: int, index: int) 
     course = courses[index]
     keyboard = _course_keyboard(course, index, len(courses))
     caption = _course_caption(course)
-    cover_url = str(course.get("cover_url") or "")
+    cover_url = _resolve_media_url(course.get("cover_url") or "")
     if cover_url.startswith(("https://", "http://")):
         result = await send_tg_photo(client, chat_id, cover_url, caption, keyboard)
         if result.get("ok"):
@@ -466,15 +476,15 @@ async def handle_callback_query(client: httpx.AsyncClient, callback_query: Dict[
         await _answer_callback(client, query_id)
         await _send_help(client, int(chat_id))
         return
-    if data == "ai:info":
-        await _answer_callback(client, query_id)
-        await send_tg_message(client, int(chat_id), "🤖 AI Mentor bilan gaplashish uchun savolingizni yozing yoki <code>/ai savolingiz</code> formatidan foydalaning.")
-        return
     await _answer_callback(client, query_id, "Bu tugma endi faol emas")
 
 
 async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict[str, Any]) -> None:
-    """Link va xaridor akkaunti mos kelgandagina join requestni tasdiqlaydi."""
+    """Link va xaridor akkaunti mos kelgandagina join requestni tasdiqlaydi.
+
+    Tasdiqlangach havola darhol bekor qilinadi (bir martalik link): uni boshqa
+    odamga qayta yuborib yoki eski zayavkani qayta bosib kirib bo'lmaydi.
+    """
     chat = join_request.get("chat") or {}
     requester = join_request.get("from") or {}
     chat_id = chat.get("id")
@@ -494,6 +504,8 @@ async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict
 
     title = _escape((purchase or {}).get("course_title") or chat.get("title") or "kurs")
     if authorized:
+        if invite_link:
+            await revoke_join_request_link(client, int(chat_id), invite_link)
         await send_tg_message(
             client,
             int(telegram_id),
@@ -503,7 +515,7 @@ async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict
         await send_tg_message(
             client,
             int(telegram_id),
-            "⚠️ <b>Kanalga kirish rad etildi.</b> Bu havola boshqa akkauntga berilgan yoki amal qilish muddati tugagan. "
+            "⚠️ <b>Kanalga kirish rad etildi.</b> Bu havola boshqa akkauntga berilgan, allaqachon ishlatilgan yoki amal qilish muddati tugagan. "
             "Kursni o'z akkauntingizdan sotib oling.",
             {"inline_keyboard": [[{"text": "🚀 Mini Appni ochish", "web_app": {"url": settings.WEBAPP_URL}}]]},
         )
@@ -552,7 +564,6 @@ async def _send_welcome(client: httpx.AsyncClient, chat_id: int, tg_user: Dict[s
         "<b>Kreativ AI</b> — Sun'iy intellekt, dizayn va zamonaviy kasblar platformasiga xush kelibsiz!\n\n"
         "✨ <b>Imkoniyatlar:</b>\n"
         "• 📚 Yuqori sifatli amaliy kurslar\n"
-        "• 🤖 24/7 Shaxsiy AI Mentor\n"
         "• 🏆 Tekshiriluvchi QR-kodli sertifikatlar\n"
         "• 🔐 Himoyalangan yopiq dars kanallari\n\n"
         "Darslarni boshlash uchun quyidagi tugmani bosing 👇"
@@ -560,7 +571,7 @@ async def _send_welcome(client: httpx.AsyncClient, chat_id: int, tg_user: Dict[s
     keyboard_rows = [
         [{"text": "🚀 Platformani Ochish (Mini App)", "web_app": {"url": settings.WEBAPP_URL}}],
         [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}, {"text": "💳 To'lov Rekvizitlari", "callback_data": "payments"}],
-        [{"text": "🤖 AI Mentor", "callback_data": "ai:info"}, {"text": "🆘 Admin Yordami", "callback_data": "help"}],
+        [{"text": "🆘 Admin Yordami", "callback_data": "help"}],
     ]
     if is_admin:
         keyboard_rows.append([{"text": "⚙️ Superadmin Boshqaruv Paneli", "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}}])
@@ -573,6 +584,7 @@ async def _send_welcome(client: httpx.AsyncClient, chat_id: int, tg_user: Dict[s
             banner_url = str(courses[0].get("cover_url") or "") if courses else ""
         except Exception:
             banner_url = ""
+    banner_url = _resolve_media_url(banner_url)
     if banner_url.startswith(("https://", "http://")):
         result = await send_tg_photo(client, chat_id, banner_url, text, keyboard)
         if result.get("ok"):
@@ -603,29 +615,18 @@ async def _send_stats(client: httpx.AsyncClient, chat_id: int, user_id: int) -> 
 
 
 
-async def _handle_ai_question(client: httpx.AsyncClient, chat_id: int, first_name: str, raw_text: str) -> None:
-    question = raw_text.removeprefix("/ai").strip() if raw_text.startswith("/ai") else raw_text
-    if len(question) < 2:
-        await send_tg_message(client, chat_id, "🤖 Savolingizni yozing. Masalan: <code>/ai Python nima?</code>")
-        return
-    await send_tg_chat_action(client, chat_id)
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": f"Foydalanuvchi ismi: {first_name}. Savol: {question}"},
-    ]
-    try:
-        reply = call_openrouter_api(messages) or call_groq_api(messages)
-    except Exception as exc:
-        logger.error("AI Mentor xatosi: %s", exc)
-        reply = None
-    if not reply:
-        reply = "Hozir AI Mentor band. Savolingizni birozdan keyin qayta yuboring yoki Mini Appdagi darslarni ko'ring."
-    safe_reply = _escape(reply)[:3500]
+async def _handle_unknown_text(client: httpx.AsyncClient, chat_id: int) -> None:
+    """Matn ko'rinishidagi barcha xabarlarga yo'naltiruvchi javob (AI chat olib tashlangan)."""
     await send_tg_message(
         client,
         chat_id,
-        f"🤖 <b>AI Mentor</b>\n\n{safe_reply}",
-        {"inline_keyboard": [[{"text": "🚀 Mini App", "web_app": {"url": settings.WEBAPP_URL}}]]},
+        "📚 <b>Kurslar platformasi</b>\n\n"
+        "Kurslarni ko'rish uchun katalogni oching yoki to'lov uchun rekvizitlarni so'rang. "
+        "Savollaringiz bo'lsa, adminlar /help bo'limida.",
+        {"inline_keyboard": [
+            [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}, {"text": "💳 To'lov Rekvizitlari", "callback_data": "payments"}],
+            [{"text": "🚀 Mini App", "web_app": {"url": settings.WEBAPP_URL}}],
+        ]},
     )
 
 
@@ -671,7 +672,7 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
     elif command in {"/help", "/contact"}:
         await _send_help(client, int(chat_id))
     else:
-        await _handle_ai_question(client, int(chat_id), str(tg_user.get("first_name") or "Talaba"), text)
+        await _handle_unknown_text(client, int(chat_id))
 
 
 async def start_telegram_bot_polling() -> None:
@@ -691,7 +692,6 @@ async def start_telegram_bot_polling() -> None:
                 {"command": "start", "description": "Platformani ochish"},
                 {"command": "kurslar", "description": "Kurslar katalogi"},
                 {"command": "tolov", "description": "To'lov rekvizitlari"},
-                {"command": "ai", "description": "AI Mentordan so'rash"},
                 {"command": "help", "description": "Yordam markazi"},
                 {"command": "admin", "description": "Superadmin statistikasi"},
             ]},

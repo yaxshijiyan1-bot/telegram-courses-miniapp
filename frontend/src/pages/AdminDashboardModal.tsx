@@ -33,7 +33,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
-import { api } from '../services/api';
+import { api, toMediaUrl } from '../services/api';
 import { AdminStats, PendingReceipt, AdminStudent, Course, CourseTestimonial, CourseCustomInfo } from '../types';
 import { InlineLoader } from 'generative-loaders';
 import { formatPrice } from '../utils/format';
@@ -228,7 +228,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
-  // AI Bilan Kurs Yaratish Funksiyasi (OpenRouter stealth/ox-alpha)
+  // AI Bilan Kurs Yaratish Funksiyasi (OpenRouter Qwen)
   const handleGenerateCourseWithAI = async () => {
     if (!aiTopic.trim()) {
       showError('Iltimos, yaratmoqchi bo‘lgan kurs mavzusini kiriting!');
@@ -256,7 +256,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         else if (d.category === 'Dasturlash') setCourseCoverUrl('/images/code_course.jpg');
         else setCourseCoverUrl('/images/ai_course.jpg');
 
-        showNotification(`✨ stealth/ox-alpha kurs tuzilmasini yaratdi! Quyida tekshirib saqlang.`);
+        showNotification(`✨ Qwen kurs tuzilmasini yaratdi! Quyida tekshirib saqlang.`);
         setAiTopic('');
       }
     } catch (e: any) {
@@ -845,7 +845,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-slate-900">AI Bilan Kurs Generatsiya Qilish</h4>
-                      <span className="text-[10px] text-slate-500 font-mono">OpenRouter stealth/ox-alpha</span>
+                      <span className="text-[10px] text-slate-500 font-mono">OpenRouter Qwen 3.8 Flash</span>
                     </div>
                   </div>
 
@@ -1136,7 +1136,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       <div className="grid grid-cols-3 gap-2 pt-1">
                         {courseGallery.map((url, index) => (
                           <div key={index} className="relative rounded-xl overflow-hidden border border-slate-200 group aspect-video bg-slate-100">
-                            <img src={url} alt={`Lavha ${index + 1}`} className="w-full h-full object-cover" />
+                            <img
+                              src={url}
+                              alt={`Lavha ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                const fixed = toMediaUrl(target.src);
+                                if (fixed !== target.src) target.src = fixed;
+                              }}
+                            />
                             <button
                               type="button"
                               onClick={() => handleRemoveGalleryImage(index)}

@@ -177,10 +177,10 @@ async def get_protected_lesson(
             detail="Bu darsga kirish uchun kursni sotib oishingiz kerak. Kursni xarid qiling yoki admin tasdiqlashini kuting."
         )
 
-    # Cloudflare R2 dan xavfsiz URL olish (agar R2 object key berilgan bo'lsa)
+    # Cloudflare R2 dan xavfsiz URL olish (obyekt kaliti, /api/media/ yoki eski r2.dev havolalar)
     video_stream_url = target_lesson.get("video_url")
-    if video_stream_url and not video_stream_url.startswith("http"):
-        video_stream_url = r2_client.generate_presigned_url(video_stream_url, expires_in=7200)
+    if video_stream_url:
+        video_stream_url = r2_client.resolve_stream_url(video_stream_url, expires_in=7200)
 
     current_idx = next((i for i, l in enumerate(all_lessons) if l["id"] == lesson_id), -1)
     prev_lesson = all_lessons[current_idx - 1] if current_idx > 0 else None

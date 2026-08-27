@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, Plus, BookOpen, GraduationCap, Trophy, PlayCircle, CheckCircle2 } from 'lucide-react';
 import { Course, EnrolledCourse } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { toMediaUrl } from '../services/api';
 
 interface MyCoursesPageProps {
   enrolledCourses: EnrolledCourse[];
@@ -85,7 +86,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
 
                 <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 flex items-center justify-center">
                   <img
-                    src={enrolled.cover_url || full?.cover_url || '/images/hero_books.jpg'}
+                    src={toMediaUrl(enrolled.cover_url || full?.cover_url || '/images/hero_books.jpg')}
                     alt=""
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';

@@ -9,11 +9,24 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Oddiy rate-limit: bir IP dan 1 daqiqada 20 tagacha urinish
 _login_attempts: dict = {}
+_ATTEMPTS_MAX_KEYS = 2000
+
+def _purge_old_attempts(now: float, window: int = 60) -> None:
+    """Limiter lug'ati cheksiz o'sib ketmasligi uchun eski yozuvlarni tozalaydi."""
+    if len(_login_attempts) < _ATTEMPTS_MAX_KEYS:
+        return
+    stale_keys = [
+        key for key, bucket in _login_attempts.items()
+        if not bucket or now - bucket[-1] >= window
+    ]
+    for key in stale_keys:
+        _login_attempts.pop(key, None)
 
 def _rate_limited(request: Request, key: str, limit: int = 20, window: int = 60) -> bool:
     import time
     ip = request.client.host if request.client else "unknown"
     now = time.time()
+    _purge_old_attempts(now, window)
     bucket = _login_attempts.setdefault(f"{key}:{ip}", [])
     bucket[:] = [t for t in bucket if now - t < window]
     if len(bucket) >= limit:
@@ -44,7 +57,14 @@ async def telegram_auth(req: TelegramAuthRequest, request: Request):
             )
         tg_user = validated_user
     elif req.telegram_user:
-        # Faqat local development uchun (BOT_TOKEN yo'q bo'lganda)
+        # Faqat local development uchun: BOT_TOKEN sozlanmagan muhitdagina ishlaysin.
+        # Productionda BOT_TOKEN mavjud, shuning uchun bu yo'l berk bo'ladi —
+        # aks holda istalgan odam o'zini admin qilib ko'rsatib JWT olishi mumkin edi.
+        if settings.BOT_TOKEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Telegram init_data taqdim etilmagan"
+            )
         tg_user = req.telegram_user
     else:
         raise HTTPException(

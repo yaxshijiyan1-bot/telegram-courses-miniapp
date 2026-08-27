@@ -412,8 +412,8 @@ async def upload_base64_to_r2(
     if not uploaded:
         raise HTTPException(status_code=500, detail="Cloudflare R2 ga yuklab bo'lmadi — R2 kalitlarini tekshiring")
 
-    # Brauzerda xatosiz ochilishi uchun to'liq ruxsatli havola
-    media_url = r2_client.generate_presigned_url(unique_key, expires_in=86400 * 30)
+    # Bucket private: brauzerda xatosiz ochilishi uchun /api/media proxy havolasi
+    media_url = r2_client.get_media_url(unique_key)
 
     return {
         "success": True,
@@ -441,8 +441,8 @@ async def upload_file_to_r2(
         uploaded = r2_client.upload_bytes(unique_key, content, content_type=content_type)
         if not uploaded:
             raise HTTPException(status_code=500, detail="Cloudflare R2 ga yuklab bo'lmadi")
-            
-        media_url = r2_client.generate_presigned_url(unique_key, expires_in=86400 * 30)
+
+        media_url = r2_client.get_media_url(unique_key)
 
         return {
             "success": True,
@@ -470,7 +470,7 @@ async def upload_media_to_r2(
     unique_key = f"courses/{uuid.uuid4().hex[:12]}.{ext}"
 
     upload_url = r2_client.generate_presigned_put_url(unique_key, expires_in=3600, content_type=file_type)
-    public_url = r2_client.get_public_url(unique_key)
+    public_url = r2_client.get_media_url(unique_key)
 
     if not upload_url:
         raise HTTPException(status_code=500, detail="R2 sozlanmagan — S3 kalitlarni tekshiring")

@@ -4,6 +4,7 @@ import { Play, Check, Star } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { formatPrice } from '../utils/format';
+import { toMediaUrl } from '../services/api';
 
 interface CourseCardProps {
   course: Course;
@@ -32,7 +33,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       {/* Cover */}
       <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
         <img
-          src={course.cover_url}
+          src={toMediaUrl(course.cover_url)}
           alt={course.title}
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';

@@ -28,6 +28,7 @@ import {
 import { Course, Lesson } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { formatPrice } from '../utils/format';
+import { toMediaUrl } from '../services/api';
 
 interface CourseDetailPageProps {
   course: Course;
@@ -122,7 +123,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         {/* Main Cover & Hero Image */}
         <div className="relative rounded-3xl overflow-hidden aspect-video bg-slate-900 shadow-md border border-slate-200/80">
           <img
-            src={course.cover_url}
+            src={toMediaUrl(course.cover_url)}
             alt={course.title}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
@@ -200,10 +201,12 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                   className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group shadow-sm"
                 >
                   <img
-                    src={imgUrl}
+                    src={toMediaUrl(imgUrl)}
                     alt={`Kurs lavhasi ${idx + 1}`}
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';
+                      const target = e.currentTarget as HTMLImageElement;
+                      const fixed = toMediaUrl(target.src);
+                      target.src = fixed !== target.src ? fixed : '/images/hero_books.jpg';
                     }}
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   />
@@ -505,7 +508,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               <X className="w-4 h-4" />
             </button>
             <img
-              src={activePreviewImage}
+              src={toMediaUrl(activePreviewImage)}
               alt="Preview"
               className="w-full h-auto max-h-[75vh] object-contain rounded-2xl"
             />

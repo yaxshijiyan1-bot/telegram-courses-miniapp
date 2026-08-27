@@ -125,7 +125,7 @@ MODULES_COURSE_1 = [
                 "is_preview": True,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
                 "description": "Sun'iy intellektning hozirgi imkoniyatlari, kontekst oynasi, tokenlar va to'g'ri fikrlash modeli.",
-                "resources": [{"name": "AI_Asoslari_Qollanma.pdf", "size": "2.4 MB", "url": "https://pub-a868f5ba65474136a054993d81485e0b.r2.dev/ai_basics.pdf"}]
+                "resources": []
             },
             {
                 "id": "l1111111-1111-1111-1111-111111111102",
@@ -135,7 +135,7 @@ MODULES_COURSE_1 = [
                 "is_preview": True,
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
                 "description": "Dasturlash, tahlil va matn generatsiyasida eng aniq natijaga erishish formulasini o'rganamiz.",
-                "resources": [{"name": "Prompt_Templates_Cheatsheet.pdf", "size": "1.8 MB", "url": "https://pub-a868f5ba65474136a054993d81485e0b.r2.dev/templates.pdf"}]
+                "resources": []
             },
             {
                 "id": "l1111111-1111-1111-1111-111111111103",
