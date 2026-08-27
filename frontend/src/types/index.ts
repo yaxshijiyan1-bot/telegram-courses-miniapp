@@ -173,6 +173,19 @@ export interface AdminStudent {
   created_at: string;
 }
 
+export type BannerActionType = 'link' | 'course' | 'none';
+
+export interface Banner {
+  id: string;
+  title?: string;
+  image_url: string;
+  action_type: BannerActionType;
+  action_value?: string;
+  order_index: number;
+  is_active: boolean;
+  created_at?: string;
+}
+
 export interface PaymentInfoAdmin {
   name: string;
   username: string;

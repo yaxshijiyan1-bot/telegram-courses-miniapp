@@ -2,6 +2,7 @@ import uuid
 import json
 import base64
 import logging
+from datetime import datetime, timezone
 import httpx
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel, Field, field_validator
@@ -11,6 +12,7 @@ from app.core.r2 import r2_client
 from app.core.config import settings
 from app.storage import get_store
 from app.services.purchases import approve_purchase, reject_purchase
+from app.api.banners import load_banners, save_banners
 from seed_data import build_course_modules
 
 logger = logging.getLogger(__name__)
@@ -484,3 +486,108 @@ async def upload_media_to_r2(
         "public_r2_url": public_url,
         "storage": "Cloudflare R2 (Zero-Egress Fees)"
     }
+
+# =====================================================================
+# BANNER TIZIMI — bosh sahifa uchun dinamik, admin boshqaruvidagi bannerlar
+# =====================================================================
+
+class BannerUpsertRequest(BaseModel):
+    """Banner yaratish/tahrirlash so'rovi."""
+    title: Optional[str] = Field(default=None, max_length=300)
+    image_url: str = Field(..., min_length=1, max_length=2_000_000)
+    action_type: str = Field(..., pattern="^(link|course|none)$")
+    action_value: Optional[str] = Field(default=None, max_length=2000)
+    order_index: Optional[int] = Field(default=0, ge=0, le=1000)
+    is_active: Optional[bool] = True
+
+    @field_validator("action_value")
+    @classmethod
+    def check_action_value(cls, value: Optional[str], info) -> Optional[str]:
+        action_type = info.data.get("action_type")
+        if action_type in ("link", "course") and not (value and value.strip()):
+            raise ValueError(f"action_type='{action_type}' bo'lganda action_value majburiy")
+        return value.strip() if value else value
+
+@router.get("/banners")
+async def list_banners(admin: dict = Depends(get_current_admin)):
+    """Admin uchun barcha bannerlar (faol bo'lmaganlari ham)."""
+    banners = await load_banners()
+    banners.sort(key=lambda b: b.get("order_index", 0))
+    return {"success": True, "banners": banners}
+
+@router.post("/banners")
+async def create_banner(
+    payload: BannerUpsertRequest,
+    admin: dict = Depends(get_current_admin)
+):
+    """Yangi banner qo'shish (rasm R2 ga yuklanadi, keyin shu endpoint chaqiriladi)."""
+    banners = await load_banners()
+
+    # Kurs biriktirilgan bo'lsa, kurs mavjudligini tekshirish
+    if payload.action_type == "course":
+        store = get_store()
+        courses = await store.list_courses(published_only=True)
+        if not any(str(c.get("id")) == payload.action_value or c.get("slug") == payload.action_value for c in courses):
+            raise HTTPException(status_code=400, detail="Biriktirilgan kurs topilmadi")
+
+    banner = {
+        "id": uuid.uuid4().hex[:16],
+        "title": payload.title.strip() if payload.title else "",
+        "image_url": payload.image_url.strip(),
+        "action_type": payload.action_type,
+        "action_value": payload.action_value or "",
+        "order_index": payload.order_index if payload.order_index is not None else len(banners),
+        "is_active": bool(payload.is_active),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    banners.append(banner)
+
+    if not await save_banners(banners):
+        raise HTTPException(status_code=500, detail="Bannerni saqlab bo'lmadi")
+    return {"success": True, "message": "Banner qo'shildi", "banner": banner}
+
+@router.put("/banners/{banner_id}")
+async def update_banner(
+    banner_id: str,
+    payload: BannerUpsertRequest,
+    admin: dict = Depends(get_current_admin)
+):
+    """Bannerni tahrirlash (rasm, link/kurs, tartib, faollik)."""
+    banners = await load_banners()
+    target = next((b for b in banners if b.get("id") == banner_id), None)
+    if not target:
+        raise HTTPException(status_code=404, detail="Banner topilmadi")
+
+    if payload.action_type == "course":
+        store = get_store()
+        courses = await store.list_courses(published_only=True)
+        if not any(str(c.get("id")) == payload.action_value or c.get("slug") == payload.action_value for c in courses):
+            raise HTTPException(status_code=400, detail="Biriktirilgan kurs topilmadi")
+
+    target.update({
+        "title": payload.title.strip() if payload.title else "",
+        "image_url": payload.image_url.strip(),
+        "action_type": payload.action_type,
+        "action_value": payload.action_value or "",
+        "order_index": payload.order_index if payload.order_index is not None else target.get("order_index", 0),
+        "is_active": bool(payload.is_active),
+    })
+
+    if not await save_banners(banners):
+        raise HTTPException(status_code=500, detail="Bannerni saqlab bo'lmadi")
+    return {"success": True, "message": "Banner yangilandi", "banner": target}
+
+@router.delete("/banners/{banner_id}")
+async def delete_banner(
+    banner_id: str,
+    admin: dict = Depends(get_current_admin)
+):
+    """Bannerni o'chirish."""
+    banners = await load_banners()
+    remaining = [b for b in banners if b.get("id") != banner_id]
+    if len(remaining) == len(banners):
+        raise HTTPException(status_code=404, detail="Banner topilmadi")
+
+    if not await save_banners(remaining):
+        raise HTTPException(status_code=500, detail="Bannerni o'chirib bo'lmadi")
+    return {"success": True, "message": "Banner o'chirildi"}

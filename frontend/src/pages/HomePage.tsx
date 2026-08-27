@@ -9,10 +9,11 @@ import {
   GraduationCap,
   Award,
 } from 'lucide-react';
-import { Course, ContinueLearningData } from '../types';
+import { Course, ContinueLearningData, Banner } from '../types';
 import { CourseCard } from '../components/CourseCard';
 import { useTelegram } from '../context/TelegramContext';
 import { getToday } from '../utils/format';
+import { api, toMediaUrl } from '../services/api';
 
 interface HomePageProps {
   courses: Course[];
@@ -50,45 +51,52 @@ export const HomePage: React.FC<HomePageProps> = ({
   onNavigateToLearning,
   onContinueLesson,
 }) => {
-  const { haptic } = useTelegram();
+  const { haptic, webApp } = useTelegram();
   const today = getToday();
 
-  // ==== Hero banner slaydlari (foydalanuvchi yuklagan 3D artwork'lar) ====
-  const slides = React.useMemo(() => [
-    {
-      id: 'grow',
-      artwork: '/images/hero_grad.webp',
-      eyebrow: 'KREATIV AI · 2026',
-      title: 'Bilimingizni',
-      accent: 'oshiring.',
-      text: 'Amaliy kurslar, tizimli o‘quv yo‘li va real loyihalar.',
-      cta: 'Kurslarni ko‘rish',
-      action: onNavigateToCatalog,
-    },
-    {
-      id: 'cert',
-      artwork: '/images/hero_seal.webp',
-      eyebrow: 'AMALIY TA’LIM',
-      title: 'Har bir kurs —',
-      accent: 'natija.',
-      text: 'Darslarni yakunlang, yuqori daromadli ko‘nikmaga ega bo‘ling.',
-      cta: 'Darslarimga',
-      action: onNavigateToLearning,
-    },
-  ], [onNavigateToCatalog, onNavigateToLearning]);
-
+  // ==== Hero bannerlar — admin yuklagan dinamik bannerlar (backend'dan) ====
+  const [banners, setBanners] = useState<Banner[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    api.getBanners().then((bn) => {
+      if (!cancelled) setBanners(bn);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const [slideIdx, setSlideIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef<number | null>(null);
 
   useEffect(() => {
-    if (paused || slides.length < 2) return;
-    const t = setTimeout(() => setSlideIdx((i) => (i + 1) % slides.length), SLIDE_MS);
+    if (paused || banners.length < 2) return;
+    const t = setTimeout(() => setSlideIdx((i) => (i + 1) % banners.length), SLIDE_MS);
     return () => clearTimeout(t);
-  }, [slideIdx, paused, slides.length]);
+  }, [slideIdx, paused, banners.length]);
 
-  const slide = slides[slideIdx];
+  const activeBanner = banners.length > 0 ? banners[slideIdx % banners.length] : null;
+
+  // Bannerga bosilganda: biriktirilgan kursga o'tadi yoki tashqi havolani ochadi
+  const handleBannerTap = (b: Banner) => {
+    haptic?.impact?.('light');
+    if (b.action_type === 'course' && b.action_value) {
+      const course = courses.find(
+        (c) => String(c.id) === b.action_value || c.slug === b.action_value
+      );
+      if (course) {
+        onSelectCourse(course);
+      } else {
+        api.getCourseDetail(b.action_value).then(onSelectCourse).catch(() => {});
+      }
+    } else if (b.action_type === 'link' && b.action_value) {
+      try {
+        if (webApp?.openTelegramLink) webApp.openTelegramLink(b.action_value);
+        else window.open(b.action_value, '_blank', 'noopener');
+      } catch {
+        window.open(b.action_value, '_blank', 'noopener');
+      }
+    }
+  };
 
   // Real statistika — backend'dan, sun'iy raqamlarsiz
   const completedLessons = stats?.completed_lessons_count ?? 0;
@@ -111,11 +119,11 @@ export const HomePage: React.FC<HomePageProps> = ({
       className="px-4 pt-4 space-y-5"
       onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
-        if (touchX.current == null) return;
+        if (touchX.current == null || banners.length < 2) return;
         const dx = e.changedTouches[0].clientX - touchX.current;
         if (Math.abs(dx) > 48) {
           haptic.selection();
-          setSlideIdx((i) => (i + (dx < 0 ? 1 : slides.length - 1)) % slides.length);
+          setSlideIdx((i) => (i + (dx < 0 ? 1 : banners.length - 1)) % banners.length);
         }
         touchX.current = null;
       }}
@@ -143,46 +151,109 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </motion.div>
 
-      {/* ==== 2. Modern Hero Banner ==== */}
-      <motion.section
-        variants={item}
-        className="relative w-full rounded-[24px] overflow-hidden bg-slate-900 shadow-xl min-h-[190px]"
-      >
-        <img 
-          src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop" 
-          alt="Student Banner" 
-          className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 to-slate-900/20" />
-        
-        <div className="relative z-10 p-5 flex flex-col h-full min-h-[190px] justify-center">
-          <div className="inline-flex items-center space-x-1 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
-            <span className="text-[10px] font-bold tracking-widest text-cyan uppercase">
-              Kreativ AI · 2026
-            </span>
-          </div>
-          
-          <h2 className="text-2xl sm:text-[26px] font-extrabold text-white leading-tight mb-2 tracking-tight max-w-[240px]">
-            Kelajak kasblarini <span className="text-cyan">biz bilan</span> o'rganing
-          </h2>
-          
-          <p className="text-xs text-slate-300 font-medium mb-5 max-w-[210px] leading-relaxed opacity-90">
-            Dasturlash va sun'iy intellekt orqali daromadingizni oshiring.
-          </p>
+      {/* ==== 2. Hero Banner — dinamik (admin boshqaruvida) ==== */}
+      {activeBanner ? (
+        <motion.section
+          variants={item}
+          className="relative w-full rounded-[24px] overflow-hidden shadow-xl"
+          onTouchStart={() => setPaused(true)}
+          onTouchEnd={() => setPaused(false)}
+        >
+          <div className="relative w-full aspect-[16/9] bg-slate-100">
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.div
+                key={activeBanner.id}
+                className="absolute inset-0"
+                initial={{ opacity: 0, scale: 1.04 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+              >
+                <img
+                  src={toMediaUrl(activeBanner.image_url)}
+                  alt={activeBanner.title || 'Banner'}
+                  className={`w-full h-full object-cover ${activeBanner.action_type !== 'none' ? 'cursor-pointer' : ''}`}
+                  onClick={() => handleBannerTap(activeBanner)}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/images/hero_grad.webp';
+                  }}
+                />
+              </motion.div>
+            </AnimatePresence>
 
-          <button
-            onClick={() => {
-              haptic?.impact?.('light');
-              onNavigateToCatalog();
-            }}
-            className="self-start inline-flex items-center space-x-2 bg-white text-slate-900 px-5 py-2.5 rounded-[14px] text-xs font-bold active:scale-95 transition-transform"
-          >
-            <span>Kurslarni ko'rish</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </motion.section>
+            {/* Sarlavha va pastki gradient */}
+            {activeBanner.title ? (
+              <>
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent pointer-events-none" />
+                <div className="absolute bottom-3 left-4 right-4 pointer-events-none">
+                  <h2 className="text-[15px] font-extrabold text-white leading-snug tracking-tight clamp-2 drop-shadow-md">
+                    {activeBanner.title}
+                  </h2>
+                </div>
+              </>
+            ) : null}
+
+            {/* Nuqtalar indikatori */}
+            {banners.length > 1 && (
+              <div className="absolute bottom-2.5 right-3.5 flex items-center space-x-1.5">
+                {banners.map((b, i) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    aria-label={`Banner ${i + 1}`}
+                    onClick={() => { haptic.selection(); setSlideIdx(i); }}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === slideIdx % banners.length
+                        ? 'w-5 bg-white shadow-sm'
+                        : 'w-1.5 bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.section>
+      ) : (
+        <motion.section
+          variants={item}
+          className="relative w-full rounded-[24px] overflow-hidden bg-slate-900 shadow-xl min-h-[190px]"
+        >
+          <img
+            src="/images/hero_grad.webp"
+            alt="Student Banner"
+            className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 to-slate-900/20" />
+
+          <div className="relative z-10 p-5 flex flex-col h-full min-h-[190px] justify-center">
+            <div className="inline-flex items-center space-x-1 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+              <span className="text-[10px] font-bold tracking-widest text-cyan uppercase">
+                Kreativ AI · 2026
+              </span>
+            </div>
+
+            <h2 className="text-2xl sm:text-[26px] font-extrabold text-white leading-tight mb-2 tracking-tight max-w-[240px]">
+              Kelajak kasblarini <span className="text-cyan">biz bilan</span> o'rganing
+            </h2>
+
+            <p className="text-xs text-slate-300 font-medium mb-5 max-w-[210px] leading-relaxed opacity-90">
+              Dasturlash va sun'iy intellekt orqali daromadingizni oshiring.
+            </p>
+
+            <button
+              onClick={() => {
+                haptic?.impact?.('light');
+                onNavigateToCatalog();
+              }}
+              className="self-start inline-flex items-center space-x-2 bg-white text-slate-900 px-5 py-2.5 rounded-[14px] text-xs font-bold active:scale-95 transition-transform"
+            >
+              <span>Kurslarni ko'rish</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </motion.section>
+      )}
 
       {/* ==== 3. Davom ettirish (faqat REAL ma'lumot bor bo'lsa) ==== */}
       {continueData && (

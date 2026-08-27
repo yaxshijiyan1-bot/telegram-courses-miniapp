@@ -30,11 +30,13 @@ import {
   MessageSquare,
   FileText,
   AlertTriangle,
-  ArrowLeft
+  ArrowLeft,
+  Link2,
+  EyeOff
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 import { api, toMediaUrl } from '../services/api';
-import { AdminStats, PendingReceipt, AdminStudent, Course, CourseTestimonial, CourseCustomInfo } from '../types';
+import { AdminStats, PendingReceipt, AdminStudent, Course, CourseTestimonial, CourseCustomInfo, Banner, BannerActionType } from '../types';
 import { InlineLoader } from 'generative-loaders';
 import { formatPrice } from '../utils/format';
 
@@ -44,11 +46,12 @@ interface AdminDashboardModalProps {
   adminName: string;
 }
 
-type AdminTab = 'receipts' | 'courses' | 'stats' | 'students' | 'broadcast' | 'settings';
+type AdminTab = 'receipts' | 'courses' | 'banners' | 'stats' | 'students' | 'broadcast' | 'settings';
 
 const TABS: { id: AdminTab; label: string; icon: typeof Clock }[] = [
   { id: 'receipts', label: 'Cheklar', icon: ReceiptText },
   { id: 'courses', label: 'Kurslar', icon: BookOpen },
+  { id: 'banners', label: 'Bannerlar', icon: ImageIcon },
   { id: 'stats', label: 'Statistika', icon: TrendingUp },
   { id: 'students', label: 'Talabalar', icon: Users },
   { id: 'broadcast', label: 'Broadcast', icon: Megaphone },
@@ -129,6 +132,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   // Delete Confirmation State
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
+  // Banner States
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerImageUrl, setBannerImageUrl] = useState('');
+  const [bannerActionType, setBannerActionType] = useState<BannerActionType>('none');
+  const [bannerActionValue, setBannerActionValue] = useState('');
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState<Banner | null>(null);
+
   // Other States
   const [broadcastText, setBroadcastText] = useState('');
   const [cardNumber, setCardNumber] = useState('8600 5304 1234 5678');
@@ -164,16 +177,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const [s, r, st, c] = await Promise.all([
+      const [s, r, st, c, bn] = await Promise.all([
         api.getAdminStats(),
         api.getPendingReceipts(),
         api.getAdminStudents(),
-        api.getAdminCourses()
+        api.getAdminCourses(),
+        api.getAdminBanners()
       ]);
       setStats(s);
       setReceipts(r);
       setStudents(st);
       setCourses(c);
+      setBanners(bn);
     } catch (e: any) {
       showError(e?.message || 'Ma\'lumotlarni yuklashda xatolik');
     } finally {
@@ -620,6 +635,123 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       String(st.telegram_id || '').includes(q)
     );
   });
+
+  // ===== BANNER BOSHQARUVI =====
+
+  const resetBannerForm = () => {
+    setEditingBannerId(null);
+    setBannerTitle('');
+    setBannerImageUrl('');
+    setBannerActionType('none');
+    setBannerActionValue('');
+  };
+
+  const startEditBanner = (b: Banner) => {
+    setEditingBannerId(b.id);
+    setBannerTitle(b.title || '');
+    setBannerImageUrl(b.image_url || '');
+    setBannerActionType(b.action_type || 'none');
+    setBannerActionValue(b.action_value || '');
+    haptic?.selection?.();
+  };
+
+  const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploadingBanner(true);
+      haptic?.impact?.('light');
+      try {
+        const compressed = await compressImage(file, 1600, 900, 0.85);
+        const res = await api.uploadBase64ToR2(compressed, file.name || 'banner.jpg', 'banners');
+        if (res && res.url) {
+          setBannerImageUrl(res.url);
+          showNotification('🖼️ Banner rasmi Cloudflare R2 ga yuklandi!');
+        } else {
+          showError('Banner rasmini yuklashda xatolik yuz berdi');
+        }
+      } catch (error: any) {
+        showError(error?.message || 'Banner rasmini yuklashda xatolik yuz berdi');
+      } finally {
+        setIsUploadingBanner(false);
+      }
+    }
+  };
+
+  const handleSaveBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bannerImageUrl.trim()) {
+      showError('Iltimos, avval banner rasmini yuklang!');
+      return;
+    }
+    if (bannerActionType !== 'none' && !bannerActionValue.trim()) {
+      showError(bannerActionType === 'link'
+        ? 'Iltimos, banner bosilganda ochiladigan havolani kiriting!'
+        : 'Iltimos, bannerga biriktiriladigan kursni tanlang!');
+      return;
+    }
+    haptic?.impact?.('heavy');
+    setIsActionLoading('banner_form');
+    try {
+      const payload = {
+        title: bannerTitle.trim() || null,
+        image_url: bannerImageUrl.trim(),
+        action_type: bannerActionType,
+        action_value: bannerActionType === 'none' ? '' : bannerActionValue.trim(),
+        order_index: editingBannerId
+          ? banners.find(b => b.id === editingBannerId)?.order_index ?? banners.length
+          : banners.length,
+        is_active: editingBannerId
+          ? banners.find(b => b.id === editingBannerId)?.is_active ?? true
+          : true,
+      };
+      let res;
+      if (editingBannerId) {
+        res = await api.updateBanner(editingBannerId, payload);
+      } else {
+        res = await api.createBanner(payload);
+      }
+      showNotification(res.message || 'Banner saqlandi!');
+      resetBannerForm();
+      const bn = await api.getAdminBanners();
+      setBanners(bn);
+    } catch (err: any) {
+      showError(err?.message || 'Bannerni saqlashda xatolik');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const handleToggleBannerActive = async (b: Banner) => {
+    haptic?.impact?.('medium');
+    setIsActionLoading(`banner_toggle_${b.id}`);
+    try {
+      await api.updateBanner(b.id, { ...b, is_active: !b.is_active });
+      const bn = await api.getAdminBanners();
+      setBanners(bn);
+      showNotification(b.is_active ? 'Banner vaqtincha yashirildi' : 'Banner qayta yoqildi');
+    } catch (err: any) {
+      showError(err?.message || 'Banner holatini o\'zgartirishda xatolik');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const executeDeleteBanner = async (bannerId: string) => {
+    haptic?.impact?.('heavy');
+    setIsActionLoading(`del_banner_${bannerId}`);
+    try {
+      const res = await api.deleteBanner(bannerId);
+      showNotification(res.message || 'Banner o‘chirildi');
+      setBannerToDelete(null);
+      if (editingBannerId === bannerId) resetBannerForm();
+      const bn = await api.getAdminBanners();
+      setBanners(bn);
+    } catch (err: any) {
+      showError(err?.message || 'Bannerni o‘chirishda xatolik');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#F8FAFC] text-slate-900 overflow-hidden animate-fade-in">
@@ -1687,6 +1819,265 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </button>
               </form>
             )}
+
+            {/* TAB 7: BANNERS (Bosh sahifa banner boshqaruvi) */}
+            {activeTab === 'banners' && (
+              <div className="space-y-4">
+                {/* Banner yaratish/tahrirlash formasi */}
+                <form onSubmit={handleSaveBanner} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-7 h-7 rounded-xl bg-sky-600/10 text-sky-600 flex items-center justify-center">
+                        <ImageIcon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                          {editingBannerId ? 'Bannerni Tahrirlash' : 'Yangi Banner Qo\'shish'}
+                        </h4>
+                        <span className="text-[10px] text-slate-500">Bosh sahifada ko'rinadigan reklama banneri</span>
+                      </div>
+                    </div>
+                    {editingBannerId && (
+                      <button
+                        type="button"
+                        onClick={resetBannerForm}
+                        className="text-[10px] font-bold text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-xl bg-slate-100 active:scale-95 transition-all"
+                      >
+                        ✕ Bekor
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Rasm yuklash */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 block">Banner Rasmi (16:9 tavsiya etiladi)</label>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-36 aspect-video rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {bannerImageUrl ? (
+                          <img src={toMediaUrl(bannerImageUrl)} alt="Banner preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <label className="flex items-center justify-center space-x-1.5 px-3 py-2.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-2xl text-xs font-bold cursor-pointer border border-sky-200 transition-colors active:scale-[0.98]">
+                          {isUploadingBanner ? (
+                            <InlineLoader variant="orbit" size={14} color="#0284C7" />
+                          ) : (
+                            <>
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>{bannerImageUrl ? 'Rasmni almashtirish' : 'Rasm yuklash'}</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleBannerImageUpload}
+                            className="hidden"
+                            disabled={isUploadingBanner}
+                          />
+                        </label>
+                        <input
+                          type="text"
+                          value={bannerImageUrl.startsWith('data:') ? '' : bannerImageUrl}
+                          onChange={(e) => setBannerImageUrl(e.target.value)}
+                          placeholder="yoki rasm URL manzilini kiriting..."
+                          className="glass-input w-full text-[11px]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sarlavha (ixtiyoriy) */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 block">Sarlavha <span className="text-slate-400 font-normal">(ixtiyoriy)</span></label>
+                    <input
+                      type="text"
+                      value={bannerTitle}
+                      onChange={(e) => setBannerTitle(e.target.value)}
+                      placeholder="Masalan: Yangi kurs — 50% chegirma!"
+                      maxLength={300}
+                      className="glass-input w-full text-xs"
+                    />
+                  </div>
+
+                  {/* Harakat turi */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 block">Bosilganda nima bo'lsin?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setBannerActionType('link'); haptic?.selection?.(); }}
+                        className={`py-2.5 rounded-2xl text-[11px] font-bold flex flex-col items-center space-y-1 border transition-all active:scale-95 ${
+                          bannerActionType === 'link'
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-md shadow-sky-500/25'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                        <span>Havola</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setBannerActionType('course'); haptic?.selection?.(); }}
+                        className={`py-2.5 rounded-2xl text-[11px] font-bold flex flex-col items-center space-y-1 border transition-all active:scale-95 ${
+                          bannerActionType === 'course'
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-md shadow-sky-500/25'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>Kurs</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setBannerActionType('none'); setBannerActionValue(''); haptic?.selection?.(); }}
+                        className={`py-2.5 rounded-2xl text-[11px] font-bold flex flex-col items-center space-y-1 border transition-all active:scale-95 ${
+                          bannerActionType === 'none'
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-md shadow-sky-500/25'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Faqat rasm</span>
+                      </button>
+                    </div>
+
+                    {bannerActionType === 'link' && (
+                      <input
+                        type="url"
+                        required
+                        value={bannerActionValue}
+                        onChange={(e) => setBannerActionValue(e.target.value)}
+                        placeholder="https://t.me/kanal yoki tashqi havola..."
+                        className="glass-input w-full text-xs mt-2"
+                      />
+                    )}
+                    {bannerActionType === 'course' && (
+                      <select
+                        required
+                        value={bannerActionValue}
+                        onChange={(e) => setBannerActionValue(e.target.value)}
+                        className="glass-input w-full text-xs mt-2"
+                      >
+                        <option value="">— Kursni tanlang —</option>
+                        {courses.map((c) => (
+                          <option key={c.id} value={String(c.id)}>
+                            {c.title} ({formatPrice(c.price)})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isActionLoading === 'banner_form'}
+                    className="btn-primary w-full py-3.5 text-xs font-extrabold flex items-center justify-center space-x-2 shadow-lg shadow-sky-500/20"
+                  >
+                    {isActionLoading === 'banner_form' ? (
+                      <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>{editingBannerId ? 'Bannerni Saqlash' : 'Bannerni Qo\'shish'}</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {/* Mavjud bannerlar ro'yxati */}
+                <div className="flex justify-between items-center px-1">
+                  <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                    Mavjud Bannerlar ({banners.length})
+                  </h3>
+                </div>
+
+                {banners.length === 0 ? (
+                  <div className="p-8 text-center bg-white border border-slate-200/90 rounded-3xl space-y-2 shadow-sm">
+                    <ImageIcon className="w-8 h-8 text-slate-300 mx-auto" />
+                    <b className="text-xs text-slate-800 block font-bold">Hozircha banner yo'q</b>
+                    <p className="text-[11px] text-slate-500">Yuqoridagi forma orqali birinchi bannerni qo'shing.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {banners.map((b) => (
+                      <div key={b.id} className="bg-white border border-slate-200/90 p-3 rounded-3xl shadow-sm">
+                        <div className="flex space-x-3">
+                          <div className="w-28 aspect-video rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
+                            <img src={toMediaUrl(b.image_url)} alt={b.title || 'Banner'} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center space-x-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${b.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                              <b className="text-xs font-bold text-slate-900 truncate">
+                                {b.title || '(sarlavhasiz)'}
+                              </b>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1">
+                              {b.action_type === 'course' ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-lg">
+                                  <BookOpen className="w-2.5 h-2.5" />
+                                  {courses.find(c => String(c.id) === b.action_value || c.slug === b.action_value)?.title?.slice(0, 22) || 'Kurs'}
+                                </span>
+                              ) : b.action_type === 'link' ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-lg max-w-[160px]">
+                                  <Link2 className="w-2.5 h-2.5 flex-shrink-0" />
+                                  <span className="truncate">{b.action_value}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-lg">
+                                  <EyeOff className="w-2.5 h-2.5" /> Faqat rasm
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-slate-400 block">Tartib raqami: {b.order_index}</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-1.5 mt-2.5 pt-2.5 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => startEditBanner(b)}
+                            className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center space-x-1 active:scale-95 transition-all"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span>Tahrirlash</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBannerActive(b)}
+                            disabled={isActionLoading === `banner_toggle_${b.id}`}
+                            className={`py-2 rounded-xl text-[10px] font-bold flex items-center justify-center space-x-1 active:scale-95 transition-all ${
+                              b.is_active
+                                ? 'bg-amber-50 hover:bg-amber-100 text-amber-700'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+                            }`}
+                          >
+                            {isActionLoading === `banner_toggle_${b.id}` ? (
+                              <InlineLoader variant="orbit" size={12} color="#64748B" />
+                            ) : (
+                              <>
+                                <EyeOff className="w-3 h-3" />
+                                <span>{b.is_active ? 'Yashirish' : 'Yoqish'}</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setBannerToDelete(b); haptic?.impact?.('medium'); }}
+                            className="py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-bold flex items-center justify-center space-x-1 active:scale-95 transition-all"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>O'chirish</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -1721,6 +2112,46 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 className="py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center"
               >
                 {isActionLoading === `del_${courseToDelete.id}` ? (
+                  <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
+                ) : (
+                  'Ha, O‘chirish'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5.5 Delete Banner Confirmation Dialog */}
+      {bannerToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h4 className="text-sm font-extrabold text-slate-900">Bannerni o'chirishni tasdiqlaysizmi?</h4>
+              <p className="text-xs text-slate-500">
+                <b className="text-slate-800">{bannerToDelete.title || '(sarlavhasiz)'}</b> banneri bosh sahifadan butunlay olib tashlanadi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setBannerToDelete(null)}
+                className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={() => executeDeleteBanner(bannerToDelete.id)}
+                disabled={isActionLoading === `del_banner_${bannerToDelete.id}`}
+                className="py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center"
+              >
+                {isActionLoading === `del_banner_${bannerToDelete.id}` ? (
                   <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
                 ) : (
                   'Ha, O‘chirish'

@@ -1,4 +1,4 @@
-import { Course, EnrolledCourse, ContinueLearningData, Certificate, NotificationItem, User, Lesson, AdminStats, PendingReceipt, AdminStudent, PaymentInfo } from '../types';
+import { Course, EnrolledCourse, ContinueLearningData, Certificate, NotificationItem, User, Lesson, AdminStats, PendingReceipt, AdminStudent, PaymentInfo, Banner } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://kurslar-backend-api.onrender.com/api';
 const IS_DEV = import.meta.env.DEV;
@@ -212,6 +212,18 @@ class ApiService {
     });
     if (res.ok) return await res.json();
     throw new Error('Kurs topilmadi yoki tarmoq xatosi');
+  }
+
+  // Bosh sahifa bannerlari (ommaviy, token kerak emas)
+  async getBanners(): Promise<Banner[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/banners`, { headers: this.getHeaders() });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data?.banners) ? data.banners : [];
+    } catch {
+      return [];
+    }
   }
 
   async login(login: string, password: string): Promise<{ token: string; user: User }> {
@@ -608,6 +620,25 @@ class ApiService {
 
   async deleteCourse(courseId: string): Promise<{ success: boolean; message: string }> {
     return this.adminFetch(`/admin/courses/${courseId}`, { method: 'DELETE' });
+  }
+
+  // ===== BANNER BOSHQARUVI =====
+
+  async getAdminBanners(): Promise<Banner[]> {
+    const data = await this.adminFetch('/admin/banners');
+    return Array.isArray(data?.banners) ? data.banners : [];
+  }
+
+  async createBanner(banner: Partial<Banner>): Promise<{ success: boolean; message: string; banner: Banner }> {
+    return this.adminFetch('/admin/banners', { method: 'POST', body: JSON.stringify(banner) });
+  }
+
+  async updateBanner(bannerId: string, banner: Partial<Banner>): Promise<{ success: boolean; message: string; banner: Banner }> {
+    return this.adminFetch(`/admin/banners/${bannerId}`, { method: 'PUT', body: JSON.stringify(banner) });
+  }
+
+  async deleteBanner(bannerId: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/banners/${bannerId}`, { method: 'DELETE' });
   }
 
   async manualEnroll(userIdOrTgId: string, courseId: string): Promise<{ success: boolean; message: string }> {

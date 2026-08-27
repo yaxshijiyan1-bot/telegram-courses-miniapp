@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
-from app.api import auth, courses, checkout, student, admin, ai
+from app.api import auth, courses, checkout, student, admin, ai, banners
 from app.storage import init_store, get_store
 from bot_service import start_telegram_bot_polling
 
@@ -51,6 +51,7 @@ app.include_router(checkout.router, prefix=settings.API_PREFIX)
 app.include_router(student.router, prefix=settings.API_PREFIX)
 app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(ai.router, prefix=settings.API_PREFIX)
+app.include_router(banners.router, prefix=settings.API_PREFIX)
 
 @app.get("/")
 async def root():
