@@ -48,12 +48,12 @@ export const INSTRUCTORS: Instructor[] = [
     tagline: '“AI Formula” kursi asoschisi',
     accent: 'violet',
     stats: [
-      { value: '2+', label: 'yil tajriba' },
+      { value: '3+', label: 'yil tajriba' },
       { value: '9 000', label: 'obunachi' },
       { value: '130+', label: 'bitiruvchi' },
     ],
     paragraphs: [
-      'Zuhra Olimova — SMM va dizayn sohasida 2 yildan ortiq tajribaga ega mutaxassis. U AI yordamida rasm va video yaratish, kreativ kontent tayyorlash hamda sahifalarni rivojlantirish bo‘yicha faol ishlaydi.',
+      'Zuhra Olimova — SMM va dizayn sohasida 3 yildan ortiq tajribaga ega mutaxassis. U AI yordamida rasm va video yaratish, kreativ kontent tayyorlash hamda sahifalarni rivojlantirish bo‘yicha faol ishlaydi.',
       'Zuhra Instagram’dagi [@zuhra_akbarovna](https://www.instagram.com/akbarovna_zuhra?igsi=MTh1dnRyeDhudW4xdg==) sahifasi egasi bo‘lib, u yerda 9 000 ga yaqin obunachiga ega. Telegram’dagi [@Olimova_Zuhra](https://t.me/+awu_1WFe7MhiNmQ6) kanalini ham yuritadi; kanalda 1 500 ga yaqin obunachi bor.',
       'U [“Hammaga Yetadi”](https://t.me/hammagayetadi) kanalining avvalgi admini va qayta tiklanayotgan kanal egasi hisoblanadi. Zuhra “Dizayn ilk qadam” chellenji asoschisi. Unda 35+ ishtirokchi qatnashgan va ularning ko‘pchiligi olgan bilimlari asosida o‘z yo‘nalishi yoki biznesini yo‘lga qo‘ygan.',
       'Zuhra, shuningdek, sun’iy intellektda prompt yozish, rasm va video yaratishga bag‘ishlangan “AI Formula” bepul kursi asoschisi.',
