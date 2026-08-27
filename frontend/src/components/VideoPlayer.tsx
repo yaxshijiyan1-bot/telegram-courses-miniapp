@@ -190,7 +190,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* ⚠️ Privacy & Anti-Recording Shield (Oyna nofaol bo'lganda yoki ekran yozishda chiqadi) */}
       {isWindowBlurred && (
-        <div className="absolute inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-4 space-y-3 pointer-events-auto animate-fade-in">
+        <div className="absolute inset-0 z-40 bg-black/95 flex flex-col items-center justify-center text-center p-4 space-y-3 pointer-events-auto animate-fade-in">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center">
             <EyeOff className="w-6 h-6" />
           </div>
@@ -218,7 +218,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Xavfsizlik Ogohlantirishi Toasti */}
       {securityWarning && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 animate-bounce border border-red-400">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 animate-bounce border border-red-400">
           <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{securityWarning}</span>
         </div>
@@ -228,7 +228,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {!isPlaying && !isWindowBlurred && (
         <div
           onClick={togglePlay}
-          className="absolute inset-0 z-20 flex items-center justify-center bg-black/35 cursor-pointer backdrop-blur-[1px] transition-all pointer-events-auto"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 cursor-pointer pointer-events-auto"
         >
           <div className="w-14 h-14 rounded-full bg-cyan text-[#05070A] flex items-center justify-center shadow-cyanGlow transform group-hover:scale-110 active:scale-95 transition-all">
             <Play className="w-6 h-6 fill-[#05070A] translate-x-0.5" />

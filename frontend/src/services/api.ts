@@ -131,7 +131,7 @@ export const MOCK_COURSES: Course[] = [
     level: "Amaliyotga yo'naltirilgan",
     instructor_name: 'Zuhra Olimova',
     instructor_title: 'Lead Product Designer & Art Director',
-    instructor_avatar: '/images/zuhra_olimova.jpg',
+    instructor_avatar: '/images/ustoz_zuhra_olimova.webp',
     instructor_bio: "Fintech, EdTech va Telegram Mini App interfeyslari bo'yicha yetakchi Art Director.",
     rating: 5.0,
     student_count: 980,
@@ -178,7 +178,7 @@ export const MOCK_COURSES: Course[] = [
     level: "Boshlang'ich va Amaliyotchi",
     instructor_name: 'Zuhra Olimova',
     instructor_title: 'Marketing & Growth Strategist',
-    instructor_avatar: '/images/zuhra_olimova.jpg',
+    instructor_avatar: '/images/ustoz_zuhra_olimova.webp',
     instructor_bio: "Yetakchi brendlar uchun sotuv voronkalari va o'sish strategiyalari muallifi.",
     rating: 4.9,
     student_count: 2100

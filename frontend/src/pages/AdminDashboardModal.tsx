@@ -800,7 +800,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#F8FAFC] text-slate-900 overflow-hidden animate-fade-in">
       {/* 1. Header with glass styling */}
-      <div className="pt-safe px-4 py-3 bg-white/95 backdrop-blur-xl border-b border-slate-200/90 flex items-center justify-between flex-shrink-0 shadow-sm">
+      <div className="pt-safe px-4 py-3 bg-white border-b border-slate-200/90 flex items-center justify-between flex-shrink-0 shadow-sm">
         <div className="flex items-center space-x-2.5">
           <div className="w-8 h-8 rounded-xl bg-sky-600/10 border border-sky-600/25 flex items-center justify-center text-sky-600">
             <ShieldCheck className="w-4 h-4" />
@@ -836,7 +836,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       </div>
 
       {/* 2. Top Tabs */}
-      <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center space-x-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+      <div className="px-4 py-2 bg-white/95 border-b border-slate-200 flex items-center space-x-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -2181,7 +2181,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
       {/* 5. Delete Course Confirmation Dialog */}
       {courseToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 animate-fade-up">
           <div className="bg-white border border-slate-200 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 mx-auto">
               <AlertTriangle className="w-6 h-6" />
@@ -2221,7 +2221,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
       {/* 5.1 Delete Student Confirmation Dialog */}
       {studentToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 animate-fade-up">
           <div className="bg-white border border-slate-200 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 mx-auto">
               <AlertTriangle className="w-6 h-6" />
@@ -2261,7 +2261,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
       {/* 5.5 Delete Banner Confirmation Dialog */}
       {bannerToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 animate-fade-up">
           <div className="bg-white border border-slate-200 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 mx-auto">
               <Trash2 className="w-6 h-6" />
@@ -2301,7 +2301,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
       {/* 6. Receipt Zoom Modal */}
       {zoomedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 animate-fade-up">
           <div className="bg-white border border-slate-200 rounded-3xl p-4 max-w-sm w-full space-y-3 shadow-2xl">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-900">{zoomedReceipt.student_name} cheki</span>

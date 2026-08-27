@@ -68,7 +68,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
     <div className="flex-1 pb-safe bg-white text-slate-900 animate-fade-up flex flex-col justify-between">
       <div className="flex-1">
         {/* Top bar */}
-        <div className="p-4 flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-2xl">
+        <div className="p-4 flex items-center justify-between border-b border-slate-200 bg-white/95">
           <button
             onClick={() => {
               haptic.selection();
@@ -110,7 +110,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
 
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex flex-col justify-between p-3.5">
             <div className="flex justify-end">
-              <span className="p-1.5 rounded-xl bg-black/60 backdrop-blur-md text-white text-[10px] flex items-center space-x-1">
+              <span className="p-1.5 rounded-xl bg-black/70 text-white text-[10px] flex items-center space-x-1">
                 <Maximize2 className="w-3.5 h-3.5" />
                 <span>Kattalashtirish</span>
               </span>

@@ -140,7 +140,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 pb-36 animate-fade-up">
       {/* Top Floating Bar */}
-      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md px-4 py-3 border-b border-slate-200/80 flex items-center justify-between shadow-sm">
+      <div className="sticky top-0 z-30 bg-white/95 px-4 py-3 border-b border-slate-200/80 flex items-center justify-between shadow-sm">
         <button
           type="button"
           onClick={() => {
@@ -523,7 +523,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       </div>
 
       {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto bg-white/95 backdrop-blur-xl p-3 border-t border-slate-200/80 z-40 shadow-lg space-y-1.5">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto bg-white p-3 border-t border-slate-200/80 z-40 shadow-lg space-y-1.5">
         {channelError && (
           <p className="text-[10px] font-semibold text-red-500 text-center leading-snug animate-fade-in">
             {channelError}

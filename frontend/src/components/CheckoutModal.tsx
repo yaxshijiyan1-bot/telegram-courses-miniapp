@@ -131,7 +131,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm p-0 sm:p-4 animate-in">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4 animate-in">
       <div className="w-full max-w-md glass-deep !rounded-t-[28px] sm:!rounded-[28px] text-ink shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar animate-sheet relative">
 
         {/* Modal Header */}

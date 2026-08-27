@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   const photoUrl = tgUser?.photo_url;
 
   return (
-    <header className="sticky top-0 z-30 px-4 pt-3 pb-3 bg-white/80 backdrop-blur-2xl border-b border-slate-200/80 flex items-center justify-between">
+    <header className="sticky top-0 z-30 px-4 pt-3 pb-3 bg-white/95 border-b border-slate-200/80 flex items-center justify-between">
       {/* Brand */}
       <button
         type="button"

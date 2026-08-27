@@ -190,7 +190,7 @@ const InstructorProfileSheet: React.FC<{
       transition={{ duration: 0.2 }}
     >
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/60"
         onClick={onClose}
       />
 
@@ -203,18 +203,18 @@ const InstructorProfileSheet: React.FC<{
       >
         {/* Sarlavha bloki — gradient header */}
         <div className={`relative bg-gradient-to-br ${a.grad} px-5 pt-6 pb-16 rounded-t-[32px] sm:rounded-t-[32px] overflow-hidden`}>
-          <div className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-          <div className="absolute -left-10 bottom-0 w-32 h-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="absolute -right-8 -top-10 w-40 h-40 blob blob-white pointer-events-none" />
+          <div className="absolute -left-10 bottom-0 w-32 h-32 blob blob-white pointer-events-none" />
 
           <div className="flex items-start justify-between relative">
-            <span className="inline-flex items-center space-x-1 text-[10px] font-extrabold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
+            <span className="inline-flex items-center space-x-1 text-[10px] font-extrabold uppercase tracking-widest text-white/90 bg-white/25 px-2.5 py-1 rounded-full border border-white/20">
               <Sparkles className="w-3 h-3" />
               <span>Ustoz</span>
             </span>
             <button
               type="button"
               onClick={() => { haptic?.impact?.('light'); onClose(); }}
-              className="w-8 h-8 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center active:scale-90 transition-transform"
+              className="w-8 h-8 rounded-full bg-white/25 border border-white/20 text-white flex items-center justify-center active:scale-90 transition-transform"
               aria-label="Yopish"
             >
               <X className="w-4 h-4" />
@@ -339,7 +339,10 @@ export const InstructorsSection: React.FC = () => {
             onClick={() => { haptic?.impact?.('light'); setSelected(ins); }}
             className="w-full glass !rounded-[24px] p-3.5 flex items-center space-x-3.5 pressable text-left relative overflow-hidden group"
           >
-            <div className={`absolute -right-8 -top-10 w-28 h-28 rounded-full blur-3xl pointer-events-none ${ACCENT[ins.accent].glow}`} />
+            <div
+              className="absolute -right-8 -top-10 w-28 h-28 blob pointer-events-none"
+              style={{ '--blob-c': ins.accent === 'cyan' ? 'rgba(2, 132, 199, 0.14)' : 'rgba(124, 58, 237, 0.14)' } as React.CSSProperties}
+            />
 
             <div className="relative w-16 h-16 rounded-[20px] overflow-hidden bg-white border border-white/60 shadow-sm flex-shrink-0">
               <img
@@ -364,7 +367,7 @@ export const InstructorsSection: React.FC = () => {
 
       {/* Maqsad — jamoa va'dasi */}
       <div className="glass !rounded-[24px] p-4 relative overflow-hidden">
-        <div className="absolute -left-8 -top-10 w-28 h-28 rounded-full bg-gold/15 blur-3xl pointer-events-none" />
+        <div className="absolute -left-8 -top-10 w-28 h-28 blob blob-gold pointer-events-none" />
         <div className="flex items-start space-x-3 relative">
           <div className="w-9 h-9 rounded-xl bg-gold/10 text-gold border border-gold/20 flex items-center justify-center flex-shrink-0">
             <Target className="w-4 h-4" strokeWidth={2.2} />

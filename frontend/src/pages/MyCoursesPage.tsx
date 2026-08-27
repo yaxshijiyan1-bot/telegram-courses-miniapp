@@ -100,7 +100,10 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                 variants={item}
                 className="w-full glass rounded-[24px] p-4 text-left relative overflow-hidden space-y-3"
               >
-                <div className="absolute -right-10 -top-14 w-40 h-40 rounded-full bg-cyan/[0.06] blur-3xl pointer-events-none" />
+                <div
+                  className="absolute -right-10 -top-14 w-40 h-40 pointer-events-none"
+                  style={{ background: 'radial-gradient(circle at center, rgba(2,132,199,0.06) 0%, transparent 70%)' }}
+                />
 
                 <div
                   role="button"

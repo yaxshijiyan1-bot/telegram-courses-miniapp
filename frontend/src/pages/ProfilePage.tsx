@@ -16,7 +16,10 @@ import {
 import { Certificate, NotificationItem } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { useAuth } from '../context/AuthContext';
-import { AdminDashboardModal } from './AdminDashboardModal';
+// Admin panel faqat kerak bo'lganda yuklanadi — asosiy bundle yengilroq bo'ladi
+const AdminDashboardModal = React.lazy(() =>
+  import('./AdminDashboardModal').then((m) => ({ default: m.AdminDashboardModal }))
+);
 import { relativeTime } from '../utils/format';
 
 interface ProfilePageProps {
@@ -75,8 +78,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     >
       {/* Profil kartasi */}
       <motion.section variants={item} className="glass rounded-[26px] p-5 relative overflow-hidden">
-        <div className="absolute -right-12 -top-16 w-44 h-44 rounded-full bg-cyan/[0.08] blur-3xl pointer-events-none" />
-        <div className="absolute -left-10 -bottom-16 w-40 h-40 rounded-full bg-violet/[0.06] blur-3xl pointer-events-none" />
+        <div className="absolute -right-12 -top-16 w-44 h-44 blob blob-cyan pointer-events-none" />
+        <div className="absolute -left-10 -bottom-16 w-40 h-40 blob blob-violet pointer-events-none" />
 
         <div className="flex items-center space-x-4">
           <div className="w-14 h-14 rounded-[18px] overflow-hidden bg-gradient-to-br from-cyan/40 to-violet/40 border border-slate-200 flex items-center justify-center text-white font-extrabold text-lg flex-shrink-0 shadow-cyanGlowSm">
@@ -211,11 +214,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
       {/* Superadmin */}
       {isAdminOpen && (
-        <AdminDashboardModal
-          isOpen={isAdminOpen}
-          onClose={() => setIsAdminOpen(false)}
-          adminName={displayName}
-        />
+        <React.Suspense fallback={null}>
+          <AdminDashboardModal
+            isOpen={isAdminOpen}
+            onClose={() => setIsAdminOpen(false)}
+            adminName={displayName}
+          />
+        </React.Suspense>
       )}
     </motion.div>
   );

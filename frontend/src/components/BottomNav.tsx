@@ -28,7 +28,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       className="flex-shrink-0 relative z-30 w-full px-3"
       style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
     >
-      <nav className="max-w-[420px] mx-auto bg-white/92 backdrop-blur-2xl rounded-[26px] p-1.5 shadow-xl border border-slate-200/90 flex items-center justify-between">
+      <nav className="max-w-[420px] mx-auto bg-white rounded-[26px] p-1.5 shadow-xl border border-slate-200/90 flex items-center justify-between">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

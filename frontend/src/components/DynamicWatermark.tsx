@@ -72,13 +72,13 @@ export const DynamicWatermark: React.FC<DynamicWatermarkProps> = ({ variant = 'v
 
       {/* 2. Asosiy Dinamik Harakatlanuvchi Rangli Watermark */}
       <div
-        className="absolute transition-all duration-1000 ease-in-out pointer-events-none"
+        className="absolute pointer-events-none"
         style={{
           ...primaryPos,
           opacity: 0.85,
         }}
       >
-        <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-cyan/40 text-white font-mono text-[10px] sm:text-[11px] tracking-wider shadow-lg">
+        <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/75 border border-cyan/40 text-white font-mono text-[10px] sm:text-[11px] tracking-wider shadow-lg">
           <Shield className="w-3 h-3 text-cyan animate-pulse" />
           <span className="font-bold text-white">{displayName}</span>
           <span className="text-white/40">|</span>
@@ -96,7 +96,7 @@ export const DynamicWatermark: React.FC<DynamicWatermarkProps> = ({ variant = 'v
 
       {/* 3. Ikkinchi suzuvchi mikro chip (turli burchaklarda) */}
       <div
-        className="absolute transition-all duration-1000 ease-in-out pointer-events-none opacity-50"
+        className="absolute pointer-events-none opacity-50"
         style={secondaryPos}
       >
         <div className="flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-black/60 border border-white/10 text-white/90 font-mono text-[8px]">

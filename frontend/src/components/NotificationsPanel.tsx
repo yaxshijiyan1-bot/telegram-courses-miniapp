@@ -49,7 +49,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-fade-up"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-slate-900/50 animate-fade-up"
       onClick={onClose}
     >
       <div

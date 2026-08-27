@@ -58,7 +58,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         ) : null}
 
         {course.is_enrolled && (
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-900/45 flex items-center justify-center">
             <span className="w-9 h-9 rounded-full bg-cyan text-white flex items-center justify-center shadow-cyanGlowSm">
               <Play className="w-4 h-4 fill-white ml-0.5" />
             </span>
@@ -67,11 +67,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
         {/* Bottom info overlay on image */}
         <div className="absolute bottom-1.5 left-2.5 right-2.5 flex items-center justify-between">
-          <span className="text-[9px] font-bold text-white/85 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10">
+          <span className="text-[9px] font-bold text-white/85 bg-black/55 px-2 py-0.5 rounded-md border border-white/10">
             {course.lesson_count || 0} dars
           </span>
           {course.rating ? (
-            <span className="text-[9px] font-bold text-gold bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded-md border border-white/10 flex items-center gap-0.5">
+            <span className="text-[9px] font-bold text-gold bg-black/55 px-1.5 py-0.5 rounded-md border border-white/10 flex items-center gap-0.5">
               <Star className="w-2.5 h-2.5 fill-gold" />
               {course.rating.toFixed(1)}
             </span>

@@ -18,7 +18,11 @@ import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
 import { api, MOCK_COURSES, toMediaUrl } from './services/api';
 import { Course, Lesson, Certificate, NotificationItem, Banner } from './types';
-import { AdminDashboardModal } from './pages/AdminDashboardModal';
+// Admin panel faqat admin ochganda yuklanadi — 2300+ qatorli kod oddiy
+// foydalanuvchilarning asosiy bundle'iga tushmaydi, ilova tezroq ochiladi
+const AdminDashboardModal = React.lazy(() =>
+  import('./pages/AdminDashboardModal').then((m) => ({ default: m.AdminDashboardModal }))
+);
 import { TelegramGate } from './components/TelegramGate';
 import { useSecurityShield } from './hooks/useSecurityShield';
 import { ShieldAlert } from 'lucide-react';
@@ -67,6 +71,13 @@ export const AppContent: React.FC = () => {
   // Navigation State
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  // Tab almashganda kontent tepasidan boshlanadi (tablar mount saqlanadi,
+  // faqat ko'rinish almashadi — scroll pozitsiyasi yangilanib turadi)
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTo(0, 0);
+  }, [activeTab]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<{
     course: Course;
@@ -417,9 +428,12 @@ export const AppContent: React.FC = () => {
         />
       </div>
 
-      {/* Scrollable Main Body — pastki bo'shliq nav balandligiga bog'liq emas, nav flow'da turadi */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-4 no-scrollbar">
-        {activeTab === 'home' && (
+      {/* Scrollable Main Body — pastki bo'shliq nav balandligiga bog'liq emas, nav flow'da turadi.
+          Tablar qayta mount qilinmaydi: faqat `hidden` bilan yashiriladi/ko'rsatiladi.
+          Shunda har tab o'tishda DOM qayta qurilmaydi, spring stagger animatsiyalar
+          qayta ijro bo'lmaydi va sahifa "og'irlashib" qotmaydi. */}
+      <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-4 no-scrollbar">
+        <div className={activeTab === 'home' ? undefined : 'hidden'}>
           <HomePage
             courses={courses}
             banners={banners}
@@ -436,9 +450,9 @@ export const AppContent: React.FC = () => {
             onNavigateToCatalog={() => setActiveTab('courses')}
             onNavigateToLearning={() => setActiveTab('learning')}
           />
-        )}
+        </div>
 
-        {activeTab === 'courses' && (
+        <div className={activeTab === 'courses' ? undefined : 'hidden'}>
           <CatalogPage
             courses={courses}
             purchasedCourseIds={purchasedCourseIds}
@@ -446,10 +460,10 @@ export const AppContent: React.FC = () => {
             onSelectCourse={(c) => setSelectedCourse(c)}
             onNavigateToLearning={() => setActiveTab('learning')}
           />
-        )}
+        </div>
 
-        {activeTab === 'learning' && (
-          isAuthenticated && dashboardData ? (
+        <div className={activeTab === 'learning' ? undefined : 'hidden'}>
+          {isAuthenticated && dashboardData ? (
             <MyCoursesPage
               enrolledCourses={dashboardData.enrolled_courses}
               courses={courses}
@@ -461,11 +475,11 @@ export const AppContent: React.FC = () => {
               onSuccess={() => setActiveTab('learning')}
               onExploreCourses={() => setActiveTab('courses')}
             />
-          )
-        )}
+          )}
+        </div>
 
-        {activeTab === 'profile' && (
-          isAuthenticated ? (
+        <div className={activeTab === 'profile' ? undefined : 'hidden'}>
+          {isAuthenticated ? (
             <ProfilePage
               certificates={certificates}
               notifications={notifications}
@@ -478,8 +492,8 @@ export const AppContent: React.FC = () => {
               onSuccess={() => setActiveTab('profile')}
               onExploreCourses={() => setActiveTab('courses')}
             />
-          )
-        )}
+          )}
+        </div>
       </main>
 
       {/* Bottom Navigation — flex flow'da: scroll zona aynan nav ustida tugaydi, hech narsa to'silmaydi */}
@@ -493,7 +507,7 @@ export const AppContent: React.FC = () => {
 
       {/* Global Security Toast Alert */}
       {securityWarning && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600/95 backdrop-blur-lg text-white text-xs font-semibold px-4 py-2 rounded-2xl shadow-xl flex items-center space-x-2 border border-red-400/50 animate-bounce max-w-[90vw] text-center">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-xs font-semibold px-4 py-2 rounded-2xl shadow-xl flex items-center space-x-2 border border-red-400/50 animate-bounce max-w-[90vw] text-center">
           <ShieldAlert className="w-4 h-4 flex-shrink-0" />
           <span>{securityWarning}</span>
         </div>
@@ -506,13 +520,15 @@ export const AppContent: React.FC = () => {
         onClose={() => setIsNotifsOpen(false)}
       />
 
-      {/* Full-Screen Superadmin Modal */}
+      {/* Full-Screen Superadmin Modal — lazy yuklanadi (code-split) */}
       {isAdminOpen && (user?.role === 'superadmin' || user?.telegram_id === 8544023815 || user?.telegram_id === 8112688757) && (
-        <AdminDashboardModal
-          isOpen={isAdminOpen}
-          onClose={() => setIsAdminOpen(false)}
-          adminName={user?.name || 'Admin'}
-        />
+        <React.Suspense fallback={null}>
+          <AdminDashboardModal
+            isOpen={isAdminOpen}
+            onClose={() => setIsAdminOpen(false)}
+            adminName={user?.name || 'Admin'}
+          />
+        </React.Suspense>
       )}
     </div>
   );
