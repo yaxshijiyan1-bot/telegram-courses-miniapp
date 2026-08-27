@@ -317,8 +317,8 @@ export const AppContent: React.FC = () => {
         />
       </div>
 
-      {/* Scrollable Main Body */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-32 no-scrollbar">
+      {/* Scrollable Main Body — pastki bo'shliq nav balandligiga bog'liq emas, nav flow'da turadi */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-4 no-scrollbar">
         {activeTab === 'home' && (
           <HomePage
             courses={courses}
@@ -379,7 +379,7 @@ export const AppContent: React.FC = () => {
         )}
       </main>
 
-      {/* Unbreakable Symmetrical Floating Bottom Navigation */}
+      {/* Bottom Navigation — flex flow'da: scroll zona aynan nav ustida tugaydi, hech narsa to'silmaydi */}
       {!isNotifsOpen && !isAdminOpen && (
         <BottomNav
           activeTab={activeTab}

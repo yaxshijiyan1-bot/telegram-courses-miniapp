@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # Telegram Bot Config
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-    BOT_USERNAME: str = os.getenv("BOT_USERNAME", "kurslarimizbot")
+    BOT_USERNAME: str = os.getenv("BOT_USERNAME", "kreativaibot")
 
     # Teng huquqli Adminlar ro'yxati
     ADMIN_IDS_RAW: str = os.getenv("ADMIN_IDS", "8544023815,8112688757")

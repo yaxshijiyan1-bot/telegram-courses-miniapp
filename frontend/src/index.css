@@ -63,7 +63,7 @@ body {
 
 /* ============ APP FRAME ============ */
 .app-canvas {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: stretch;
@@ -77,7 +77,7 @@ body {
 .app-frame {
   width: 100%;
   max-width: 440px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg-base);
   display: flex;
   flex-direction: column;
