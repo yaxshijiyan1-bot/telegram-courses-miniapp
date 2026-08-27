@@ -161,12 +161,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         <div className="grid grid-cols-2 gap-2.5">
           {[
-            { name: 'Yaxshi Bola', tag: '@yomonboia', avatar: '/images/ustoz_yaxshi_bola.webp' },
-            { name: 'Zuhra Olimova', tag: '@sokin_notalar', avatar: '/images/ustoz_zuhra_olimova.webp' },
+            { name: 'Zuhra Olimova', tag: '@Olimova_Zuhra', avatar: '/images/ustoz_zuhra_olimova.webp', url: 'https://t.me/+awu_1WFe7MhiNmQ6' },
+            { name: 'Yaxshi Bola', tag: '@yomonboia', avatar: '/images/ustoz_yaxshi_bola.webp', url: 'https://t.me/yomonboia' },
           ].map((mentor) => (
             <a
-              key={mentor.tag}
-              href={`https://t.me/${mentor.tag.slice(1)}`}
+              key={mentor.url}
+              href={mentor.url}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => haptic.impact('light')}

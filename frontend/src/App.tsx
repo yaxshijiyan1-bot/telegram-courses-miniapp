@@ -318,7 +318,7 @@ export const AppContent: React.FC = () => {
       </div>
 
       {/* Scrollable Main Body */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-24 no-scrollbar">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-32 no-scrollbar">
         {activeTab === 'home' && (
           <HomePage
             courses={courses}

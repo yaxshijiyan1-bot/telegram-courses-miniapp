@@ -6,6 +6,7 @@ import {
   Sparkles,
   Target,
   Instagram,
+  Facebook,
   Send,
   Users,
   Award,
@@ -37,7 +38,38 @@ export interface Instructor {
 }
 
 // ==== USTOZLAR MA'LUMOTLARI ====
+// Matn ichidagi [so'z](havola) ko'rinishidagi qismlar kanallarga rangli havola bo'lib ochiladi
 export const INSTRUCTORS: Instructor[] = [
+  {
+    id: 'zuhra-olimova',
+    name: 'Zuhra Olimova',
+    photo: '/images/ustoz_zuhra_olimova.webp',
+    role: 'SMM & AI Kontent',
+    tagline: '“AI Formula” kursi asoschisi',
+    accent: 'violet',
+    stats: [
+      { value: '2+', label: 'yil tajriba' },
+      { value: '9 000', label: 'obunachi' },
+      { value: '130+', label: 'bitiruvchi' },
+    ],
+    paragraphs: [
+      'Zuhra Olimova — SMM va dizayn sohasida 2 yildan ortiq tajribaga ega mutaxassis. U AI yordamida rasm va video yaratish, kreativ kontent tayyorlash hamda sahifalarni rivojlantirish bo‘yicha faol ishlaydi.',
+      'Zuhra Instagram’dagi [@zuhra_akbarovna](https://www.instagram.com/akbarovna_zuhra?igsi=MTh1dnRyeDhudW4xdg==) sahifasi egasi bo‘lib, u yerda 9 000 ga yaqin obunachiga ega. Telegram’dagi [@Olimova_Zuhra](https://t.me/+awu_1WFe7MhiNmQ6) kanalini ham yuritadi; kanalda 1 500 ga yaqin obunachi bor.',
+      'U [“Hammaga Yetadi”](https://t.me/hammagayetadi) kanalining avvalgi admini va qayta tiklanayotgan kanal egasi hisoblanadi. Zuhra “Dizayn ilk qadam” chellenji asoschisi. Unda 35+ ishtirokchi qatnashgan va ularning ko‘pchiligi olgan bilimlari asosida o‘z yo‘nalishi yoki biznesini yo‘lga qo‘ygan.',
+      'Zuhra, shuningdek, sun’iy intellektda prompt yozish, rasm va video yaratishga bag‘ishlangan “AI Formula” bepul kursi asoschisi.',
+    ],
+    highlights: [
+      'AI prompt yozish',
+      'Rasm va video yaratish',
+      'Sahifalarni rivojlantirish',
+      'SMM strategiya',
+    ],
+    socials: [
+      { icon: Instagram, label: '@zuhra_akbarovna', url: 'https://www.instagram.com/akbarovna_zuhra?igsi=MTh1dnRyeDhudW4xdg==' },
+      { icon: Send, label: '@Olimova_Zuhra', url: 'https://t.me/+awu_1WFe7MhiNmQ6' },
+      { icon: Send, label: 'Hammaga Yetadi', url: 'https://t.me/hammagayetadi' },
+    ],
+  },
   {
     id: 'yaxshi-bola',
     name: 'Yaxshi Bola',
@@ -51,8 +83,8 @@ export const INSTRUCTORS: Instructor[] = [
       { value: '2 500+', label: "o'quvchi" },
     ],
     paragraphs: [
-      '22 yoshli Yaxshi Bola — dasturlash va dizayn yo‘nalishida 1,5 yildan ortiq tajribaga ega ijodkor. U Instagram’dagi odobli.ai loyihasi asoschisi. Loyiha 9 000+ obunachiga ega. Facebook’dagi sahifasini ham 1 000+ kishi kuzatadi.',
-      'U avval bir yil davomida “Hammaga Yetadi” kanalini yuritib, Canva va dizayn bo‘yicha foydali bilimlarni 2 500+ kishiga ulashgan. Kanal hozir qayta tiklanib, yangi bosqichda rivojlanmoqda.',
+      '22 yoshli Yaxshi Bola — dasturlash va dizayn yo‘nalishida 1,5 yildan ortiq tajribaga ega ijodkor. U Instagram’dagi [odobli.ai](https://www.instagram.com/odobli.ai?igsi=OWZlZnhiano2Z2x0) loyihasi asoschisi. Loyiha 9 000+ obunachiga ega. [Facebook](https://www.facebook.com/share/1F1tuV2C9L/)’dagi sahifasini ham 1 000+ kishi kuzatadi.',
+      'U avval bir yil davomida [“Hammaga Yetadi”](https://t.me/hammagayetadi) kanalini yuritib, Canva va dizayn bo‘yicha foydali bilimlarni 2 500+ kishiga ulashgan. Kanal hozir qayta tiklanib, yangi bosqichda rivojlanmoqda.',
       'Bu kursda Yaxshi Bola sizga AI vositalarini amalda ishlatish, kreativ kontent yaratish, dizayn fikrlashi va raqamli loyihalarni rivojlantirish bo‘yicha o‘z tajribasini ulashadi.',
     ],
     highlights: [
@@ -62,37 +94,9 @@ export const INSTRUCTORS: Instructor[] = [
       'Raqamli loyihalarni rivojlantirish',
     ],
     socials: [
-      { icon: Instagram, label: 'odobli.ai', url: 'https://instagram.com/odobli.ai' },
+      { icon: Instagram, label: 'odobli.ai', url: 'https://www.instagram.com/odobli.ai?igsi=OWZlZnhiano2Z2x0' },
+      { icon: Facebook, label: 'Facebook', url: 'https://www.facebook.com/share/1F1tuV2C9L/' },
       { icon: Send, label: '@yomonboia', url: 'https://t.me/yomonboia' },
-    ],
-  },
-  {
-    id: 'zuhra-olimova',
-    name: 'Zuhra Olimova',
-    photo: '/images/ustoz_zuhra_olimova.webp',
-    role: 'SMM & AI Kontent',
-    tagline: '“AI Formula” kursi asoschisi',
-    accent: 'violet',
-    stats: [
-      { value: '2+', label: 'yil tajriba' },
-      { value: '9 000', label: 'obunachi' },
-      { value: '35+', label: 'bitiruvchi' },
-    ],
-    paragraphs: [
-      'Zuhra Olimova — SMM va dizayn sohasida 2 yildan ortiq tajribaga ega mutaxassis. U AI yordamida rasm va video yaratish, kreativ kontent tayyorlash hamda sahifalarni rivojlantirish bo‘yicha faol ishlaydi.',
-      'Zuhra Instagram’dagi @zuhra_akbarovna sahifasi egasi bo‘lib, u yerda 9 000 ga yaqin obunachiga ega. Telegram’dagi @Olimova_Zuhra kanalini ham yuritadi; kanalda 1 500 ga yaqin obunachi bor.',
-      'U “Hammaga Yetadi” kanalining avvalgi admini va qayta tiklanayotgan kanal egasi hisoblanadi. Zuhra “Dizayn ilk qadam” chellenji asoschisi. Unda 35+ ishtirokchi qatnashgan va ularning ko‘pchiligi olgan bilimlari asosida o‘z yo‘nalishi yoki biznesini yo‘lga qo‘ygan.',
-      'Zuhra, shuningdek, sun’iy intellektda prompt yozish, rasm va video yaratishga bag‘ishlangan “AI Formula” bepul kursi asoschisi.',
-    ],
-    highlights: [
-      'AI prompt yozish',
-      'Rasm va video yaratish',
-      'Sahifalarni rivojlantirish',
-      'SMM strategiya',
-    ],
-    socials: [
-      { icon: Instagram, label: '@zuhra_akbarovna', url: 'https://instagram.com/zuhra_akbarovna' },
-      { icon: Send, label: '@Olimova_Zuhra', url: 'https://t.me/Olimova_Zuhra' },
     ],
   },
 ];
@@ -116,6 +120,42 @@ const ACCENT = {
     grad: 'from-violet/90 to-violet-light/80',
     soft: 'bg-violet/5',
   },
+};
+
+// Havola platformasi bo'yicha brend ranglari: Telegram — ko'k, Facebook — to'q ko'k, Instagram — pushti
+const linkColor = (url: string): string => {
+  if (url.includes('t.me') || url.includes('telegram.')) return 'text-[#229ED9]';
+  if (url.includes('facebook.') || url.includes('fb.com')) return 'text-[#0866FF]';
+  if (url.includes('instagram.com')) return 'text-[#E1306C]';
+  return 'text-cyan';
+};
+
+const LINK_TOKEN = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+
+// “[so‘z](havola)” belgilarini topib, o‘rniga bosiladigan rangli havola qo‘yadi
+const RichText: React.FC<{ text: string }> = ({ text }) => {
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  LINK_TOKEN.lastIndex = 0;
+  while ((m = LINK_TOKEN.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(
+      <a
+        key={`${m.index}`}
+        href={m[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className={`font-bold ${linkColor(m[2])} active:opacity-60 transition-opacity`}
+      >
+        {m[1]}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
 };
 
 // ==== USTOZ PROFIL MODALI (bottom-sheet) ====
@@ -143,7 +183,7 @@ const InstructorProfileSheet: React.FC<{
 
   return (
     <motion.div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -219,7 +259,7 @@ const InstructorProfileSheet: React.FC<{
         <div className="px-5 mt-5 space-y-3">
           {instructor.paragraphs.map((p, i) => (
             <p key={i} className="text-xs text-ink-secondary leading-relaxed">
-              {p}
+              <RichText text={p} />
             </p>
           ))}
         </div>
@@ -253,14 +293,14 @@ const InstructorProfileSheet: React.FC<{
               const Icon = s.icon;
               return (
                 <a
-                  key={s.label}
+                  key={s.url}
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => haptic?.impact?.('light')}
                   className="flex items-center space-x-2 px-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-2xl transition-colors active:scale-[0.97]"
                 >
-                  <Icon className="w-3.5 h-3.5 text-cyan flex-shrink-0" />
+                  <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${linkColor(s.url)}`} />
                   <span className="text-[10px] font-bold text-ink truncate">{s.label}</span>
                 </a>
               );

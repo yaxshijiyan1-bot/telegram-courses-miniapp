@@ -160,7 +160,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           onTouchStart={() => setPaused(true)}
           onTouchEnd={() => setPaused(false)}
         >
-          <div className="relative w-full aspect-[16/9] bg-slate-100">
+          <div className="relative w-full aspect-[21/9] bg-slate-100">
             <AnimatePresence initial={false} mode="popLayout">
               <motion.div
                 key={activeBanner.id}
@@ -186,7 +186,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             {activeBanner.title ? (
               <>
                 <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent pointer-events-none" />
-                <div className="absolute bottom-3 left-4 right-4 pointer-events-none">
+                <div className="absolute bottom-3 left-4 right-12 pointer-events-none">
                   <h2 className="text-[15px] font-extrabold text-white leading-snug tracking-tight clamp-2 drop-shadow-md">
                     {activeBanner.title}
                   </h2>
