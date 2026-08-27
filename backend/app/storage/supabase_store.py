@@ -143,6 +143,11 @@ class SupabaseStore(Store):
         except Exception:
             return 0
 
+    async def delete_user(self, user_id: str) -> bool:
+        # FK lar ON DELETE CASCADE: enrollments, purchases, progress, certificates, notifications avto o'chadi
+        res = await self._req("DELETE", "users", {"id": f"eq.{user_id}"})
+        return bool(res)
+
     # ---------------- COURSES ----------------
     async def list_courses(self, published_only: bool = True) -> List[Dict[str, Any]]:
         params = {"order": "created_at.asc"}
@@ -294,6 +299,16 @@ class SupabaseStore(Store):
             "user_id": f"eq.{user_id}", "status": "eq.active", "order": "granted_at.desc"
         })
         return rows or []
+
+    async def revoke_enrollment(self, user_id: str, course_id: str) -> bool:
+        res = await self._req("DELETE", "enrollments", {
+            "user_id": f"eq.{user_id}", "course_id": f"eq.{course_id}"
+        })
+        if res:
+            await self._req("DELETE", "lesson_progress", {
+                "user_id": f"eq.{user_id}", "course_id": f"eq.{course_id}"
+            })
+        return bool(res)
 
     # ---------------- LESSON PROGRESS ----------------
     async def upsert_progress(self, user_id: str, course_id: str, lesson_id: str, completed: bool, last_position: int = 0) -> bool:

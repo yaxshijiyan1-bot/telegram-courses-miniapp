@@ -1,9 +1,52 @@
+import json
+import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 class Store(ABC):
     """Barcha storage backendlari uchun yagona interfeys."""
     backend_name: str = "base"
+
+    # ---------------- BLOCKED USERS ----------------
+    # app_settings (key-value) jadvalida JSON ro'yxat sifatida saqlanadi —
+    # Supabase'da users jadvaliga yangi ustun qo'shmasdan ishlaydi.
+    BLOCKED_KEY = "blocked_users"
+    _blocked_cache: Optional[Set[int]] = None
+    _blocked_cache_ts: float = 0.0
+    _BLOCKED_CACHE_TTL = 20.0
+
+    async def get_blocked_ids(self) -> Set[int]:
+        now = time.monotonic()
+        if self._blocked_cache is not None and now - self._blocked_cache_ts < self._BLOCKED_CACHE_TTL:
+            return self._blocked_cache
+        raw = await self.get_setting(self.BLOCKED_KEY)
+        ids: Set[int] = set()
+        if raw:
+            try:
+                ids = {int(x) for x in json.loads(raw)}
+            except Exception:
+                ids = set()
+        self._blocked_cache = ids
+        self._blocked_cache_ts = now
+        return ids
+
+    async def set_user_blocked(self, telegram_id: int, blocked: bool) -> bool:
+        ids = set(await self.get_blocked_ids())
+        if blocked:
+            ids.add(int(telegram_id))
+        else:
+            ids.discard(int(telegram_id))
+        ok = await self.set_setting(self.BLOCKED_KEY, json.dumps(sorted(ids)))
+        if ok:
+            self._blocked_cache = ids
+            self._blocked_cache_ts = time.monotonic()
+        return ok
+
+    async def is_user_blocked(self, telegram_id: int) -> bool:
+        try:
+            return int(telegram_id) in await self.get_blocked_ids()
+        except Exception:
+            return False
 
     # USERS
     @abstractmethod
@@ -18,6 +61,8 @@ class Store(ABC):
     async def list_users(self, limit: int = 200) -> List[Dict[str, Any]]: ...
     @abstractmethod
     async def count_users(self) -> int: ...
+    @abstractmethod
+    async def delete_user(self, user_id: str) -> bool: ...
 
     # COURSES
     @abstractmethod
@@ -58,6 +103,8 @@ class Store(ABC):
     async def create_enrollment(self, user_id: str, course_id: str, purchase_id: Optional[str] = None) -> Dict[str, Any]: ...
     @abstractmethod
     async def list_enrollments(self, user_id: str) -> List[Dict[str, Any]]: ...
+    @abstractmethod
+    async def revoke_enrollment(self, user_id: str, course_id: str) -> bool: ...
 
     # LESSON PROGRESS
     @abstractmethod

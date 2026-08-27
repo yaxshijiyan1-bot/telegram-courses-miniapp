@@ -71,6 +71,22 @@ async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCrede
     if not credentials:
         return None
     payload = decode_access_token(credentials.credentials)
+    if not payload:
+        return None
+    # Bloklangan foydalanuvchi anonim sifatida ko'riladi — kurslarga kirish yo'q
+    tg_id = payload.get("telegram_id")
+    if tg_id is not None:
+        try:
+            tg_id_int = int(tg_id)
+        except (TypeError, ValueError):
+            return payload
+        if tg_id_int not in settings.ADMIN_IDS:
+            from app.storage import get_store
+            try:
+                if await get_store().is_user_blocked(tg_id_int):
+                    return None
+            except Exception:
+                pass
     return payload
 
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Security(security_bearer)) -> Dict[str, Any]:
@@ -85,6 +101,25 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Yaroqsiz yoki muddati o'tgan token."
         )
+    # Bloklangan foydalanuvchilar: token amal qilish muddati tugamagan bo'lsa ham rad etiladi.
+    # Adminlar bloklanmaydi — ularni bloklash imkoni yo'q (ADMIN_IDS ichida).
+    tg_id = payload.get("telegram_id")
+    if tg_id is not None:
+        try:
+            tg_id_int = int(tg_id)
+        except (TypeError, ValueError):
+            tg_id_int = None
+        if tg_id_int is not None and tg_id_int not in settings.ADMIN_IDS:
+            from app.storage import get_store
+            try:
+                blocked = await get_store().is_user_blocked(tg_id_int)
+            except Exception:
+                blocked = False
+            if blocked:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Hisobingiz bloklangan. Batafsil ma'lumot uchun admin bilan bog'laning."
+                )
     return payload
 
 async def get_current_admin(credentials: Optional[HTTPAuthorizationCredentials] = Security(security_bearer)) -> Dict[str, Any]:

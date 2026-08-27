@@ -212,6 +212,13 @@ class SqliteStore(Store):
         with self.lock, self._conn() as c:
             return c.execute("SELECT COUNT(*) FROM users").fetchone()[0]
 
+    async def delete_user(self, user_id: str) -> bool:
+        with self.lock, self._conn() as c:
+            for table in ("enrollments", "lesson_progress", "certificates", "notifications", "purchases"):
+                c.execute(f"DELETE FROM {table} WHERE user_id=?", (user_id,))
+            cur = c.execute("DELETE FROM users WHERE id=?", (user_id,))
+            return cur.rowcount > 0
+
     # ---------------- COURSES ----------------
     def _course_row(self, r: sqlite3.Row) -> Dict[str, Any]:
         d = dict(r)
@@ -432,6 +439,18 @@ class SqliteStore(Store):
                 (user_id,)
             ).fetchall()
             return [dict(r) for r in rows]
+
+    async def revoke_enrollment(self, user_id: str, course_id: str) -> bool:
+        with self.lock, self._conn() as c:
+            cur = c.execute(
+                "DELETE FROM enrollments WHERE user_id=? AND course_id=?",
+                (user_id, course_id)
+            )
+            c.execute(
+                "DELETE FROM lesson_progress WHERE user_id=? AND course_id=?",
+                (user_id, course_id)
+            )
+            return cur.rowcount > 0
 
     # ---------------- LESSON PROGRESS ----------------
     async def upsert_progress(self, user_id: str, course_id: str, lesson_id: str, completed: bool, last_position: int = 0) -> bool:

@@ -168,8 +168,14 @@ export interface AdminStudent {
   name: string;
   username?: string;
   telegram_id?: number;
+  role?: string;
   overall_progress?: string;
   enrolled_courses?: string;
+  enrolled_courses_count?: number;
+  courses?: { id: string; title: string }[];
+  joined_date?: string;
+  status?: string;
+  is_blocked?: boolean;
   created_at: string;
 }
 

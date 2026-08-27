@@ -606,6 +606,21 @@ class ApiService {
     return this.adminFetch('/admin/students');
   }
 
+  async deleteStudent(studentId: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/students/${studentId}`, { method: 'DELETE' });
+  }
+
+  async setStudentBlocked(studentId: string, blocked: boolean): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/students/${studentId}/block`, {
+      method: 'POST',
+      body: JSON.stringify({ blocked })
+    });
+  }
+
+  async revokeStudentCourse(studentId: string, courseId: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/students/${studentId}/courses/${courseId}`, { method: 'DELETE' });
+  }
+
   async getAdminCourses(): Promise<Course[]> {
     return this.adminFetch('/admin/courses');
   }

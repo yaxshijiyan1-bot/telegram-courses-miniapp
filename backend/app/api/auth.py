@@ -74,6 +74,15 @@ async def telegram_auth(req: TelegramAuthRequest, request: Request):
 
     tg_id = int(tg_user.get("id", 0))
 
+    store = get_store()
+
+    # Bloklangan foydalanuvchilar tizimga kira olmaydi (adminlar bundan mustasno)
+    if tg_id not in settings.ADMIN_IDS and await store.is_user_blocked(tg_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Hisobingiz bloklangan. Batafsil ma'lumot uchun admin bilan bog'laning."
+        )
+
     # Agar kirayotgan user Admin bo'lsa (Yaxshi Bola yoki Zuhra Olimova)
     if tg_id in settings.ADMIN_PROFILES:
         admin_info = settings.ADMIN_PROFILES[tg_id]
@@ -85,7 +94,6 @@ async def telegram_auth(req: TelegramAuthRequest, request: Request):
         username = tg_user.get("username", "")
         role = "student"
 
-    store = get_store()
     user_record = await store.get_user_by_tg(tg_id)
     if user_record:
         # Ism/username/rol o'zgargan bo'lsa yangilab boramiz

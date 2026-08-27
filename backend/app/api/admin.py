@@ -167,6 +167,7 @@ async def get_students_list(admin: dict = Depends(get_current_admin)):
     """Barcha ro'yxatdan o'tgan talabalar CRM ro'yxati — real ma'lumotlar"""
     store = get_store()
     users = await store.list_users(limit=200)
+    blocked_ids = await store.get_blocked_ids()
 
     result = []
     for u in users:
@@ -174,28 +175,98 @@ async def get_students_list(admin: dict = Depends(get_current_admin)):
         completed_total = 0
         lessons_total = 0
         course_titles = []
+        courses = []
         for enr in enrollments:
             course = await store.get_course(enr["course_id"])
             if not course:
                 continue
             course_titles.append(course["title"])
+            courses.append({"id": course["id"], "title": course["title"]})
             lessons = len([l for m in build_course_modules(course) for l in m["lessons"]])
             completed_total += await store.count_completed(u["id"], course["id"])
             lessons_total += lessons or course.get("lesson_count", 0)
         overall = min(100, int(completed_total * 100 / max(lessons_total, 1))) if enrollments else 0
+        tg_id = int(u.get("telegram_id") or 0)
         result.append({
             "id": u["id"],
             "name": u.get("name", "Talaba"),
             "username": u.get("username") or "",
-            "telegram_id": u.get("telegram_id") or 0,
+            "telegram_id": tg_id,
             "role": u.get("role", "student"),
             "enrolled_courses_count": len(enrollments),
             "enrolled_courses": ", ".join(course_titles[:3]),
+            "courses": courses,
             "overall_progress": f"{overall}%",
             "joined_date": str(u.get("created_at", ""))[:10],
-            "status": "Faol" if enrollments else "Yangi"
+            "status": "Faol" if enrollments else "Yangi",
+            "is_blocked": tg_id in blocked_ids,
         })
     return result
+
+class BlockUserRequest(BaseModel):
+    blocked: bool = True
+
+@router.delete("/students/{user_id}")
+async def delete_student(user_id: str, admin: dict = Depends(get_current_admin)):
+    """Talabani tizimdan butunlay o'chirish (barcha kurslari, progressi, xaridlari bilan)"""
+    store = get_store()
+    target = await store.get_user(user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Talaba topilmadi")
+
+    tg_id = int(target.get("telegram_id") or 0)
+    if tg_id in settings.ADMIN_IDS or target.get("role") == "superadmin":
+        raise HTTPException(status_code=403, detail="Administrator hisobini o'chirib bo'lmaydi")
+
+    ok = await store.delete_user(user_id)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Foydalanuvchini o'chirishda xatolik yuz berdi")
+    # Blok ro'yxatidan ham tozalash (avval bloklangan bo'lsa)
+    if tg_id:
+        await store.set_user_blocked(tg_id, False)
+    return {"success": True, "message": f"{target.get('name')} tizimdan butunlay o'chirildi (Admin: {admin.get('name')})"}
+
+@router.post("/students/{user_id}/block")
+async def set_student_blocked(user_id: str, req: BlockUserRequest, admin: dict = Depends(get_current_admin)):
+    """Talabani bloklash / blokdan chiqarish (login va miniapp kirishi yopiladi)"""
+    store = get_store()
+    target = await store.get_user(user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Talaba topilmadi")
+
+    tg_id = int(target.get("telegram_id") or 0)
+    if not tg_id:
+        raise HTTPException(status_code=400, detail="Bu foydalanuvchida Telegram ID yo'q")
+    if tg_id in settings.ADMIN_IDS or target.get("role") == "superadmin":
+        raise HTTPException(status_code=403, detail="Administrator hisobini bloklab bo'lmaydi")
+
+    ok = await store.set_user_blocked(tg_id, req.blocked)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Bloklash amalga oshmadi")
+    action = "bloklandi" if req.blocked else "blokdan chiqarildi"
+    return {"success": True, "blocked": req.blocked, "message": f"{target.get('name')} {action} (Admin: {admin.get('name')})"}
+
+@router.delete("/students/{user_id}/courses/{course_id}")
+async def revoke_student_course(user_id: str, course_id: str, admin: dict = Depends(get_current_admin)):
+    """Talabaning ma'lum bir kursga kirishini cheklash"""
+    store = get_store()
+    target = await store.get_user(user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Talaba topilmadi")
+    course = await store.get_course(course_id)
+
+    ok = await store.revoke_enrollment(user_id, course_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Bu kurs talabaga biriktirilmagan")
+
+    title = course["title"] if course else course_id
+    await store.create_notification(
+        user_id,
+        "Kursga kirish cheklandi",
+        f"Admin '{title}' kursiga kirishingizni chekladi.",
+        "warning"
+    )
+    return {"success": True, "message": f"{target.get('name')} ning '{title}' kursiga kirishi cheklandi (Admin: {admin.get('name')})"}
 
 @router.post("/manual-enroll")
 async def manual_enroll_student(
@@ -262,11 +333,15 @@ async def broadcast_message(
         keyboard = {"inline_keyboard": [[{"text": req.button_text, "url": req.button_url}]]}
 
     recipients = await store.broadcast_recipients()
+    blocked_ids = await store.get_blocked_ids()
     sent_count = 0
     failed = 0
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         for r in recipients:
+            # Bloklangan foydalanuvchilarga xabar yuborilmaydi
+            if int(r.get("telegram_id") or 0) in blocked_ids:
+                continue
             try:
                 payload = {
                     "chat_id": r["telegram_id"],

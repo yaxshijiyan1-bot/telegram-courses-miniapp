@@ -131,6 +131,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   // Delete Confirmation State
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<AdminStudent | null>(null);
 
   // Banner States
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -607,6 +608,49 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       await loadData(true);
     } catch (e: any) {
       showError(e?.message || 'Kursni ochishda xatolik');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const handleToggleBlock = async (st: AdminStudent) => {
+    haptic?.impact?.('heavy');
+    setIsActionLoading(`block_${st.id}`);
+    try {
+      const res = await api.setStudentBlocked(st.id, !st.is_blocked);
+      showNotification(res.message || (st.is_blocked ? 'Talaba blokdan chiqarildi!' : 'Talaba bloklandi!'));
+      setStudents(prev => prev.map(s => s.id === st.id ? { ...s, is_blocked: !st.is_blocked } : s));
+    } catch (e: any) {
+      showError(e?.message || 'Bloklashda xatolik yuz berdi');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const handleDeleteStudent = async (st: AdminStudent) => {
+    haptic?.impact?.('heavy');
+    setIsActionLoading(`delstudent_${st.id}`);
+    try {
+      const res = await api.deleteStudent(st.id);
+      showNotification(res.message || 'Talaba tizimdan o\'chirildi!');
+      setStudentToDelete(null);
+      setStudents(prev => prev.filter(s => s.id !== st.id));
+    } catch (e: any) {
+      showError(e?.message || 'Talabani o\'chirishda xatolik yuz berdi');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const handleRevokeCourse = async (st: AdminStudent, courseId: string) => {
+    haptic?.impact?.('heavy');
+    setIsActionLoading(`revoke_${st.id}_${courseId}`);
+    try {
+      const res = await api.revokeStudentCourse(st.id, courseId);
+      showNotification(res.message || 'Kursga kirish cheklandi!');
+      await loadData(true);
+    } catch (e: any) {
+      showError(e?.message || 'Kursga kirishni cheklashda xatolik');
     } finally {
       setIsActionLoading(null);
     }
@@ -1699,33 +1743,86 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       Talabalar topilmadi.
                     </div>
                   ) : (
-                    filteredStudents.map((st) => (
-                      <div key={st.id} className="bg-white border border-slate-200/90 p-3.5 rounded-2xl space-y-2 text-xs shadow-sm">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <strong className="text-slate-900 block font-bold">{st.name}</strong>
-                            <span className="text-[10px] text-slate-500">
-                              @{st.username || 'noma\'lum'} • ID: <code className="text-sky-600 font-bold">{st.telegram_id}</code>
-                            </span>
+                    filteredStudents.map((st) => {
+                      const isAdminAccount = st.role === 'superadmin';
+                      return (
+                        <div key={st.id} className={`p-3.5 rounded-2xl space-y-2 text-xs shadow-sm border ${st.is_blocked ? 'bg-red-50/60 border-red-200' : 'bg-white border-slate-200/90'}`}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <strong className="text-slate-900 font-bold">{st.name}</strong>
+                                {st.is_blocked && (
+                                  <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">
+                                    <Ban className="w-2.5 h-2.5" /> Bloklangan
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-slate-500">
+                                @{st.username || 'noma\'lum'} • ID: <code className="text-sky-600 font-bold">{st.telegram_id}</code>
+                              </span>
+                            </div>
+                            <span className="badge-cyan text-[9px] py-0.5 px-2">{st.overall_progress || '0%'}</span>
                           </div>
-                          <span className="badge-cyan text-[9px] py-0.5 px-2">{st.overall_progress || '0%'}</span>
-                        </div>
 
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                          <span className="text-[11px] text-slate-500">
-                            Kurs: <b className="text-slate-900">{st.enrolled_courses || '— Yangi'}</b>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleManualEnroll(st.id, enrollCourseId)}
-                            disabled={isActionLoading === `enroll_${st.id}`}
-                            className="px-3 py-1.5 bg-sky-600 text-white font-extrabold rounded-xl text-[10px] hover:bg-sky-700 active:scale-95 transition-transform"
-                          >
-                            + Grant Ochish
-                          </button>
+                          {/* Kurslar — har birini cheklash (X) mumkin */}
+                          <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
+                            {st.courses && st.courses.length > 0 ? st.courses.map(c => (
+                              <span key={c.id} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 rounded-lg px-2 py-1 text-[10px] font-semibold">
+                                {c.title}
+                                <button
+                                  type="button"
+                                  title="Kursga kirishni cheklash"
+                                  onClick={() => handleRevokeCourse(st, c.id)}
+                                  disabled={isActionLoading === `revoke_${st.id}_${c.id}`}
+                                  className="text-slate-400 hover:text-red-600 active:scale-90 transition"
+                                >
+                                  {isActionLoading === `revoke_${st.id}_${c.id}` ? <InlineLoader variant="orbit" size={10} color="#94a3b8" /> : <X className="w-3 h-3" />}
+                                </button>
+                              </span>
+                            )) : (
+                              <span className="text-[10px] text-slate-400 italic py-1">Kurslari yo'q — Yangi talaba</span>
+                            )}
+                          </div>
+
+                          {/* Amallar: Grant / Bloklash / O'chirish */}
+                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => handleManualEnroll(st.id, enrollCourseId)}
+                              disabled={isActionLoading === `enroll_${st.id}`}
+                              className="flex-1 px-2 py-1.5 bg-sky-600 text-white font-extrabold rounded-xl text-[10px] hover:bg-sky-700 active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center"
+                            >
+                              {isActionLoading === `enroll_${st.id}` ? <InlineLoader variant="orbit" size={11} color="#FFFFFF" /> : '+ Grant Ochish'}
+                            </button>
+                            {!isAdminAccount && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleBlock(st)}
+                                  disabled={isActionLoading === `block_${st.id}`}
+                                  className={`flex-1 px-2 py-1.5 font-extrabold rounded-xl text-[10px] active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1 ${st.is_blocked ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
+                                >
+                                  {isActionLoading === `block_${st.id}` ? (
+                                    <InlineLoader variant="orbit" size={11} color={st.is_blocked ? '#FFFFFF' : '#b45309'} />
+                                  ) : (
+                                    <Ban className="w-3 h-3" />
+                                  )}
+                                  {st.is_blocked ? 'Blokdan chiqarish' : 'Bloklash'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setStudentToDelete(st)}
+                                  title="Talabani butunlay o'chirish"
+                                  className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-extrabold rounded-xl text-[10px] active:scale-95 transition-transform"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -2112,6 +2209,46 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 className="py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center"
               >
                 {isActionLoading === `del_${courseToDelete.id}` ? (
+                  <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
+                ) : (
+                  'Ha, O‘chirish'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5.1 Delete Student Confirmation Dialog */}
+      {studentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-up">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h4 className="text-sm font-extrabold text-slate-900">Talabani o'chirishni tasdiqlaysizmi?</h4>
+              <p className="text-xs text-slate-500">
+                <b className="text-slate-800">{studentToDelete.name}</b> (@{studentToDelete.username || 'noma\'lum'}) tizimdan butunlay o'chiriladi — barcha kurslari, progressi va xarid tarixi yo'qoladi. Bu amalni ortga qaytarib bo'lmaydi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteStudent(studentToDelete)}
+                disabled={isActionLoading === `delstudent_${studentToDelete.id}`}
+                className="py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center"
+              >
+                {isActionLoading === `delstudent_${studentToDelete.id}` ? (
                   <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
                 ) : (
                   'Ha, O‘chirish'

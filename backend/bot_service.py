@@ -600,11 +600,15 @@ async def _send_stats(client: httpx.AsyncClient, chat_id: int, user_id: int) -> 
     stats = await store.revenue_stats()
     pending = await store.list_purchases(status="pending_approval", limit=1000)
     active_courses = await store.list_courses(published_only=True)
+    # Ayrim adminlarga (masalan Zuhra Olimova) talabalar soni ko'rsatilmaydi
+    students_line = ""
+    if user_id not in settings.STATS_STUDENTS_HIDDEN_IDS:
+        students_line = f"👥 Talabalar: <b>{await store.count_users()} ta</b>\n"
     text = (
         "📊 <b>Kreativ AI — Platforma Statistikasi</b>\n\n"
         f"💰 Jami tushum: <b>{_uzs(stats.get('total_revenue'))}</b>\n"
         f"📈 Oylik tushum: <b>{_uzs(stats.get('monthly_revenue'))}</b>\n"
-        f"👥 Talabalar: <b>{await store.count_users()} ta</b>\n"
+        f"{students_line}"
         f"📚 Faol kurslar: <b>{len(active_courses)} ta</b>\n"
         f"⏳ Kutilayotgan cheklar: <b>{len(pending)} ta</b>"
     )
@@ -637,6 +641,27 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
     if "my_chat_member" in update:
         await handle_my_chat_member(client, update["my_chat_member"])
         return
+
+    # Bloklangan foydalanuvchilar bot bilan muloqot qila olmaydi (adminlar bundan mustasno)
+    raw_tg_id = None
+    if "callback_query" in update:
+        raw_tg_id = ((update["callback_query"].get("from")) or {}).get("id")
+    elif update.get("message"):
+        raw_tg_id = ((update["message"].get("from")) or {}).get("id")
+    if raw_tg_id:
+        try:
+            tg_id_int = int(raw_tg_id)
+        except (TypeError, ValueError):
+            tg_id_int = None
+        if tg_id_int is not None and tg_id_int not in settings.ADMIN_IDS:
+            try:
+                if await get_store().is_user_blocked(tg_id_int):
+                    if "callback_query" in update:
+                        await _answer_callback(client, update["callback_query"].get("id"), "Hisobingiz bloklangan.")
+                    return
+            except Exception:
+                pass
+
     if "callback_query" in update:
         await handle_callback_query(client, update["callback_query"])
         return
