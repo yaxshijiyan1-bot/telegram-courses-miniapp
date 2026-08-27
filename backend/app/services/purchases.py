@@ -225,7 +225,7 @@ async def reject_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, s
         purchase.get("telegram_id"),
         "⚠️ <b>To'lov chekingiz tasdiqlanmadi.</b>\n\n"
         "Chek ma'lumotlarini tekshirib, qayta yuboring yoki yordam uchun adminlarga yozing:\n"
-        "👤 @yaxshiboIa\n👤 @sokin_notalar",
+        "👤 @yomonboIa\n👤 @sokin_notalar",
     )
     return True, "Chek rad etildi va talaba xabardor qilindi"
 

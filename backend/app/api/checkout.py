@@ -63,8 +63,8 @@ async def get_payment_info():
         "admins": [
             {
                 "name": "Yaxshi Bola",
-                "username": "yaxshiboIa",
-                "telegram_url": "https://t.me/yaxshiboIa",
+                "username": "yomonboIa",
+                "telegram_url": "https://t.me/yomonboIa",
                 "role": "Asoschi & Superadmin"
             },
             {

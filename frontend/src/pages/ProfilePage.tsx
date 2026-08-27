@@ -140,7 +140,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           )}
 
           <a
-            href="https://t.me/yaxshiboIa"
+            href="https://t.me/yomonboIa"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => haptic.impact('light')}
@@ -162,7 +162,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <div className="grid grid-cols-2 gap-2.5">
           {[
             { name: 'Zuhra Olimova', tag: '@Olimova_Zuhra', avatar: '/images/ustoz_zuhra_olimova.webp', url: 'https://t.me/+awu_1WFe7MhiNmQ6' },
-            { name: 'Yaxshi Bola', tag: '@yaxshiboIa', avatar: '/images/ustoz_yaxshi_bola.webp', url: 'https://t.me/yaxshiboIa' },
+            { name: 'Yaxshi Bola', tag: '@yomonboIa', avatar: '/images/ustoz_yaxshi_bola.webp', url: 'https://t.me/yomonboIa' },
           ].map((mentor) => (
             <a
               key={mentor.url}
