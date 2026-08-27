@@ -5,7 +5,6 @@ import {
   BookOpen,
   Trophy,
   Plus,
-  PlayCircle,
   GraduationCap,
   Award,
 } from 'lucide-react';
@@ -28,7 +27,6 @@ interface HomePageProps {
   onSelectCourse: (course: Course) => void;
   onNavigateToCatalog: () => void;
   onNavigateToLearning: () => void;
-  onContinueLesson?: (courseId: string, lessonId: string) => void;
 }
 
 const SLIDE_MS = 5200;
@@ -50,7 +48,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   onSelectCourse,
   onNavigateToCatalog,
   onNavigateToLearning,
-  onContinueLesson,
 }) => {
   const { haptic, webApp } = useTelegram();
   const today = getToday();
@@ -103,9 +100,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   const completedLessons = stats?.completed_lessons_count ?? 0;
   const enrolledCount = stats?.enrolled_count ?? 0;
   const overallProgress = stats?.overall_progress_percent ?? 0;
-
-  // Continue-learning kursini courses ro'yxatidan topamiz
-  const continueCourse = continueData ? courses.find((c) => c.id === continueData.course_id) : undefined;
 
   // Sotuv bo'limida sotib olingan kurslar ko'rsatilmaydi
   const recommendedCourses = courses
@@ -245,59 +239,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.section>
       )}
 
-      {/* ==== 3. Davom ettirish (faqat REAL ma'lumot bor bo'lsa) ==== */}
-      {continueData && (
-        <motion.section variants={item} className="glass rounded-[24px] p-4 sm:p-5 relative overflow-hidden">
-          <div className="absolute -right-10 -top-14 w-40 h-40 rounded-full bg-cyan/[0.07] blur-3xl pointer-events-none" />
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-cyan/15 border border-cyan/25 text-cyan flex items-center justify-center">
-              <PlayCircle className="w-4 h-4" strokeWidth={2.2} />
-            </div>
-            <span className="eyebrow !text-cyan/90">Davom ettirish</span>
-          </div>
-
-          <h2 className="text-[15px] font-bold text-ink leading-snug clamp-1">
-            {continueData.course_title}
-          </h2>
-          <p className="text-[11px] text-ink-secondary mt-0.5 clamp-1">
-            Keyingi dars: {continueData.lesson_title}
-          </p>
-
-          <div className="flex items-center space-x-2.5 py-2.5">
-            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-cyan to-violet-light"
-                initial={{ width: 0 }}
-                animate={{ width: `${continueData.progress_percent}%` }}
-                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
-            <span className="text-[11px] font-extrabold text-cyan tabular-nums">
-              {continueData.progress_percent}%
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              haptic?.impact?.('medium');
-              if (onContinueLesson && continueData.lesson_id) {
-                onContinueLesson(continueData.course_id, continueData.lesson_id);
-              } else if (continueCourse) {
-                onSelectCourse(continueCourse);
-              } else {
-                onNavigateToLearning();
-              }
-            }}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 bg-cyan text-white rounded-xl text-[11px] font-extrabold shadow-cyanGlowSm active:scale-95 transition-transform"
-          >
-            <span>Darsni davom ettirish</span>
-            <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-          </button>
-        </motion.section>
-      )}
-
-      {/* ==== 4. Statistika (REAL — backend'dan) ==== */}
+      {/* ==== 3. Statistika (REAL — backend'dan) ==== */}
       <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-slate-200/80">
         <div className="flex items-center space-x-2.5 px-1.5">
           <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 border border-cyan/15">
@@ -342,7 +284,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </motion.div>
 
-      {/* ==== 5. Yangi kurs topish ==== */}
+      {/* ==== 4. Yangi kurs topish ==== */}
       {!continueData && (
         <motion.button
           variants={item}
@@ -370,7 +312,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.button>
       )}
 
-      {/* ==== 6. Sizga mos kurslar (sotib olinganlar ko'rsatilmaydi) ==== */}
+      {/* ==== 5. Sizga mos kurslar (sotib olinganlar ko'rsatilmaydi) ==== */}
       {recommendedCourses.length > 0 && (
       <motion.div variants={item} className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
@@ -404,7 +346,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </motion.div>
       )}
 
-      {/* ==== 7. Ustozlar haqida ==== */}
+      {/* ==== 6. Ustozlar haqida ==== */}
       <motion.div variants={item}>
         <InstructorsSection />
       </motion.div>

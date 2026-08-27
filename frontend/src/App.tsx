@@ -209,18 +209,6 @@ export const AppContent: React.FC = () => {
     return ids;
   }, [paidCourseIds, dashboardData]);
 
-  const handleContinueLesson = useCallback(async (courseId: string, lessonId: string) => {
-    const course = courses.find((c) => c.id === courseId);
-    if (!course) return;
-    const cont = dashboardData?.continue_learning;
-    await handlePlayLesson(course, {
-      id: lessonId,
-      title: cont?.lesson_title || course.title,
-      duration: cont?.lesson_duration || '',
-      order: 0,
-    });
-  }, [courses, dashboardData]);
-
   // Splash Ekrani
   if (showSplash) {
     return <SplashPage onStart={() => setShowSplash(false)} />;
@@ -332,7 +320,6 @@ export const AppContent: React.FC = () => {
             onSelectCourse={(c) => setSelectedCourse(c)}
             onNavigateToCatalog={() => setActiveTab('courses')}
             onNavigateToLearning={() => setActiveTab('learning')}
-            onContinueLesson={handleContinueLesson}
           />
         )}
 
