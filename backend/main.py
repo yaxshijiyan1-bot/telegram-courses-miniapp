@@ -2,7 +2,7 @@ import os
 import asyncio
 import uvicorn
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
@@ -43,6 +43,16 @@ app.add_middleware(
 
 # JSON javoblar uchun gzip siqish (mobil trafik tejamkorligi)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+# Dinamik API javoblari (bannerlar, kurslar, sotib olishlar) hech qayerda keshlanmasligi
+# kerak — aks holda Telegram WebView'da eski ma'lumot ko'rinib qoladi.
+# Rasm baytlari to'g'ridan-to'g'ri R2 dan oqadi, bu sarlavha yuklamani oshirmaydi.
+@app.middleware("http")
+async def no_cache_api(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store, max-age=0")
+    return response
 
 # Routerlarni ro'yxatdan o'tkazish
 app.include_router(auth.router, prefix=settings.API_PREFIX)

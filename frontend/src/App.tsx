@@ -23,8 +23,26 @@ import { TelegramGate } from './components/TelegramGate';
 import { useSecurityShield } from './hooks/useSecurityShield';
 import { ShieldAlert } from 'lucide-react';
 
+// Sotib olingan kurslar ID'larining lokal keshi — ilova ochilishi bilanoq sotuv
+// ro'yxati to'g'ri filtrlanadi: kurslar avval ko'rinib, keyin yo'qolib qolmaydi.
+const PURCHASED_IDS_KEY = 'purchased_course_ids';
+const readPurchasedCache = (): string[] => {
+  try {
+    const raw = localStorage.getItem(PURCHASED_IDS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+const writePurchasedCache = (ids: string[]) => {
+  try {
+    localStorage.setItem(PURCHASED_IDS_KEY, JSON.stringify([...new Set(ids)]));
+  } catch {}
+};
+
 export const AppContent: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, authVersion } = useAuth();
   const { showBackButton, hideBackButton } = useTelegram();
   const { securityWarning } = useSecurityShield();
 
@@ -44,8 +62,10 @@ export const AppContent: React.FC = () => {
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
-  // Chek yuborilgan, lekin admin hali tasdiqlamagan kurslar (dashboard yangilanguncha yashirish uchun)
-  const [paidCourseIds, setPaidCourseIds] = useState<string[]>([]);
+  // Sotib olingan kurslar: localStorage kesh (ochilishdayoq filtrlaydi) + joriy
+  // sessiyada chek orqali qo'shilganlari. Dashboard yuklanishi bilan kesh yangilanadi.
+  const [cachedPurchasedIds, setCachedPurchasedIds] = useState<string[]>(readPurchasedCache);
+  const [sessionPurchasedIds, setSessionPurchasedIds] = useState<string[]>([]);
 
   // ---- ORTQA QAYTISH (telefon "Nazad" tugmasi) ----
   // Android'da "orqaga" tugmasi WebView'da history.back() qiladi. Tarix bo'sh
@@ -158,16 +178,22 @@ export const AppContent: React.FC = () => {
     }
   }, []);
 
-  // Dashboard ma'lumotlarini yuklash
+  // Dashboard ma'lumotlarini yuklash. Sotib olingan kurslar ID'lari darhol
+  // localStorage'ga yoziladi — keyingi ochilishda sotuv ro'yxati flicker qilmaydi.
   const refreshDashboard = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
       const data = await api.getDashboard();
       setDashboardData(data);
+      const enrolledIds = (data?.enrolled_courses || [])
+        .map((c: any) => (c?.id ? String(c.id) : ''))
+        .filter(Boolean);
+      setCachedPurchasedIds(enrolledIds);
+      writePurchasedCache([...enrolledIds, ...sessionPurchasedIds]);
     } catch {
       // Offline
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, sessionPurchasedIds]);
 
   // Bildirishnomalarni yuklash
   const refreshNotifications = useCallback(async () => {
@@ -201,7 +227,9 @@ export const AppContent: React.FC = () => {
       refreshNotifications();
       refreshCertificates();
     }
-  }, [isAuthenticated, refreshDashboard, refreshNotifications, refreshCertificates]);
+    // authVersion: yangi token olinganda dashboard qayta yuklanadi,
+    // sotib olishlar tasdig'i iloji boricha tez aniqlanadi
+  }, [isAuthenticated, authVersion, refreshDashboard, refreshNotifications, refreshCertificates]);
 
   // Telegram BackButton boshqaruvi
   useEffect(() => {
@@ -235,12 +263,14 @@ export const AppContent: React.FC = () => {
 
   // Sotib olingan kurslar ID'lari — sotuv bo'limlarida ko'rsatilmaydi
   const purchasedCourseIds = useMemo(() => {
-    const ids = new Set<string>(paidCourseIds);
-    (dashboardData?.enrolled_courses || []).forEach((c: any) => {
-      if (c?.id) ids.add(String(c.id));
-    });
+    const ids = new Set<string>(cachedPurchasedIds);
+    sessionPurchasedIds.forEach((id) => ids.add(id));
     return ids;
-  }, [paidCourseIds, dashboardData]);
+  }, [cachedPurchasedIds, sessionPurchasedIds]);
+
+  // Sotib olishlar hali aniqlanmagan (kesh yo'q va dashboard yuklanmoqda) —
+  // bu holatda sotuv ro'yxati o'rniga skeleton ko'rsatiladi, flicker bo'lmaydi
+  const purchasesLoading = isAuthenticated && !dashboardData && purchasedCourseIds.size === 0;
 
   // Splash Ekrani
   if (showSplash) {
@@ -306,7 +336,8 @@ export const AppContent: React.FC = () => {
             onClose={() => setIsCheckoutOpen(false)}
             onSuccess={(c) => {
               setIsCheckoutOpen(false);
-              setPaidCourseIds((prev) => (prev.includes(c.id) ? prev : [...prev, c.id]));
+              setSessionPurchasedIds((prev) => (prev.includes(c.id) ? prev : [...prev, c.id]));
+              writePurchasedCache([...readPurchasedCache(), c.id]);
               setPurchasedCourse(c);
             }}
           />
@@ -344,6 +375,7 @@ export const AppContent: React.FC = () => {
           <HomePage
             courses={courses}
             purchasedCourseIds={purchasedCourseIds}
+            purchasesLoading={purchasesLoading}
             continueData={dashboardData?.continue_learning || null}
             stats={dashboardData ? {
               completed_lessons_count: dashboardData.completed_lessons_count ?? 0,
@@ -360,6 +392,7 @@ export const AppContent: React.FC = () => {
           <CatalogPage
             courses={courses}
             purchasedCourseIds={purchasedCourseIds}
+            purchasesLoading={purchasesLoading}
             onSelectCourse={(c) => setSelectedCourse(c)}
             onNavigateToLearning={() => setActiveTab('learning')}
           />

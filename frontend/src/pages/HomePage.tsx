@@ -18,6 +18,7 @@ import { api, toMediaUrl } from '../services/api';
 interface HomePageProps {
   courses: Course[];
   purchasedCourseIds?: Set<string>;
+  purchasesLoading?: boolean;
   continueData?: ContinueLearningData | null;
   stats?: {
     completed_lessons_count: number;
@@ -43,6 +44,7 @@ const item = {
 export const HomePage: React.FC<HomePageProps> = ({
   courses,
   purchasedCourseIds,
+  purchasesLoading,
   continueData,
   stats,
   onSelectCourse,
@@ -313,7 +315,9 @@ export const HomePage: React.FC<HomePageProps> = ({
       )}
 
       {/* ==== 5. Sizga mos kurslar (sotib olinganlar ko'rsatilmaydi) ==== */}
-      {recommendedCourses.length > 0 && (
+      {/* purchasesLoading: sotib olishlar hali aniqlanmagan — eski ro'yxat qisqacha
+          ko'rinib, keyin yo'qolib qolmasligi uchun skeleton ko'rsatiladi */}
+      {(purchasesLoading || recommendedCourses.length > 0) && (
       <motion.div variants={item} className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
           <h2 className="text-sm font-bold text-ink flex items-center gap-1.5">
@@ -333,6 +337,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           </button>
         </div>
 
+        {purchasesLoading ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[0, 1].map((i) => (
+              <div key={i} className="h-56 rounded-2xl bg-slate-100/80 animate-pulse" />
+            ))}
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-3">
           {recommendedCourses.map((course, idx) => (
             <CourseCard
@@ -343,6 +354,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             />
           ))}
         </div>
+        )}
       </motion.div>
       )}
 

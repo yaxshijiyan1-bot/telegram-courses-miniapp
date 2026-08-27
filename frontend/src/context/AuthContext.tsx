@@ -12,6 +12,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  // Har safar yangi token olinganda ortadi — App shu signal bilan ma'lumotlarni qayta yuklaydi
+  authVersion: number;
   login: (login: string, pass: string) => Promise<AuthResult>;
   telegramLogin: () => Promise<AuthResult>;
   logout: () => void;
@@ -27,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   user: defaultGuestUser,
   isAuthenticated: true,
   isLoading: false,
+  authVersion: 0,
   login: async () => ({ success: false }),
   telegramLogin: async () => ({ success: false }),
   logout: () => {}
@@ -41,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return defaultGuestUser;
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [authVersion, setAuthVersion] = useState(0);
   const { webApp, user: tgUser } = useTelegram();
 
   useEffect(() => {
@@ -63,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (res && res.user) {
           setUser(res.user);
           localStorage.setItem('user', JSON.stringify(res.user));
+          setAuthVersion((v) => v + 1);
         }
       }).catch(() => {
         // Offline yoki sekin internetda ham foydalanuvchi bemalol kiradi
@@ -74,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.login(loginStr, pass);
       setUser(res.user);
+      setAuthVersion((v) => v + 1);
       return { success: true };
     } catch (e: any) {
       return { success: false, error: e?.message || 'Login yoki parol noto\'g\'ri.' };
@@ -85,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const initData = webApp?.initData || '';
       const res = await api.telegramAuth(initData, tgUser);
       setUser(res.user);
+      setAuthVersion((v) => v + 1);
       return { success: true };
     } catch (e: any) {
       return { success: false, error: e?.message || 'Telegram orqali ulanishda xatolik yuz berdi.' };
@@ -103,6 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user: user || defaultGuestUser,
         isAuthenticated: true,
         isLoading,
+        authVersion,
         login,
         telegramLogin,
         logout

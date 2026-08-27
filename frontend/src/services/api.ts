@@ -217,7 +217,12 @@ class ApiService {
   // Bosh sahifa bannerlari (ommaviy, token kerak emas)
   async getBanners(): Promise<Banner[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/banners`, { headers: this.getHeaders() });
+      // no-store + cache-buster: WebView bannerlar ro'yxatini keshlab qo'ymasligi kerak,
+      // admin yangi banner yuklaganda u darhol ko'rinishi shart
+      const res = await fetch(`${API_BASE_URL}/banners?t=${Date.now()}`, {
+        headers: this.getHeaders(),
+        cache: 'no-store'
+      });
       if (!res.ok) return [];
       const data = await res.json();
       return Array.isArray(data?.banners) ? data.banners : [];
@@ -292,7 +297,8 @@ class ApiService {
     enrolled_courses: EnrolledCourse[];
   }> {
     const res = await fetch(`${API_BASE_URL}/student/dashboard?t=${Date.now()}`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
+      cache: 'no-store'
     });
     if (res.ok) return await res.json();
     throw new Error('Dashboard ma\'lumotlarini yuklashda xatolik');

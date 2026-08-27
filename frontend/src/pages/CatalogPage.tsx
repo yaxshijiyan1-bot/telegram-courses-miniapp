@@ -8,6 +8,7 @@ import { useTelegram } from '../context/TelegramContext';
 interface CatalogPageProps {
   courses: Course[];
   purchasedCourseIds?: Set<string>;
+  purchasesLoading?: boolean;
   onSelectCourse: (course) => void;
   onNavigateToLearning?: () => void;
   isLoading?: boolean;
@@ -16,6 +17,7 @@ interface CatalogPageProps {
 export const CatalogPage: React.FC<CatalogPageProps> = ({
   courses,
   purchasedCourseIds,
+  purchasesLoading,
   onSelectCourse,
   onNavigateToLearning,
 }) => {
@@ -161,8 +163,15 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         </span>
       </div>
 
-      {/* Kurslar Ro'yxati / Grid */}
-      {filteredCourses.length === 0 ? (
+      {/* Kurslar Ro'yxati / Grid — sotib olishlar aniqlanmaguncha skeleton,
+          sotib olingan kurslar qisqacha ko'rinib keyin yo'qolib qolmaydi */}
+      {purchasesLoading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-56 rounded-2xl bg-slate-100/80 animate-pulse" />
+          ))}
+        </div>
+      ) : filteredCourses.length === 0 ? (
         <div className="py-16 text-center glass rounded-3xl space-y-3 p-6">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
             <Search className="w-6 h-6" />
