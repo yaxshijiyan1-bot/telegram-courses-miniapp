@@ -17,6 +17,8 @@ import { api, toMediaUrl } from '../services/api';
 
 interface HomePageProps {
   courses: Course[];
+  banners: Banner[];
+  bannersReady?: boolean;
   purchasedCourseIds?: Set<string>;
   purchasesLoading?: boolean;
   continueData?: ContinueLearningData | null;
@@ -43,6 +45,8 @@ const item = {
 
 export const HomePage: React.FC<HomePageProps> = ({
   courses,
+  banners,
+  bannersReady,
   purchasedCourseIds,
   purchasesLoading,
   continueData,
@@ -53,16 +57,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { haptic, webApp } = useTelegram();
   const today = getToday();
-
-  // ==== Hero bannerlar — admin yuklagan dinamik bannerlar (backend'dan) ====
-  const [banners, setBanners] = useState<Banner[]>([]);
-  useEffect(() => {
-    let cancelled = false;
-    api.getBanners().then((bn) => {
-      if (!cancelled) setBanners(bn);
-    });
-    return () => { cancelled = true; };
-  }, []);
 
   const [slideIdx, setSlideIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -210,36 +204,14 @@ export const HomePage: React.FC<HomePageProps> = ({
             )}
           </div>
         </motion.section>
-      ) : (
+      ) : !bannersReady ? (
+        // Banner hali yuklanmadi (kesh ham yo'q) — hech qanday yozuv chiqmasin,
+        // faqat yuklanish belgisi; admin banneri kelishi bilan darhol ko'rinadi
         <motion.section
           variants={item}
-          className="relative w-full rounded-[24px] overflow-hidden bg-slate-900 shadow-xl aspect-[21/9]"
-        >
-          <img
-            src="/images/hero_grad.webp"
-            alt="Student Banner"
-            className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 to-slate-900/20" />
-
-          <div className="relative z-10 px-5 h-full flex flex-col justify-center">
-            <div className="inline-flex items-center space-x-1 mb-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
-              <span className="text-[9px] font-bold tracking-widest text-cyan uppercase">
-                Kreativ AI · 2026
-              </span>
-            </div>
-
-            <h2 className="text-lg sm:text-xl font-extrabold text-white leading-tight tracking-tight max-w-[250px]">
-              Kelajak kasblarini <span className="text-cyan">biz bilan</span> o'rganing
-            </h2>
-
-            <p className="text-[10px] text-slate-300 font-medium mt-1 max-w-[220px] leading-snug opacity-90">
-              Dasturlash va sun'iy intellekt orqali daromadingizni oshiring.
-            </p>
-          </div>
-        </motion.section>
-      )}
+          className="w-full rounded-[24px] aspect-[21/9] bg-slate-100/80 animate-pulse"
+        />
+      ) : null}
 
       {/* ==== 3. Statistika (REAL — backend'dan) ==== */}
       <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-slate-200/80">

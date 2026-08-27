@@ -214,21 +214,18 @@ class ApiService {
     throw new Error('Kurs topilmadi yoki tarmoq xatosi');
   }
 
-  // Bosh sahifa bannerlari (ommaviy, token kerak emas)
+  // Bosh sahifa bannerlari (ommaviy, token kerak emas).
+  // Xatoda throw qiladi — App localStorage'dagi keshni saqlab qoladi.
   async getBanners(): Promise<Banner[]> {
-    try {
-      // no-store + cache-buster: WebView bannerlar ro'yxatini keshlab qo'ymasligi kerak,
-      // admin yangi banner yuklaganda u darhol ko'rinishi shart
-      const res = await fetch(`${API_BASE_URL}/banners?t=${Date.now()}`, {
-        headers: this.getHeaders(),
-        cache: 'no-store'
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data?.banners) ? data.banners : [];
-    } catch {
-      return [];
-    }
+    // no-store + cache-buster: WebView bannerlar ro'yxatini keshlab qo'ymasligi kerak,
+    // admin yangi banner yuklaganda u darhol ko'rinishi shart
+    const res = await fetch(`${API_BASE_URL}/banners?t=${Date.now()}`, {
+      headers: this.getHeaders(),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('Bannerlarni yuklab bo\'lmadi');
+    const data = await res.json();
+    return Array.isArray(data?.banners) ? data.banners : [];
   }
 
   async login(login: string, password: string): Promise<{ token: string; user: User }> {

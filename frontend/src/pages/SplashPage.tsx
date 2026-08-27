@@ -38,20 +38,19 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
 
       {/* Center hero */}
       <div className="my-auto flex flex-col items-center text-center space-y-7 relative z-10 max-w-xs mx-auto">
-        {/* 3D artwork */}
+        {/* 3D artwork — foni kesilgan maxsus rasm */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 160, damping: 20, delay: 0.15 }}
-          className="relative w-56 h-44 flex items-center justify-center"
+          className="relative w-64 h-56 flex items-center justify-center"
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(2,132,199,0.14),transparent_65%)]" />
           <motion.img
-            src="/images/hero_grad.webp"
+            src="/images/splash_hero.webp"
             alt=""
             draggable={false}
-            className="relative z-10 w-full h-full object-contain animate-floaty pointer-events-none"
-            style={{ maskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 60%, transparent 98%)', WebkitMaskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 60%, transparent 98%)' }}
+            className="relative z-10 w-full h-full object-contain animate-floaty pointer-events-none drop-shadow-xl"
           />
         </motion.div>
 

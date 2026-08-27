@@ -17,7 +17,7 @@ import { NotificationsPanel } from './components/NotificationsPanel';
 import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
 import { api, MOCK_COURSES } from './services/api';
-import { Course, Lesson, Certificate, NotificationItem } from './types';
+import { Course, Lesson, Certificate, NotificationItem, Banner } from './types';
 import { AdminDashboardModal } from './pages/AdminDashboardModal';
 import { TelegramGate } from './components/TelegramGate';
 import { useSecurityShield } from './hooks/useSecurityShield';
@@ -38,6 +38,24 @@ const readPurchasedCache = (): string[] => {
 const writePurchasedCache = (ids: string[]) => {
   try {
     localStorage.setItem(PURCHASED_IDS_KEY, JSON.stringify([...new Set(ids)]));
+  } catch {}
+};
+
+// Bannerlar keshi — admin qo'ygan bannerlar qurilmada saqlanadi: ilova
+// ochilishida darhol ko'rsatiladi, tab almashtirganda qayta yuklanib
+// flicker qilmaydi. Backend'dan kelgan yangi ro'yxat keshni yangilaydi.
+const BANNERS_CACHE_KEY = 'banners_cache_v1';
+const readBannersCache = (): Banner[] => {
+  try {
+    const arr = JSON.parse(localStorage.getItem(BANNERS_CACHE_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+const writeBannersCache = (banners: Banner[]) => {
+  try {
+    localStorage.setItem(BANNERS_CACHE_KEY, JSON.stringify(banners));
   } catch {}
 };
 
@@ -165,6 +183,10 @@ export const AppContent: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  // Bannerlar App darajasida saqlanadi — HomePage har tab almashtirganda
+  // qayta mount bo'lsa ham ro'yxat yo'qolmaydi, fallback chiqmaydi
+  const [banners, setBanners] = useState<Banner[]>(readBannersCache);
+  const [bannersReady, setBannersReady] = useState(false);
 
   // Kurslarni yuklash (Offline fallback bilan)
   const refreshCourses = useCallback(async () => {
@@ -217,9 +239,24 @@ export const AppContent: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  // Bannerlarni yuklash: avval kesh ko'rsatiladi, keyin backend'dan yangi
+  // ro'yxat keladi. Tarmoq xatosida kesh o'chirilmaydi (offline banner qoladi).
+  const refreshBanners = useCallback(async () => {
+    try {
+      const bn = await api.getBanners();
+      setBanners(bn);
+      writeBannersCache(bn);
+    } catch {
+      // Offline — keshdagi bannerlar qoladi
+    } finally {
+      setBannersReady(true);
+    }
+  }, []);
+
   useEffect(() => {
     refreshCourses();
-  }, [refreshCourses]);
+    refreshBanners();
+  }, [refreshCourses, refreshBanners]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -374,6 +411,8 @@ export const AppContent: React.FC = () => {
         {activeTab === 'home' && (
           <HomePage
             courses={courses}
+            banners={banners}
+            bannersReady={bannersReady}
             purchasedCourseIds={purchasedCourseIds}
             purchasesLoading={purchasesLoading}
             continueData={dashboardData?.continue_learning || null}
