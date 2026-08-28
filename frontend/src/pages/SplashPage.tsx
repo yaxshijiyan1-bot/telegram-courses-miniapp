@@ -74,7 +74,7 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
             initial={{ opacity: 0, x: -18 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.65, ease: EASE, delay: 0.7 }}
-            className="absolute -left-3.5 top-6 z-[3]"
+            className="absolute -left-4 -top-1 z-[3]"
           >
             <div
               className="animate-floaty bg-white border border-slate-900/[0.06] rounded-[14px] px-3 py-2 flex items-center gap-1.5"
