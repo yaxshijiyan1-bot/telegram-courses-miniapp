@@ -71,21 +71,28 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   // Ro'yxat endpointi is_enrolled/modules/descriptionni qaytarmaydi —
   // sahifa ochilganda detail so'rovi orqali to'liq ma'lumot olinadi
   const [course, setCourse] = useState<Course>(courseProp);
-  const [openModuleId, setOpenModuleId] = useState<string | null>(courseProp.modules?.[0]?.id || null);
+  // Modul avto-ochilmaydi — foydalanuvchi o'zi tanlaydi
+  const [openModuleId, setOpenModuleId] = useState<string | null>(null);
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
   const [activePreviewIdx, setActivePreviewIdx] = useState<number | null>(null);
   const swipeStartX = useRef<number | null>(null);
   const { haptic } = useTelegram();
 
+  // Bo'lim tugmalari uchun havolalar
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const programRef = useRef<HTMLDivElement>(null);
+  const faqRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState('about');
+
   useEffect(() => {
     setCourse(courseProp);
-    setOpenModuleId(courseProp.modules?.[0]?.id || null);
+    setOpenModuleId(null);
     let cancelled = false;
     api.getCourseDetail(courseProp.id)
       .then((d) => {
         if (!cancelled && d) {
-          setCourse((prev) => ({ ...prev, ...d }));
-          setOpenModuleId((prevId) => prevId || d.modules?.[0]?.id || null);
+            setCourse((prev) => ({ ...prev, ...d }));
         }
       })
       .catch(() => {});
@@ -184,6 +191,39 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
     { icon: Users, val: course.student_count ? `${formatNumber(course.student_count)}+` : '—', lbl: 'talaba' },
     { icon: Star, val: course.rating ? String(course.rating) : '—', lbl: 'reyting' },
   ];
+
+  // Bo'limlar bo'ylab navigatsiya — faqat mavjud bo'limlar ko'rsatiladi
+  const sections = [
+    { id: 'about', label: 'Kurs haqida', ref: aboutRef, show: Boolean(course.description || course.short_description) },
+    { id: 'lavhalar', label: 'Lavhalar', ref: galleryRef, show: galleryList.length > 0 },
+    { id: 'dastur', label: 'Dastur', ref: programRef, show: (course.modules?.length ?? 0) > 0 },
+    { id: 'savollar', label: 'Savollar', ref: faqRef, show: true },
+  ].filter((s) => s.show);
+
+  // Scroll holatiga qarab faol bo'limni belgilash
+  useEffect(() => {
+    const onScroll = () => {
+      let current = sections[0]?.id ?? 'about';
+      for (const s of sections) {
+        const el = s.ref.current;
+        if (el && el.getBoundingClientRect().top <= 170) current = s.id;
+      }
+      setActiveSection((prev) => (prev === current ? prev : current));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course.id, course.description, course.short_description, galleryList.length, course.modules?.length]);
+
+  const scrollToSection = (id: string) => {
+    const el = sections.find((s) => s.id === id)?.ref.current;
+    if (!el) return;
+    haptic?.selection?.();
+    setActiveSection(id);
+    const top = el.getBoundingClientRect().top + window.scrollY - 116;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-white text-ink pb-32 animate-fade-up">
@@ -332,9 +372,44 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         </div>
       )}
 
+      {/* Bo'limlar bo'ylab yopishqoq navigatsiya tugmalari */}
+      <div
+        className="sticky z-20"
+        style={{
+          top: 62,
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          borderBottom: '1px solid rgba(15,23,42,0.05)',
+        }}
+      >
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar" style={{ padding: '8px 20px' }}>
+          {sections.map((s) => {
+            const active = activeSection === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => scrollToSection(s.id)}
+                className={`flex-shrink-0 text-[12px] font-bold tracking-[-0.005em] transition-all active:scale-95 ${
+                  active ? 'text-white' : 'text-ink-muted'
+                }`}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 999,
+                  background: active ? '#0F172A' : 'rgba(15,23,42,0.045)',
+                }}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Kurs haqida */}
       {(course.description || course.short_description) && (
-        <div style={{ padding: '12px 20px' }}>
+        <div ref={aboutRef} style={{ padding: '12px 20px' }}>
           <SectionInline title="Kurs haqida" />
           <p className="text-[13px] text-ink-secondary leading-[1.65] font-medium tracking-[-0.005em] mt-1.5 whitespace-pre-line">
             {course.description || course.short_description}
@@ -370,7 +445,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
       {/* Kursdan lavhalar (galereya) */}
       {galleryList.length > 0 && (
-        <div style={{ padding: '12px 20px' }}>
+        <div ref={galleryRef} style={{ padding: '12px 20px' }}>
           <SectionInline title="Kursdan lavhalar" right={<span className="text-[11px] text-ink-muted font-semibold">{galleryList.length} ta</span>} />
           <div className="mt-2 grid grid-cols-2 gap-2">
             {galleryList.map((imgUrl, idx) => (
@@ -392,7 +467,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                     const fixed = toMediaUrl(target.src);
                     target.src = fixed !== target.src ? fixed : '/images/hero_books.jpg';
                   }}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
                   <Maximize2 className="w-4 h-4" />
@@ -461,7 +536,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
       {/* Dastur (modullar) */}
       {(course.modules?.length ?? 0) > 0 && (
-        <div style={{ padding: '12px 20px' }}>
+        <div ref={programRef} style={{ padding: '12px 20px' }}>
           <SectionInline
             title="Dastur"
             right={<span className="text-[11px] text-ink-muted font-semibold">{course.modules?.length || 0} modul · {totalLessons} dars</span>}
@@ -579,7 +654,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       )}
 
       {/* Ko'p beriladigan savollar */}
-      <div style={{ padding: '12px 20px 16px' }}>
+      <div ref={faqRef} style={{ padding: '12px 20px 16px' }}>
         <SectionInline title="Ko‘p beriladigan savollar" />
         <div className="space-y-1.5 mt-2">
           {faqs.map((faq, idx) => {
