@@ -435,7 +435,9 @@ export const AppContent: React.FC = () => {
     return (
       <TeacherPage
         instructor={selectedTeacher}
-        courses={courses}
+        courses={courses.map((c) =>
+          purchasedCourseIds.has(c.id) || c.is_enrolled ? { ...c, is_enrolled: true } : c
+        )}
         onBack={goBack}
         onSelectCourse={openCourse}
       />
@@ -466,6 +468,10 @@ export const AppContent: React.FC = () => {
               setIsCheckoutOpen(false);
               setSessionPurchasedIds((prev) => (prev.includes(c.id) ? prev : [...prev, c.id]));
               writePurchasedCache([...readPurchasedCache(), c.id]);
+              // Orqaga qaytganda "Sotib olish" emas, "Kanalga o'tish" ko'rinishi uchun
+              setSelectedCourse((prev) =>
+                prev && prev.id === c.id ? { ...prev, is_enrolled: true } : prev
+              );
               setPurchasedCourse(c);
             }}
           />

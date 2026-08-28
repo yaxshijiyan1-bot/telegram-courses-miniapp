@@ -148,6 +148,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [bannerTag, setBannerTag] = useState('');
   const [bannerTagColor, setBannerTagColor] = useState('cyan');
   const [bannerImageUrl, setBannerImageUrl] = useState('');
+  const [bannerImagePosition, setBannerImagePosition] = useState<'top' | 'center' | 'bottom'>('center');
   const [bannerActionType, setBannerActionType] = useState<BannerActionType>('none');
   const [bannerActionValue, setBannerActionValue] = useState('');
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -712,6 +713,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setBannerTag('');
     setBannerTagColor('cyan');
     setBannerImageUrl('');
+    setBannerImagePosition('center');
     setBannerActionType('none');
     setBannerActionValue('');
   };
@@ -723,6 +725,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setBannerTag(b.tag || '');
     setBannerTagColor(b.tag_color || 'cyan');
     setBannerImageUrl(b.image_url || '');
+    setBannerImagePosition(b.image_position || 'center');
     setBannerActionType(b.action_type || 'none');
     setBannerActionValue(b.action_value || '');
     haptic?.selection?.();
@@ -771,6 +774,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         tag: bannerTag.trim() || null,
         tag_color: bannerTagColor,
         image_url: bannerImageUrl.trim(),
+        image_position: bannerImagePosition,
         action_type: bannerActionType,
         action_value: bannerActionType === 'none' ? '' : bannerActionValue.trim(),
         order_index: editingBannerId
@@ -2024,7 +2028,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <div className="flex items-start space-x-3">
                       <div className="w-36 aspect-video rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center flex-shrink-0">
                         {bannerImageUrl ? (
-                          <img src={toMediaUrl(bannerImageUrl)} alt="Banner preview" className="w-full h-full object-cover" />
+                          <img
+                            src={toMediaUrl(bannerImageUrl)}
+                            alt="Banner preview"
+                            className="w-full h-full object-cover"
+                            style={{ objectPosition: bannerImagePosition === 'top' ? '50% 0%' : bannerImagePosition === 'bottom' ? '50% 100%' : '50% 50%' }}
+                          />
                         ) : (
                           <ImageIcon className="w-6 h-6 text-slate-300" />
                         )}
@@ -2056,6 +2065,32 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Rasmning qaysi qismi ko'rinishi */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 block">Rasmning qaysi qismi ko'rinsin?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { id: 'top', label: '⬆️ Yuqori qismi' },
+                        { id: 'center', label: '⏺ Markazi' },
+                        { id: 'bottom', label: '⬇️ Pastki qismi' },
+                      ] as const).map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => { setBannerImagePosition(p.id); haptic?.selection?.(); }}
+                          className={`py-2.5 rounded-2xl text-[11px] font-bold border transition-all active:scale-95 ${
+                            bannerImagePosition === p.id
+                              ? 'bg-sky-600 text-white border-sky-600 shadow-md shadow-sky-500/25'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400">Banner qirqilmaydi — rasmda qaysi joy muhim bo'lsa, o'shani tanlang</p>
                   </div>
 
                   {/* Sarlavha (ixtiyoriy) */}

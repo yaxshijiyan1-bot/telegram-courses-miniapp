@@ -199,6 +199,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                   src={toMediaUrl(activeBanner.image_url)}
                   alt={activeBanner.title || 'Banner'}
                   className={`w-full h-full object-cover ${activeBanner.action_type !== 'none' ? 'cursor-pointer' : ''}`}
+                  style={{
+                    objectPosition:
+                      activeBanner.image_position === 'top'
+                        ? '50% 0%'
+                        : activeBanner.image_position === 'bottom'
+                          ? '50% 100%'
+                          : '50% 50%',
+                  }}
                   onClick={() => handleBannerTap(activeBanner)}
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src = '/images/hero_books.jpg';

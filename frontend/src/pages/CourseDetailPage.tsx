@@ -62,17 +62,36 @@ const SectionInline: React.FC<{ title: string; right?: React.ReactNode }> = ({ t
 );
 
 export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
-  course,
+  course: courseProp,
   onBack,
   onPurchase,
   onPlayLesson,
   onOpenTeacher,
 }) => {
-  const [openModuleId, setOpenModuleId] = useState<string | null>(course.modules?.[0]?.id || null);
+  // Ro'yxat endpointi is_enrolled/modules/descriptionni qaytarmaydi —
+  // sahifa ochilganda detail so'rovi orqali to'liq ma'lumot olinadi
+  const [course, setCourse] = useState<Course>(courseProp);
+  const [openModuleId, setOpenModuleId] = useState<string | null>(courseProp.modules?.[0]?.id || null);
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
   const [activePreviewIdx, setActivePreviewIdx] = useState<number | null>(null);
   const swipeStartX = useRef<number | null>(null);
   const { haptic } = useTelegram();
+
+  useEffect(() => {
+    setCourse(courseProp);
+    setOpenModuleId(courseProp.modules?.[0]?.id || null);
+    let cancelled = false;
+    api.getCourseDetail(courseProp.id)
+      .then((d) => {
+        if (!cancelled && d) {
+          setCourse((prev) => ({ ...prev, ...d }));
+          setOpenModuleId((prevId) => prevId || d.modules?.[0]?.id || null);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseProp.id]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });

@@ -574,6 +574,7 @@ class BannerUpsertRequest(BaseModel):
     tag: Optional[str] = Field(default=None, max_length=50)
     tag_color: Optional[str] = Field(default=None, max_length=30)
     image_url: str = Field(..., min_length=1, max_length=2_000_000)
+    image_position: Optional[str] = Field(default=None, pattern="^(top|center|bottom)$")
     action_type: str = Field(..., pattern="^(link|course|none)$")
     action_value: Optional[str] = Field(default=None, max_length=2000)
     order_index: Optional[int] = Field(default=0, ge=0, le=1000)
@@ -616,6 +617,7 @@ async def create_banner(
         "tag": payload.tag.strip() if payload.tag else "",
         "tag_color": payload.tag_color.strip() if payload.tag_color else "cyan",
         "image_url": payload.image_url.strip(),
+        "image_position": payload.image_position or "center",
         "action_type": payload.action_type,
         "action_value": payload.action_value or "",
         "order_index": payload.order_index if payload.order_index is not None else len(banners),
@@ -652,6 +654,7 @@ async def update_banner(
         "tag": payload.tag.strip() if payload.tag else "",
         "tag_color": payload.tag_color.strip() if payload.tag_color else target.get("tag_color") or "cyan",
         "image_url": payload.image_url.strip(),
+        "image_position": payload.image_position or target.get("image_position") or "center",
         "action_type": payload.action_type,
         "action_value": payload.action_value or "",
         "order_index": payload.order_index if payload.order_index is not None else target.get("order_index", 0),

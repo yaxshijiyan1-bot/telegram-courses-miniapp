@@ -189,6 +189,7 @@ export interface Banner {
   tag?: string;
   tag_color?: string;
   image_url: string;
+  image_position?: 'top' | 'center' | 'bottom';
   action_type: BannerActionType;
   action_value?: string;
   order_index: number;
