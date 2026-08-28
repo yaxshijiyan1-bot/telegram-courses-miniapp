@@ -93,16 +93,6 @@ class Settings(BaseSettings):
         except Exception:
             return [8112688757]
 
-    # Bot statistikasida "Talabalar" soni ko'rinmasligi kerak bo'lgan adminlar
-    STATS_STUDENTS_HIDDEN_RAW: str = os.getenv("STATS_STUDENTS_HIDDEN_IDS", "8112688757")
-
-    @property
-    def STATS_STUDENTS_HIDDEN_IDS(self) -> List[int]:
-        try:
-            return [int(x.strip()) for x in self.STATS_STUDENTS_HIDDEN_RAW.split(",") if x.strip()]
-        except Exception:
-            return [8112688757]
-
     @property
     def ADMIN_PROFILES(self) -> Dict[int, Dict[str, Any]]:
         """Teng huquqli adminlar profillari"""

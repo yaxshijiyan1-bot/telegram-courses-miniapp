@@ -10,13 +10,16 @@ import asyncio
 import html
 import json
 import logging
+import time
 import uuid
 from typing import Any, Dict, Optional
 
 import httpx
 
+from app.api.ai import call_openrouter_api
 from app.core.config import settings
 from app.core.r2 import r2_client
+from app.services.pricing import course_pricing
 from app.services.purchases import (
     approve_purchase,
     is_join_request_authorized,
@@ -32,6 +35,17 @@ API_URL = f"https://api.telegram.org/bot{settings.BOT_TOKEN}"
 # FSM faqat chek yuborishning qisqa oralig'i uchun kerak. Jarayon server qayta
 # ishga tushsa toza holatga qaytadi; tasdiqlangan cheklar esa doim bazada qoladi.
 _checkout_sessions: Dict[int, str] = {}
+
+# Guruh AI yordamchisi uchun chat bo'yicha tezlik cheklovi (spam/kredit himoyasi)
+_GROUP_AI_STATE: Dict[int, Dict[str, Any]] = {}
+BOT_ID: Optional[int] = None
+
+# Guruhda AI savol-javobni ishga tushiradigan sotuvga aloqador so'zlar
+_GROUP_SALES_KEYWORDS = (
+    "kurs", "narx", "narxi", "chegirma", "to'lov", "tolov", "o'qimoq", "o'qimoqchi",
+    "o'rgan", "sertifikat", "platforma", "kreativ", "dizayn", "smm", "dasturlash",
+    "sun'iy intellekt", "prompt", "nechchi dars", "qancha turadi",
+)
 
 
 def _uzs(amount: Any) -> str:
@@ -166,16 +180,26 @@ def _course_keyboard(course: Dict[str, Any], index: int, total: int) -> dict:
     return {"inline_keyboard": rows}
 
 
-def _course_caption(course: Dict[str, Any]) -> str:
+def _course_caption(course: Dict[str, Any], pricing: Optional[Dict[str, Any]] = None) -> str:
     title = _escape(course.get("title") or "Kurs")
     category = _escape(course.get("category") or "Premium ta'lim")
     instructor = _escape(course.get("instructor_name") or "Kreativ AI ustozlari")
 
     instructor_title = _escape(course.get("instructor_title") or "Ekspert")
-    old_price = course.get("old_price")
-    old_price_line = f"\n🏷 <s>{_uzs(old_price)}</s>" if old_price else ""
+    # Faol "birinchi N kishi" chegirmasi bo'lsa — chegirmali yakuniy narx ko'rsatiladi
+    discount_active = bool((pricing or {}).get("discount_active"))
+    final_price = (pricing or {}).get("final_price")
+    shown_price = final_price if discount_active and final_price is not None else course.get("price")
+    shown_old = course.get("price") if discount_active and final_price is not None else course.get("old_price")
+    old_price_line = f"\n🏷 <s>{_uzs(shown_old)}</s>" if shown_old and shown_old > (shown_price or 0) else ""
     discount = course.get("discount_percent")
-    discount_line = f" · 🔥 -{discount}%" if discount else ""
+    if discount_active and discount:
+        spots = (pricing or {}).get("discount_spots_left")
+        discount_line = f"\n🔥 <b>−{int(discount)}% chegirma</b> — birinchi {int(course.get('discount_limit') or 0)} kishi uchun"
+        if spots is not None:
+            discount_line += f", {int(spots)} ta joy qoldi"
+    else:
+        discount_line = f" · 🔥 -{discount}%" if discount and not course.get("discount_limit") else ""
     description = _escape(course.get("short_description") or course.get("description") or "")
     if len(description) > 290:
         description = description[:287].rstrip() + "..."
@@ -183,7 +207,7 @@ def _course_caption(course: Dict[str, Any]) -> str:
         f"🎓 <b>{title}</b>\n"
         f"🏷 {category}\n"
         f"📚 {int(course.get('lesson_count') or 0)} ta dars · ⏱ {_escape(course.get('duration') or 'Davomiyligi ko\'rsatiladi')}\n"
-        f"💰 <b>{_uzs(course.get('price'))}</b>{old_price_line}{discount_line}\n"
+        f"💰 <b>{_uzs(shown_price)}</b>{old_price_line}{discount_line}\n"
         f"🎙 <b>{instructor}</b> — {instructor_title}\n"
         f"⭐ {course.get('rating') or 5.0}/5\n\n"
         f"{description}"
@@ -199,8 +223,12 @@ async def show_course_card(client: httpx.AsyncClient, chat_id: int, index: int) 
 
     index %= len(courses)
     course = courses[index]
+    try:
+        pricing = await course_pricing(store, course)
+    except Exception:
+        pricing = {"discount_active": False, "discount_spots_left": None, "final_price": course.get("price")}
     keyboard = _course_keyboard(course, index, len(courses))
-    caption = _course_caption(course)
+    caption = _course_caption(course, pricing)
     cover_url = _resolve_media_url(course.get("cover_url") or "")
     if cover_url.startswith(("https://", "http://")):
         result = await send_tg_photo(client, chat_id, cover_url, caption, keyboard)
@@ -261,13 +289,26 @@ async def _start_checkout(client: httpx.AsyncClient, chat_id: int, user: Dict[st
         await send_tg_message(client, chat_id, "⚠️ Bu kurs hozir mavjud emas.")
         return
     card = await _get_active_card_info()
+    # Chegirma faol bo'lsa bot ham mini-app bilan bir xil yakuniy narxni ko'rsatadi
+    try:
+        pricing = await course_pricing(store, course)
+    except Exception:
+        pricing = {"discount_active": False, "discount_spots_left": None, "final_price": course.get("price")}
+    amount = pricing["final_price"]
+    price_block = f"💰 Summa: <b>{_uzs(amount)}</b>"
+    if pricing["discount_active"] and course.get("discount_percent"):
+        price_block = (
+            f"💰 Summa: <s>{_uzs(course.get('price'))}</s> → <b>{_uzs(amount)}</b>\n"
+            f"🔥 <b>−{int(course['discount_percent'])}% chegirma</b> — birinchi {int(course.get('discount_limit') or 0)} kishi uchun"
+            + (f", {int(pricing['discount_spots_left'])} ta joy qoldi" if pricing.get("discount_spots_left") is not None else "")
+        )
     _checkout_sessions[int(user["telegram_id"])] = course["id"]
     await send_tg_message(
         client,
         chat_id,
         "💳 <b>To'lovni amalga oshirish</b>\n\n"
         f"📚 Kurs: <b>{_escape(course['title'])}</b>\n"
-        f"💰 Summa: <b>{_uzs(course.get('price'))}</b>\n\n"
+        f"{price_block}\n\n"
         f"🏦 Bank: <b>{_escape(card['bank_name'])}</b>\n"
         f"💳 Karta raqami (nusxalash uchun bosing):\n"
         f"<code>{_escape(card['card_number'])}</code>\n"
@@ -361,12 +402,17 @@ async def _handle_receipt_photo(client: httpx.AsyncClient, message: Dict[str, An
 
     transaction_id = f"rcp_{uuid.uuid4().hex[:12]}"
     receipt_url = await _store_telegram_receipt(client, file_id, transaction_id)
+    # Botdan kelgan chek ham mini-app bilan bir xil chegirmali narxda qayd etiladi
+    try:
+        pricing = await course_pricing(store, course)
+    except Exception:
+        pricing = {"final_price": course.get("price")}
     purchase = await store.create_purchase(
         {
             "user_id": user["id"],
             "course_id": course["id"],
             "course_title": course["title"],
-            "amount": course.get("price", 0),
+            "amount": pricing["final_price"],
             "status": "pending_approval",
             "payment_method": "telegram_receipt",
             "transaction_id": transaction_id,
@@ -522,10 +568,17 @@ async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict
 
 
 async def handle_my_chat_member(client: httpx.AsyncClient, update: Dict[str, Any]) -> None:
-    """Bot kanalga admin bo'lganda superadminlarga kanal ID sini yuboradi."""
+    """Bot kanalga admin bo'lganda superadminlarga kanal ID sini yuboradi.
+    Guruhga qo'shilganda esa qisqa tanishtiruv yuboradi."""
     chat = update.get("chat") or {}
     old_status = (update.get("old_chat_member") or {}).get("status")
     new_status = (update.get("new_chat_member") or {}).get("status")
+
+    if chat.get("type") in {"group", "supergroup"}:
+        if new_status in {"member", "administrator"} and old_status in {"left", "kicked"}:
+            await _send_group_intro(client, int(chat.get("id") or 0))
+        return
+
     if new_status not in {"administrator", "creator"} or old_status == new_status:
         return
     if chat.get("type") not in {"channel", "supergroup"}:
@@ -634,6 +687,198 @@ async def _handle_unknown_text(client: httpx.AsyncClient, chat_id: int) -> None:
     )
 
 
+async def _get_bot_id(client: httpx.AsyncClient) -> Optional[int]:
+    """Botning o'z ID sini bir marta olib keshlaydi (guruhda reply-to-bot aniqlash uchun)."""
+    global BOT_ID
+    if BOT_ID is None:
+        data = await _telegram_call(client, "getMe", {})
+        BOT_ID = (data.get("result") or {}).get("id")
+    return BOT_ID
+
+
+def _group_ai_allowed(chat_id: int) -> bool:
+    """Har bir guruhda AI javoblari: kamida 15 soniya oraliq va soatiga 8 tadan."""
+    now = time.time()
+    st = _GROUP_AI_STATE.setdefault(chat_id, {"times": [], "last": 0.0})
+    st["times"] = [t for t in st["times"] if now - t < 3600]
+    if now - st["last"] < 15:
+        return False
+    if len(st["times"]) >= 8:
+        return False
+    return True
+
+
+def _group_ai_mark(chat_id: int) -> None:
+    now = time.time()
+    st = _GROUP_AI_STATE.setdefault(chat_id, {"times": [], "last": 0.0})
+    st["last"] = now
+    st["times"].append(now)
+
+
+async def _send_group_intro(client: httpx.AsyncClient, chat_id: int) -> None:
+    """Bot guruhga qo'shilganda qisqa tanishtiruv."""
+    if not chat_id:
+        return
+    text = (
+        "👋 <b>Assalomu alaykum!</b> Men — <b>Kreativ AI</b> o'quv platformasining yordamchisman.\n\n"
+        "🤖 Guruhda savolingizni <b>@kreativaibot</b> deb yozib bering — AI yordamchim javob beradi "
+        "va kasb o'rganish bo'yicha yo'l ko'rsatadi.\n"
+        "📚 Kurslar, narxlar va chegirmalar haqida bemalol so'rang!"
+    )
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "🚀 Kurslarni ko'rish (Mini App)", "web_app": {"url": settings.WEBAPP_URL}}],
+            [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}],
+        ]
+    }
+    await send_tg_message(client, chat_id, text, keyboard, protect_content=False)
+
+
+async def _build_catalog_context(store) -> str:
+    """AI ga beriladigan katalog konteksti — faqat real ma'lumotlar (raqam o'ylab topish taqiqlanadi)."""
+    try:
+        courses = await store.list_courses(published_only=True)
+    except Exception:
+        courses = []
+    lines: list = []
+    for c in courses[:8]:
+        try:
+            pricing = await course_pricing(store, c)
+        except Exception:
+            pricing = {"discount_active": False, "discount_spots_left": None, "final_price": c.get("price")}
+        line = (
+            f"• «{c.get('title')}» — kategoriya: {c.get('category')}, "
+            f"{int(c.get('lesson_count') or 0)} ta dars, narxi {_uzs(pricing['final_price'])}, "
+            f"ustoz: {c.get('instructor_name')}"
+        )
+        if pricing["discount_active"] and c.get("discount_percent"):
+            line += (
+                f", 🔥 −{int(c['discount_percent'])}% chegirma birinchi {int(c.get('discount_limit') or 0)} kishi uchun"
+                + (f" ({int(pricing['discount_spots_left'])} ta joy qoldi)" if pricing.get("discount_spots_left") is not None else "")
+            )
+        lines.append(line)
+    return "\n".join(lines) or "(katalog hozircha bo'sh)"
+
+
+_GROUP_SYSTEM_PROMPT = (
+    "Siz — «Kreativ AI» onlayn kurslar platformasining Telegram guruh yordamchisisiz. "
+    "Vazifangiz: guruhdagi savollarga qisqa, do'stona va foydali javob berish hamda tabiiy tarzda "
+    "platformadagi amaliy kurslarga qiziqish uyg'otish.\n\n"
+    "Qoidalar:\n"
+    "1. O'zbek tilida, sodda va samimiy ohangda yozing. Javob 1-4 gap + zarur bo'lsa 2-3 ta banddan oshmasin.\n"
+    "2. Narx, chegirma, darslar soni — FAQAT katalogdan oling. Hech qachon raqam, aksiya yoki kurs "
+    "nomini o'ylab chiqmang. Katalogda yo'q kursni tavsiya qilmang.\n"
+    "3. Savol o'qish/kasb/ko'nikmaga aloqador bo'lsa — eng mos 1 ta kursni nomi va narxi bilan tavsiya qiling.\n"
+    "4. Savol butunlay boshqa mavzuda bo'lsa — qisqa foydali javob bering va suhbatni kasb o'rganish "
+    "mavzusiga tabiiy bog'lang.\n"
+    "5. Spam, qattiq reklama ohangi bo'lmasin. Siyosiy, diniy va ta'qibli mavzularda betaraf qisqa javob bering.\n"
+    "6. Javob oxirida 1 marta yumshoq CTA bo'lsin (masalan: 'Batafsil — Mini Appda 👇').\n"
+    "7. Maksimal ~500 belgi. Emoji dan o'rnida foydalaning (1-3 dona)."
+)
+
+
+async def _group_ai_answer(
+    client: httpx.AsyncClient,
+    chat_id: int,
+    reply_to_message_id: Optional[int],
+    question: str,
+    sender_name: str,
+) -> None:
+    """Guruhdagi savolga AI javob beradi: katalog konteksti + sotuvga yo'naltirilgan persona."""
+    store = get_store()
+    catalog = await _build_catalog_context(store)
+    messages = [
+        {"role": "system", "content": _GROUP_SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": (
+                f"Guruh a'zosi {sender_name} quyidagi savolni yozdi:\n"
+                f"\"{question[:600]}\"\n\n"
+                f"Platformaning joriy katalogi:\n{catalog}"
+            ),
+        },
+    ]
+    await send_tg_chat_action(client, chat_id, "typing")
+    answer = await asyncio.to_thread(call_openrouter_api, messages)
+    if not answer:
+        top = "\n".join(catalog.splitlines()[:3]) if catalog and not catalog.startswith("(") else ""
+        answer = (
+            "🤖 Men hozircha savolga to'liq javob bera olmayaman, lekin Kreativ AI platformasidagi "
+            "amaliy kurslar bilan tanishtiraman:\n"
+            f"{top}\n\n"
+            "Batafsil narx va chegirmalar Mini Appda 👇"
+        )
+    answer = answer.strip()
+    if len(answer) > 1200:
+        answer = answer[:1190].rstrip() + "…"
+
+    payload: Dict[str, Any] = {
+        "chat_id": chat_id,
+        "text": _escape(answer),
+        "disable_web_page_preview": True,
+        "reply_markup": {"inline_keyboard": [
+            [{"text": "🚀 Kurslarni ko'rish (Mini App)", "web_app": {"url": settings.WEBAPP_URL}}],
+            [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}],
+        ]},
+    }
+    if reply_to_message_id:
+        payload["reply_to_message_id"] = reply_to_message_id
+        payload["allow_sending_without_reply"] = True
+    await _telegram_call(client, "sendMessage", payload)
+
+
+def _group_should_answer(message: Dict[str, Any], text: str) -> bool:
+    """Guruhda bot faqat haqiqiy murojaatlarga javob beradi (spam qilmaydi):
+    @mention, bot xabariga javob, yoki sotuvga aloqador so'zli savol."""
+    lowered = text.lower()
+    if f"@{settings.BOT_USERNAME.lower()}" in lowered:
+        return True
+    reply_from = ((message.get("reply_to_message") or {}).get("from")) or {}
+    if BOT_ID and reply_from.get("id") == BOT_ID:
+        return True
+    if reply_from.get("username") and reply_from["username"].lower() == settings.BOT_USERNAME.lower():
+        return True
+    if "?" in text and any(k in lowered for k in _GROUP_SALES_KEYWORDS):
+        return True
+    return False
+
+
+async def _handle_group_message(client: httpx.AsyncClient, message: Dict[str, Any]) -> None:
+    """Guruh/supergrup xabarlari: komandalar + AI savol-javob. DB ga user yozilmaydi."""
+    chat = message.get("chat") or {}
+    chat_id = int(chat.get("id") or 0)
+    tg_user = message.get("from") or {}
+    if not chat_id or tg_user.get("is_bot"):
+        return
+
+    text = str(message.get("text") or "").strip()
+    if text.startswith("/"):
+        command = text.split(maxsplit=1)[0].split("@", 1)[0].lower()
+        if command == "/start":
+            await _send_group_intro(client, chat_id)
+        elif command in {"/kurslar", "/courses"}:
+            await show_course_card(client, chat_id, 0)
+        elif command in {"/tolov", "/payment", "/payments"}:
+            await _send_payment_info(client, chat_id)
+        elif command in {"/help", "/contact"}:
+            await _send_help(client, chat_id)
+        elif command in {"/stats", "/admin"}:
+            if tg_user.get("id") in settings.ADMIN_IDS:
+                await _send_stats(client, chat_id, int(tg_user["id"]))
+        return
+
+    if not text or not _group_should_answer(message, text):
+        return
+    if not _group_ai_allowed(chat_id):
+        return
+    _group_ai_mark(chat_id)
+    sender_name = _escape(tg_user.get("first_name") or "Do'stim")
+    try:
+        await _group_ai_answer(client, chat_id, message.get("message_id"), text, sender_name)
+    except Exception:
+        logger.exception("Guruh AI javobida xato (chat %s)", chat_id)
+
+
 async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) -> None:
     if "chat_join_request" in update:
         await handle_chat_join_request(client, update["chat_join_request"])
@@ -670,9 +915,17 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
     if not message:
         return
     tg_user = message.get("from") or {}
-    chat_id = (message.get("chat") or {}).get("id")
+    chat = message.get("chat") or {}
+    chat_id = (chat.get("id"))
     if not tg_user or not chat_id:
         return
+
+    # Guruh/supergrup xabarlari: bot faqat murojaatlarga javob beradi, DB ga
+    # har bir guruh a'zosi yozilmaydi va chek/FSM oqimi faqat privat chatga xos.
+    if chat.get("type") in {"group", "supergroup"}:
+        await _handle_group_message(client, message)
+        return
+
     user = await _ensure_user(tg_user)
     if not user:
         return
