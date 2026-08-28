@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle2, Play, ArrowRight } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { toMediaUrl } from '../services/api';
 
 interface PurchaseSuccessPageProps {
@@ -16,6 +17,7 @@ export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({
   onGoHome
 }) => {
   const { haptic } = useTelegram();
+  const { t } = useSettings();
 
   useEffect(() => {
     haptic?.notification?.('success');
@@ -39,14 +41,14 @@ export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({
   }, []);
 
   return (
-    <div className="flex-1 min-h-screen bg-white text-slate-900 p-6 flex flex-col justify-between select-none animate-fade-up relative overflow-hidden">
+    <div className="flex-1 min-h-screen bg-white text-slate-900 p-6 flex flex-col justify-between select-none animate-fade-up relative overflow-hidden dark-scope">
       <div className="absolute -top-28 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full bg-cyan/[0.08] blur-[100px] pointer-events-none" />
 
       {/* Top pill */}
       <div className="pt-safe flex justify-center relative z-10">
         <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full glass-chip text-sky-600 text-[10px] font-extrabold tracking-[0.16em]">
           <span className="w-1.5 h-1.5 rounded-full bg-sky-600 animate-pulse-glow" />
-          <span>KUTILMOQDA...</span>
+          <span>{t('KUTILMOQDA...')}</span>
         </div>
       </div>
 
@@ -68,10 +70,10 @@ export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({
 
         <div className="space-y-3">
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            To'lov adminga yuborildi!
+            {t("To'lov adminga yuborildi!")}
           </h1>
           <p className="text-sm text-slate-500 leading-relaxed max-w-[280px] mx-auto font-medium">
-            Sizning to'lov chekingiz muvaffaqiyatli qabul qilindi. Admin tasdiqlashi bilan «Darslarim» bo'limida kanalga o'tish tugmasi paydo bo'ladi — barcha darslar yopiq kanalda.
+            {t("Sizning to'lov chekingiz muvaffaqiyatli qabul qilindi. Admin tasdiqlashi bilan «Darslarim» bo'limida kanalga o'tish tugmasi paydo bo'ladi — barcha darslar yopiq kanalda.")}
           </p>
         </div>
 
@@ -87,7 +89,7 @@ export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({
             />
             <div className="flex-1 min-w-0">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">
-                Kutilayotgan kurs
+                {t('Kutilayotgan kurs')}
               </span>
               <p className="text-xs font-bold text-slate-900 truncate">{course.title}</p>
             </div>

@@ -15,9 +15,11 @@ import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { CheckoutModal } from './components/CheckoutModal';
 import { NotificationsPanel } from './components/NotificationsPanel';
+import { SettingsPage } from './pages/SettingsPage';
 
 import { useAuth } from './context/AuthContext';
 import { useTelegram } from './context/TelegramContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { api, MOCK_COURSES, toMediaUrl } from './services/api';
 import { Course, Lesson, Certificate, NotificationItem, Banner } from './types';
 // Admin panel faqat admin ochganda yuklanadi — 2300+ qatorli kod oddiy
@@ -107,6 +109,7 @@ export const AppContent: React.FC = () => {
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Qidiruv signali: Header'dagi lupa bosilganda Katalog tabiga o'tiladi va
   // qidiruv maydoniga fokus beriladi (signal har bosishda oshiriladi)
   const [searchFocusSignal, setSearchFocusSignal] = useState(0);
@@ -125,16 +128,16 @@ export const AppContent: React.FC = () => {
   // chiqib ketmaydi, popstate orqali bir qatlam yopiladi.
   const navStateRef = useRef({
     selectedCourse, selectedTeacher, overlayStack, selectedLesson, purchasedCourse,
-    isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
+    isCheckoutOpen, isAdminOpen, isNotifsOpen, isSettingsOpen, activeTab,
   });
   navStateRef.current = {
     selectedCourse, selectedTeacher, overlayStack, selectedLesson, purchasedCourse,
-    isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
+    isCheckoutOpen, isAdminOpen, isNotifsOpen, isSettingsOpen, activeTab,
   };
 
   const canGoBack = !!(
     selectedCourse || selectedTeacher || selectedLesson || purchasedCourse ||
-    isCheckoutOpen || isAdminOpen || isNotifsOpen
+    isCheckoutOpen || isAdminOpen || isNotifsOpen || isSettingsOpen
   ) || activeTab !== 'home';
 
   const ensureSentinel = useCallback(() => {
@@ -170,6 +173,7 @@ export const AppContent: React.FC = () => {
     if (s.isCheckoutOpen) setIsCheckoutOpen(false);
     else if (s.isNotifsOpen) setIsNotifsOpen(false);
     else if (s.isAdminOpen) setIsAdminOpen(false);
+    else if (s.isSettingsOpen) setIsSettingsOpen(false);
     else if (s.selectedLesson) setSelectedLesson(null);
     else if (s.purchasedCourse) setPurchasedCourse(null);
     else if (s.selectedTeacher && top === 'teacher') {
@@ -487,9 +491,14 @@ export const AppContent: React.FC = () => {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  // 5. Settings View (Profil ichidan ochiladi, to'liq ekran)
+  if (isSettingsOpen) {
+    return <SettingsPage onBack={goBack} />;
+  }
+
   // MAIN TAB LAYOUT (Rock-Solid Viewport & Unbreakable BottomNav)
   return (
-    <div className="flex flex-col h-[100dvh] max-h-[100dvh] w-full bg-white text-[#0F172A] relative overflow-hidden">
+    <div className="dark-scope flex flex-col h-[100dvh] max-h-[100dvh] w-full bg-white text-ink relative overflow-hidden">
       {/* Background Glow */}
       <div className="aurora pointer-events-none" />
 
@@ -570,6 +579,7 @@ export const AppContent: React.FC = () => {
               onNotificationsRead={refreshNotifications}
               onNavigateToCourses={() => setActiveTab('courses')}
               onOpenAdmin={() => setIsAdminOpen(true)}
+              onOpenSettings={() => setIsSettingsOpen(true)}
             />
           ) : (
             <LoginPage
@@ -622,7 +632,9 @@ export default function App() {
   return (
     <TelegramGate>
       <DesktopWrapper>
-        <AppContent />
+        <SettingsProvider>
+          <AppContent />
+        </SettingsProvider>
       </DesktopWrapper>
     </TelegramGate>
   );

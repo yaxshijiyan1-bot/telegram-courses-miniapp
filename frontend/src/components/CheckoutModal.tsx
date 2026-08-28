@@ -15,6 +15,7 @@ import {
 import { Course } from '../types';
 import { api, toMediaUrl } from '../services/api';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { formatPrice } from '../utils/format';
 import { InlineLoader } from 'generative-loaders';
 
@@ -45,6 +46,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     bank_name: ''
   });
   const { haptic, user } = useTelegram();
+  const { t } = useSettings();
 
   useEffect(() => {
     api.getPaymentInfo().then(info => {
@@ -93,7 +95,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleSubmitReceipt = async () => {
     if (!receiptImage) {
-      setErrorMsg("Iltimos, avval to‘lov cheki skrinshotini yuklang!");
+      setErrorMsg(t("Iltimos, avval to‘lov cheki skrinshotini yuklang!"));
       haptic?.notification?.('error');
       return;
     }
@@ -123,7 +125,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }, 2600);
 
     } catch (err: any) {
-      setErrorMsg(err.message || 'Chekni yuborishda xatolik yuz berdi');
+      setErrorMsg(err.message || t('Chekni yuborishda xatolik yuz berdi'));
       haptic?.notification?.('error');
     } finally {
       setIsProcessing(false);
@@ -131,7 +133,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4 animate-in">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4 animate-in dark-scope">
       <div className="w-full max-w-md glass-deep !rounded-t-[28px] sm:!rounded-[28px] text-ink shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar animate-sheet relative">
 
         {/* Modal Header */}
@@ -141,7 +143,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 onClick={() => { haptic?.impact?.('light'); setStep(1); setErrorMsg(''); }}
                 className="w-8 h-8 rounded-full glass-chip flex items-center justify-center text-ink-secondary active:scale-90 transition-transform"
-                aria-label="Orqaga"
+                aria-label={t('Orqaga')}
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -150,9 +152,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <ShieldCheck className="w-[18px] h-[18px]" strokeWidth={2.2} />
             </div>
             <div>
-              <h3 className="text-[13px] font-extrabold text-ink leading-tight">Xavfsiz to‘lov</h3>
+              <h3 className="text-[13px] font-extrabold text-ink leading-tight">{t('Xavfsiz to‘lov')}</h3>
               <p className="text-[10px] text-ink-muted">
-                {isSubmitted ? 'Yuborildi' : step === 1 ? '1/2 · Karta rekvizitlari' : '2/2 · Chek yuborish'}
+                {isSubmitted ? t('Yuborildi') : step === 1 ? t('1/2 · Karta rekvizitlari') : t('2/2 · Chek yuborish')}
               </p>
             </div>
           </div>
@@ -194,9 +196,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="w-16 h-16 bg-cyan/15 text-cyan rounded-full flex items-center justify-center mx-auto border border-cyan/30 shadow-cyanGlowSm">
                 <CheckCircle2 className="w-8 h-8" strokeWidth={2.2} />
               </div>
-              <h4 className="text-base font-extrabold text-ink">Chek adminga yuborildi!</h4>
+              <h4 className="text-base font-extrabold text-ink">{t('Chek adminga yuborildi!')}</h4>
               <p className="text-[11px] text-ink-secondary max-w-xs mx-auto leading-relaxed">
-                To‘lov chekingiz adminlarimizga yuborildi. Tekshirilgach, darslar kabinetingizda ochiladi va bot orqali xabar boradi.
+                {t('To‘lov chekingiz adminlarimizga yuborildi. Tekshirilgach, darslar kabinetingizda ochiladi va bot orqali xabar boradi.')}
               </p>
             </motion.div>
           ) : step === 1 ? (
@@ -229,7 +231,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     className="flex items-center space-x-1 text-[11px] font-bold text-cyan glass-chip px-3 py-1.5 rounded-full active:scale-95 transition-transform"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Nusxalandi!' : 'Karta raqamini nusxalash'}</span>
+                    <span>{copied ? t('Nusxalandi!') : t('Karta raqamini nusxalash')}</span>
                   </button>
                 </div>
 
@@ -239,11 +241,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                 <div className="space-y-1.5 pt-1 text-xs">
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>Karta egasi:</span>
+                    <span>{t('Karta egasi:')}</span>
                     <span className="font-extrabold text-slate-900">{cardInfo.card_holder}</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>To‘lov summasi:</span>
+                    <span>{t('To‘lov summasi:')}</span>
                     <span className="font-extrabold text-base text-cyan tabular-nums">{formatPrice(course.price)}</span>
                   </div>
                 </div>
@@ -251,11 +253,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* Simple 2-Step Instruction */}
               <div className="glass-chip rounded-[18px] p-3 text-[11px] text-ink-secondary leading-relaxed space-y-1">
-                <p className="font-semibold text-ink">💡 To‘lov qilish tartibi:</p>
+                <p className="font-semibold text-ink">💡 {t('To‘lov qilish tartibi:')}</p>
                 <ol className="list-decimal list-inside space-y-0.5 text-ink-muted">
-                  <li>Karta raqamidan nusxa oling va ilovangizdan pul o‘tkazing.</li>
-                  <li>To‘lov chekining skrinshotini oling.</li>
-                  <li><b>"Chek yuklash"</b> tugmasini bosib, rasmni yuboring.</li>
+                  <li>{t('Karta raqamidan nusxa oling va ilovangizdan pul o‘tkazing.')}</li>
+                  <li>{t('To‘lov chekining skrinshotini oling.')}</li>
+                  <li><b>{t('"Chek yuklash"')}</b> {t('tugmasini bosib, rasmni yuboring.')}</li>
                 </ol>
               </div>
 
@@ -264,14 +266,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 onClick={() => { haptic?.impact?.('light'); setStep(2); }}
                 className="w-full py-3.5 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl shadow-cyanGlow active:scale-[0.98] transition-transform flex items-center justify-center space-x-2 text-sm"
               >
-                <span>To‘lov qildim, chek yuklash</span>
+                <span>{t('To‘lov qildim, chek yuklash')}</span>
                 <Sparkles className="w-4 h-4" />
               </button>
             </motion.div>
           ) : (
             <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease }} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[11px] font-extrabold text-ink-secondary block">To‘lov cheki skrinshoti</label>
+                <label className="text-[11px] font-extrabold text-ink-secondary block">{t('To‘lov cheki skrinshoti')}</label>
                 <label className="border-2 border-dashed border-slate-300 hover:border-cyan/50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 relative overflow-hidden group">
                   <input
                     type="file"
@@ -283,7 +285,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <div className="relative w-full aspect-video rounded-xl overflow-hidden">
                       <img src={receiptImage} alt="Chek" className="w-full h-full object-contain" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                        Boshqa rasm tanlash
+                        {t('Boshqa rasm tanlash')}
                       </div>
                     </div>
                   ) : (
@@ -291,8 +293,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <div className="w-12 h-12 rounded-2xl bg-cyan/10 border border-cyan/25 text-cyan flex items-center justify-center mx-auto">
                         <Upload className="w-5 h-5" />
                       </div>
-                      <p className="text-xs font-bold text-ink">Chek rasmini yuklang</p>
-                      <p className="text-[10px] text-ink-muted">PNG, JPG yoki WebP (Galereyadan tanlang)</p>
+                      <p className="text-xs font-bold text-ink">{t('Chek rasmini yuklang')}</p>
+                      <p className="text-[10px] text-ink-muted">{t('PNG, JPG yoki WebP (Galereyadan tanlang)')}</p>
                     </div>
                   )}
                 </label>
@@ -316,13 +318,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 ) : (
                   <>
                     <Check className="w-4 h-4 stroke-[3]" />
-                    <span>Chekni adminga yuborish</span>
+                    <span>{t('Chekni adminga yuborish')}</span>
                   </>
                 )}
               </button>
 
               <p className="text-[10px] text-ink-muted text-center leading-relaxed">
-                Chek to‘g‘ridan-to‘g‘ri adminlarga yuboriladi. Tasdiqlangach, kurs darslari ochiladi.
+                {t('Chek to‘g‘ridan-to‘g‘ri adminlarga yuboriladi. Tasdiqlangach, kurs darslari ochiladi.')}
               </p>
             </motion.div>
           )}

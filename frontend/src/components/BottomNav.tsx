@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, Compass, BookOpen, User } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 
 export type NavTab = 'home' | 'courses' | 'learning' | 'profile';
 
@@ -15,12 +16,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onChangeTab,
 }) => {
   const { haptic } = useTelegram();
+  const { t } = useSettings();
 
   const tabs: { id: NavTab; label: string; icon: typeof Home }[] = [
-    { id: 'home', label: 'Bosh sahifa', icon: Home },
-    { id: 'courses', label: 'Kurslar', icon: Compass },
-    { id: 'learning', label: 'Darslarim', icon: BookOpen },
-    { id: 'profile', label: 'Profil', icon: User },
+    { id: 'home', label: t('Bosh sahifa'), icon: Home },
+    { id: 'courses', label: t('Kurslar'), icon: Compass },
+    { id: 'learning', label: t('Darslarim'), icon: BookOpen },
+    { id: 'profile', label: t('Profil'), icon: User },
   ];
 
   return (

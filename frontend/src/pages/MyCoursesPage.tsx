@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, Plus, BookOpen, GraduationCap, Trophy, PlayCircle, CheckCircle2, Send, Loader2 } from 'lucide-react';
 import { Course, EnrolledCourse } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { api, toMediaUrl } from '../services/api';
 
 interface MyCoursesPageProps {
@@ -28,6 +29,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
   onExploreCourses,
 }) => {
   const { haptic } = useTelegram();
+  const { t } = useSettings();
   const [channelLoadingId, setChannelLoadingId] = useState<string | null>(null);
   const [channelError, setChannelError] = useState<{ id: string; message: string } | null>(null);
 
@@ -52,7 +54,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
       }
     } catch (err: any) {
       haptic?.notification?.('error');
-      setChannelError({ id: courseId, message: err?.message || 'Kanal havolasini olishda xatolik' });
+      setChannelError({ id: courseId, message: err?.message || t('Kanal havolasini olishda xatolik') });
     } finally {
       setChannelLoadingId(null);
     }
@@ -68,9 +70,9 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
       {/* Sarlavha */}
       <motion.div variants={item} className="flex items-center justify-between">
         <div className="space-y-1">
-          <p className="eyebrow">O‘quv hududingiz</p>
+          <p className="eyebrow">{t('O‘quv hududingiz')}</p>
           <h1 className="text-[28px] sm:text-[32px] font-extrabold text-ink leading-tight tracking-tight">
-            Darslarim
+            {t('Darslarim')}
           </h1>
         </div>
         <span className="w-11 h-11 rounded-2xl glass-chip text-cyan font-extrabold text-sm flex items-center justify-center tabular-nums">
@@ -84,9 +86,9 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
           <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 text-cyan flex items-center justify-center mx-auto">
             <BookOpen className="w-6 h-6" strokeWidth={2} />
           </div>
-          <b className="text-sm text-ink block">Hozircha aktiv kurs yo‘q</b>
+          <b className="text-sm text-ink block">{t('Hozircha aktiv kurs yo‘q')}</b>
           <p className="text-[11px] text-ink-muted leading-relaxed max-w-[260px] mx-auto">
-            Kurs xarid qilgach, bu yerda «Kanalga o'tish» tugmasi paydo bo'ladi — barcha darslar yopiq kanalda joylashgan.
+            {t("Kurs xarid qilgach, bu yerda «Kanalga o'tish» tugmasi paydo bo'ladi — barcha darslar yopiq kanalda joylashgan.")}
           </p>
         </motion.div>
       ) : (
@@ -137,7 +139,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                     <div className="flex items-center space-x-1.5">
                       <span className={`text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${isDone ? 'text-emerald-600' : 'text-cyan'}`}>
                         {isDone ? <CheckCircle2 className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
-                        {isDone ? 'Yakunlangan' : 'Davom etmoqda'}
+                        {isDone ? t('Yakunlangan') : t('Davom etmoqda')}
                       </span>
                     </div>
                     <h3 className="text-[13px] font-bold text-ink leading-snug clamp-1">
@@ -157,7 +159,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                     </div>
 
                     <p className="text-[10px] text-ink-muted clamp-1">
-                      {enrolled.completed_lessons}/{enrolled.total_lessons} dars
+                      {enrolled.completed_lessons}/{enrolled.total_lessons} {t('dars')}
                       {enrolled.last_lesson_title ? ` · ${enrolled.last_lesson_title}` : ''}
                     </p>
                   </div>
@@ -177,7 +179,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                   ) : (
                     <Send className="w-4 h-4" strokeWidth={2.4} />
                   )}
-                  <span>Kanalga o'tish — darslar shu yerda</span>
+                  <span>{t("Kanalga o'tish — darslar shu yerda")}</span>
                 </button>
 
                 {channelError?.id === enrolled.id && (
@@ -204,7 +206,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                 <span className="text-[10px] font-bold text-ink-muted">/{totalLessons}</span>
               )}
             </b>
-            <span className="text-[9px] text-ink-muted block truncate leading-tight">darslar</span>
+            <span className="text-[9px] text-ink-muted block truncate leading-tight">{t('darslar')}</span>
           </div>
         </div>
 
@@ -216,7 +218,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
             <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
               {enrolledCourses.length}
             </b>
-            <span className="text-[9px] text-ink-muted block truncate leading-tight">aktiv kurs</span>
+            <span className="text-[9px] text-ink-muted block truncate leading-tight">{t('aktiv kurs')}</span>
           </div>
         </div>
 
@@ -228,7 +230,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
             <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
               {completedCourses}
             </b>
-            <span className="text-[9px] text-ink-muted block truncate leading-tight">yakunlangan</span>
+            <span className="text-[9px] text-ink-muted block truncate leading-tight">{t('yakunlangan')}</span>
           </div>
         </div>
       </motion.div>
@@ -248,8 +250,8 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
             <Plus className="w-5 h-5" strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <b className="text-[13px] font-bold text-ink block">Yangi kursni toping</b>
-            <small className="text-[11px] text-ink-muted block truncate">Katalogdagi kurslarni ko‘ring</small>
+            <b className="text-[13px] font-bold text-ink block">{t('Yangi kursni toping')}</b>
+            <small className="text-[11px] text-ink-muted block truncate">{t('Katalogdagi kurslarni ko‘ring')}</small>
           </div>
         </div>
         <ArrowRight className="w-4 h-4 text-cyan flex-shrink-0" />

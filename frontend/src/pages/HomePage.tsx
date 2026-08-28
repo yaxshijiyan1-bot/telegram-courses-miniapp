@@ -14,6 +14,7 @@ import { CourseCard } from '../components/CourseCard';
 import { SectionTitle } from '../components/SectionTitle';
 import { INSTRUCTORS, TEAM_GOAL, ACCENT } from '../components/InstructorsSection';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { api, toMediaUrl } from '../services/api';
 
 interface HomePageProps {
@@ -75,6 +76,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onOpenTeacher,
 }) => {
   const { haptic, webApp } = useTelegram();
+  const { t } = useSettings();
 
   const [slideIdx, setSlideIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -134,12 +136,12 @@ export const HomePage: React.FC<HomePageProps> = ({
     .slice(0, 4);
 
   // Maqsad matnidagi "natijaga" so'zi serif accent bilan ajratiladi
-  const goalParts = TEAM_GOAL.split('natijaga');
+  const goalParts = t(TEAM_GOAL).split(t('natijaga'));
 
   const statTiles = [
-    { icon: BookOpen, val: String(completedLessons), lbl: 'yakunlangan dars', cls: 'bg-cyan/10 text-cyan' },
-    { icon: GraduationCap, val: String(enrolledCount), lbl: 'aktiv kurs', cls: 'bg-violet/10 text-violet' },
-    { icon: Trophy, val: `${overallProgress}%`, lbl: 'umumiy progress', cls: 'bg-gold/10 text-gold' },
+    { icon: BookOpen, val: String(completedLessons), lbl: t('yakunlangan dars'), cls: 'bg-cyan/10 text-cyan' },
+    { icon: GraduationCap, val: String(enrolledCount), lbl: t('aktiv kurs'), cls: 'bg-violet/10 text-violet' },
+    { icon: Trophy, val: `${overallProgress}%`, lbl: t('umumiy progress'), cls: 'bg-gold/10 text-gold' },
   ];
 
   return (
@@ -162,12 +164,12 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* ==== 1. Salomlashuv ==== */}
       <motion.div variants={item} className="px-5 mb-4">
         <p className="text-[10.5px] font-extrabold text-cyan tracking-[0.14em] uppercase mb-1.5">
-          Xush kelibsiz
+          {t('Xush kelibsiz')}
         </p>
         <h1 className="text-[28px] font-extrabold text-ink tracking-[-0.03em] leading-[1.12]">
-          Bugun nima
+          {t('Bugun nima')}
           <br />
-          <em className="serif-accent text-[30px]">o'rganamiz?</em>
+          <em className="serif-accent text-[30px]">{t("o'rganamiz?")}</em>
         </h1>
       </motion.div>
 
@@ -182,7 +184,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div
             className="relative w-full h-[190px] rounded-[24px] overflow-hidden bg-slate-100"
             style={{
-              border: '1px solid rgba(15,23,42,0.06)',
+              border: '1px solid var(--soft-border-2)',
               boxShadow: '0 12px 30px -14px rgba(15,23,42,0.18)',
             }}
           >
@@ -309,7 +311,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div
               key={s.lbl}
               className="bg-white rounded-[18px]"
-              style={{ border: '1px solid rgba(15,23,42,0.05)', padding: '12px 12px 12px 14px' }}
+              style={{ border: '1px solid var(--soft-border)', padding: '12px 12px 12px 14px' }}
             >
               <div className={`w-[30px] h-[30px] rounded-[10px] flex items-center justify-center ${s.cls}`}>
                 <Icon className="w-[15px] h-[15px]" strokeWidth={2.2} />
@@ -328,9 +330,9 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* ==== 4. Ustozlar ==== */}
       <motion.div variants={item} className="pt-2">
         <SectionTitle
-          eyebrow="JAMOA"
-          title="Ustozlar"
-          sub="Amaliyotdan, real loyihalardan"
+          eyebrow={t('JAMOA')}
+          title={t('Ustozlar')}
+          sub={t('Amaliyotdan, real loyihalardan')}
         />
         <div className="px-5 space-y-2.5">
           {INSTRUCTORS.map((ins) => (
@@ -340,7 +342,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               whileTap={{ scale: 0.97 }}
               onClick={() => { haptic?.impact?.('light'); onOpenTeacher(ins.id); }}
               className="w-full bg-white rounded-[22px] flex items-center gap-3 text-left pressable"
-              style={{ border: '1px solid rgba(15,23,42,0.05)', padding: '12px 14px' }}
+              style={{ border: '1px solid var(--soft-border)', padding: '12px 14px' }}
             >
               <div
                 className="w-[54px] h-[54px] rounded-[18px] overflow-hidden flex-shrink-0"
@@ -360,9 +362,9 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <span
                   className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border mt-1 ${ACCENT[ins.accent].chipBg}`}
                 >
-                  {ins.role}
+                  {t(ins.role)}
                 </span>
-                <p className="text-[11px] text-ink-muted mt-1.5 clamp-1">{ins.tagline}</p>
+                <p className="text-[11px] text-ink-muted mt-1.5 clamp-1">{t(ins.tagline)}</p>
               </div>
               <ChevronRight className="w-[18px] h-[18px] text-slate-400 flex-shrink-0" />
             </motion.button>
@@ -374,16 +376,16 @@ export const HomePage: React.FC<HomePageProps> = ({
       {(purchasesLoading || recommendedCourses.length > 0) && (
         <motion.div variants={item} className="pt-4">
           <SectionTitle
-            eyebrow="TAVSIYA"
-            title="Siz uchun"
-            accent="tanlangan."
+            eyebrow={t('TAVSIYA')}
+            title={t('Siz uchun')}
+            accent={t('tanlangan.')}
             right={
               <button
                 type="button"
                 onClick={() => { haptic.selection(); onNavigateToCatalog(); }}
                 className="flex items-center gap-1 text-xs font-bold text-cyan pb-1"
               >
-                <span>Barchasi</span>
+                <span>{t('Barchasi')}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             }
@@ -425,11 +427,11 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-extrabold text-cyan tracking-[0.12em] uppercase mb-1">
-              Bizning maqsad
+              {t('Bizning maqsad')}
             </p>
             <p className="text-[12.5px] text-ink-secondary leading-[1.6] font-medium">
               {goalParts[0]}
-              <em className="serif-accent">natijaga</em>
+              <em className="serif-accent">{t('natijaga')}</em>
               {goalParts[1]}
             </p>
           </div>

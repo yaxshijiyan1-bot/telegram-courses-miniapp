@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { BookOpen, Clock, Zap, Check } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { formatPrice } from '../utils/format';
 import { toMediaUrl } from '../services/api';
 
@@ -37,6 +38,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   compact = false,
 }) => {
   const { haptic } = useTelegram();
+  const { t } = useSettings();
 
   const handleClick = () => {
     haptic?.impact?.('light');
@@ -48,7 +50,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       whileTap={{ scale: 0.97 }}
       onClick={handleClick}
       className="bg-white border border-slate-900/[0.06] rounded-[24px] overflow-hidden pressable cursor-pointer"
-      style={{ boxShadow: '0 8px 24px -12px rgba(15,23,42,0.10)' }}
+      style={{ boxShadow: '0 8px 24px -12px rgba(15,23,42,0.10)', borderColor: 'var(--soft-border-2)' }}
     >
       {/* Cover */}
       <div className={`relative bg-slate-100 overflow-hidden ${compact ? 'h-[120px]' : 'h-[150px]'}`}>
@@ -69,12 +71,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         {/* Kategoriya + chegirma pillari */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
           <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border bg-white/95 ${catStyle(course.category)}`}>
-            {course.category || 'Kurs'}
+            {course.category || t('Kurs')}
           </span>
           {course.discount_percent ? (
             <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-gold/25 bg-white/95 text-gold">
               <Zap className="w-[11px] h-[11px] fill-gold/20" />
-              −{course.discount_percent}% chegirma
+              −{course.discount_percent}% {t('chegirma')}
             </span>
           ) : null}
         </div>
@@ -83,7 +85,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         {course.is_enrolled && (
           <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2.5 py-1 rounded-full bg-white/95 text-emerald-600 border border-emerald-600/20">
             <Check className="w-3 h-3 stroke-[3]" />
-            {course.progress_percent ? `${course.progress_percent}%` : 'Sizda'}
+            {course.progress_percent ? `${course.progress_percent}%` : t('Sizda')}
           </span>
         )}
       </div>
@@ -96,7 +98,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
         <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-ink-muted font-medium">
           <BookOpen className="w-[13px] h-[13px]" />
-          <span>{course.lesson_count || 0} dars</span>
+          <span>{course.lesson_count || 0} {t('dars')}</span>
           {course.duration ? (
             <>
               <span className="w-[3px] h-[3px] rounded-full bg-slate-300" />
@@ -120,7 +122,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           </div>
 
           {course.is_enrolled ? (
-            <span className="text-[12px] font-extrabold text-emerald-600">Faol</span>
+            <span className="text-[12px] font-extrabold text-emerald-600">{t('Faol')}</span>
           ) : (
             <div className="flex items-center gap-1.5">
               {course.old_price ? (

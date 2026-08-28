@@ -23,6 +23,58 @@
   --accent-violet: #7C3AED;
   --accent-gold: #D97706;
   --accent-emerald: #059669;
+
+  /* Inline uslublarda ishlatiladigan sirt/border tokenlari —
+     tungi mavzuda .theme-dark ularni qayta belgilaydi */
+  --soft-border: rgba(15, 23, 42, 0.05);
+  --soft-border-2: rgba(15, 23, 42, 0.06);
+  --surface-card: rgba(255, 255, 255, 0.9);
+  --surface-bar: rgba(255, 255, 255, 0.94);
+  --surface-elevated: #F8FAFC;
+  --surface-sunken: #F1F5F9;
+  --seg-active-bg: #FFFFFF;
+  --seg-active-text: #0284C7;
+  --seg-active-shadow: 0 1px 3px rgba(15, 23, 42, 0.10);
+  --chip-active-bg: #0F172A;
+  --chip-active-text: #FFFFFF;
+  --chip-idle-bg: rgba(15, 23, 42, 0.045);
+
+  /* Tungi palit tokenlari */
+  --dark-bg: #0B1120;
+  --dark-card: #131E33;
+  --dark-card-2: #16233C;
+  --dark-border: rgba(148, 163, 184, 0.14);
+  --dark-ink: #F1F5F9;
+  --dark-ink-2: #C3CEDF;
+  --dark-ink-3: #8A97AC;
+}
+
+/* ============ TUNGI MAVZU — palit tokenlari ============ */
+.theme-dark {
+  --bg-base: #0B1120;
+  --bg-secondary: #0F172A;
+  --bg-tertiary: #131E33;
+  --bg-glass: rgba(11, 17, 32, 0.85);
+  --ink: #F1F5F9;
+  --ink-secondary: #C3CEDF;
+  --ink-muted: #8A97AC;
+  --soft-border: rgba(255, 255, 255, 0.07);
+  --soft-border-2: rgba(255, 255, 255, 0.10);
+  --surface-card: rgba(19, 30, 51, 0.92);
+  --surface-bar: rgba(11, 17, 32, 0.94);
+  --surface-elevated: #16233C;
+  --surface-sunken: #101B30;
+  --seg-active-bg: #1E2E4E;
+  --seg-active-text: #38BDF8;
+  --seg-active-shadow: 0 1px 3px rgba(0, 0, 0, 0.40);
+  --chip-active-bg: #38BDF8;
+  --chip-active-text: #0B1120;
+  --chip-idle-bg: rgba(148, 163, 184, 0.14);
+  color-scheme: dark;
+}
+
+html.theme-dark {
+  background: #0B1120;
 }
 
 * {
@@ -362,3 +414,213 @@ body {
 .animate-pulse-glow {
   animation: pulse-glow 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
+
+/* ============================================================
+   TUNGI MAVZU (theme-dark) — .dark-scope ichidagi barcha sirtlar
+   qayta bo'yaladi. Splash ekran va admin panel dark-scope tashqarisida
+   yoki force-light bilan himoyalangan — ular doim yorug' qoladi.
+   ============================================================ */
+
+/* --- Komponent klasslari (glass sirtlar, boshqaruvlar) --- */
+.theme-dark .dark-scope .glass {
+  background: rgba(19, 30, 51, 0.92);
+  border-color: var(--dark-border);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 10px 30px -8px rgba(0, 0, 0, 0.45);
+}
+.theme-dark .dark-scope .glass-deep {
+  background: rgba(16, 25, 44, 0.95);
+  border-color: rgba(148, 163, 184, 0.10);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+}
+.theme-dark .dark-scope .glass-chip {
+  background: rgba(30, 43, 68, 0.9);
+  border-color: rgba(148, 163, 184, 0.16);
+}
+.theme-dark .dark-scope .segmented {
+  background: #101B30;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+.theme-dark .dark-scope .segmented-pill {
+  color: #8A97AC;
+}
+.theme-dark .dark-scope .segmented-pill.active {
+  background: #1E2E4E;
+  color: var(--dark-ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.theme-dark .dark-scope .btn-secondary {
+  background: #16233C;
+  color: var(--dark-ink);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+.theme-dark .dark-scope .glass-input {
+  background: #101B30;
+  border-color: rgba(148, 163, 184, 0.22);
+  color: var(--dark-ink);
+}
+.theme-dark .dark-scope .glass-input::placeholder {
+  color: #6E7D93;
+}
+.theme-dark .dark-scope .badge-cyan {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.28);
+}
+.theme-dark .dark-scope .badge-gold {
+  background: rgba(251, 191, 36, 0.10);
+  color: #FBBF24;
+  border-color: rgba(251, 191, 36, 0.28);
+}
+.theme-dark .dark-scope .badge-emerald {
+  background: rgba(52, 211, 153, 0.10);
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.28);
+}
+.theme-dark .dark-scope .eyebrow,
+.theme-dark .dark-scope .serif-accent {
+  color: #38BDF8;
+}
+.theme-dark .dark-scope .aurora {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(2, 132, 199, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 90% 85%, rgba(124, 58, 237, 0.09) 0%, transparent 45%),
+    radial-gradient(circle at 50% 40%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+}
+
+/* --- Tailwind palit klasslari: kartalar/sirtlar ---
+   dark-scope ildiz elementning o'zida ham ishlashi uchun
+   har qoidaga o'z-o'zini moslovchi juft selector qo'shilgan */
+.theme-dark .dark-scope.bg-white,
+.theme-dark .dark-scope .bg-white { background-color: var(--dark-card) !important; }
+.theme-dark .dark-scope.bg-slate-50,
+.theme-dark .dark-scope .bg-slate-50 { background-color: #101B30 !important; }
+.theme-dark .dark-scope.bg-slate-100,
+.theme-dark .dark-scope .bg-slate-100 { background-color: #16233C !important; }
+.theme-dark .dark-scope .bg-slate-100\/60 { background-color: rgba(22, 35, 60, 0.6) !important; }
+.theme-dark .dark-scope .bg-slate-100\/80 { background-color: rgba(22, 35, 60, 0.8) !important; }
+.theme-dark .dark-scope .bg-slate-200 { background-color: #1E2E4E !important; }
+.theme-dark .dark-scope .hover\:bg-slate-50:hover { background-color: #101B30 !important; }
+.theme-dark .dark-scope .hover\:bg-slate-100:hover { background-color: #16233C !important; }
+.theme-dark .dark-scope .hover\:bg-white:hover { background-color: #16233C !important; }
+
+/* --- Chegaralar --- */
+.theme-dark .dark-scope .border-slate-100 { border-color: rgba(148, 163, 184, 0.08) !important; }
+.theme-dark .dark-scope .border-slate-200 { border-color: var(--dark-border) !important; }
+.theme-dark .dark-scope .border-slate-200\/60 { border-color: rgba(148, 163, 184, 0.09) !important; }
+.theme-dark .dark-scope .border-slate-200\/80 { border-color: rgba(148, 163, 184, 0.11) !important; }
+.theme-dark .dark-scope .border-slate-200\/90 { border-color: rgba(148, 163, 184, 0.13) !important; }
+.theme-dark .dark-scope .border-slate-300 { border-color: rgba(148, 163, 184, 0.25) !important; }
+.theme-dark .dark-scope .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.theme-dark .dark-scope .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(148, 163, 184, 0.10) !important;
+}
+
+/* --- Rangli tint fonlar (sky/amber) — qorong'ida moslashtirilgan --- */
+.theme-dark .dark-scope .bg-sky-50 { background-color: rgba(56, 189, 248, 0.10) !important; }
+.theme-dark .dark-scope .border-sky-200 { border-color: rgba(56, 189, 248, 0.22) !important; }
+.theme-dark .dark-scope .bg-amber-50 { background-color: rgba(251, 191, 36, 0.10) !important; }
+.theme-dark .dark-scope .border-amber-200 { border-color: rgba(251, 191, 36, 0.22) !important; }
+.theme-dark .dark-scope .bg-slate-50\/50 { background-color: rgba(16, 27, 48, 0.5) !important; }
+
+/* --- Matn ranglari (yorug'lik darajasi teskari tartibda) --- */
+.theme-dark .dark-scope.text-slate-900,
+.theme-dark .dark-scope .text-slate-900 { color: var(--dark-ink) !important; }
+.theme-dark .dark-scope .text-slate-800 { color: #DCE4F0 !important; }
+.theme-dark .dark-scope .text-slate-700 { color: #C3CEDF !important; }
+.theme-dark .dark-scope .text-slate-600 { color: #AAB7CB !important; }
+.theme-dark .dark-scope .text-slate-500 { color: #8A97AC !important; }
+.theme-dark .dark-scope .text-slate-400 { color: #6E7D93 !important; }
+.theme-dark .dark-scope .text-slate-300 { color: #5A6980 !important; }
+.theme-dark .dark-scope .text-ink { color: var(--dark-ink) !important; }
+.theme-dark .dark-scope .text-ink-secondary { color: var(--dark-ink-2) !important; }
+.theme-dark .dark-scope .text-ink-muted { color: var(--dark-ink-3) !important; }
+.theme-dark .dark-scope .text-emerald-600,
+.theme-dark .dark-scope .text-emerald-500 { color: #34D399 !important; }
+.theme-dark .dark-scope .text-red-600 { color: #F87171 !important; }
+
+/* --- Skeleton pulse fonlari --- */
+.theme-dark .dark-scope .animate-pulse.bg-slate-100\/80,
+.theme-dark .dark-scope .animate-pulse.bg-slate-100 { background-color: rgba(22, 35, 60, 0.7) !important; }
+
+/* ============================================================
+   FORCE-LIGHT — admin panel doim yorug' qoladi: yuqoridagi har bir
+   qoidaning yorug' qiymatga qaytaruvchi juftligi (fayl oxirida
+   joylashgani uchun ustunlik qiladi)
+   ============================================================ */
+.theme-dark .force-light .glass {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(226, 232, 240, 0.85);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.95) inset,
+    0 10px 30px -8px rgba(15, 23, 42, 0.06);
+}
+.theme-dark .force-light .glass-deep {
+  background: rgba(248, 250, 252, 0.97);
+  border-color: rgba(226, 232, 240, 0.95);
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.05);
+}
+.theme-dark .force-light .glass-chip {
+  background: rgba(241, 245, 249, 0.95);
+  border-color: rgba(226, 232, 240, 0.9);
+}
+.theme-dark .force-light .segmented { background: #F1F5F9; border-color: #E2E8F0; }
+.theme-dark .force-light .segmented-pill { color: #64748B; }
+.theme-dark .force-light .segmented-pill.active { background: #FFFFFF; color: #0F172A; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07); }
+.theme-dark .force-light .btn-secondary { background: #F1F5F9; color: #0F172A; border-color: #E2E8F0; }
+.theme-dark .force-light .glass-input { background: #FFFFFF; border-color: #CBD5E1; color: #0F172A; }
+.theme-dark .force-light .badge-cyan { background: rgba(2, 132, 199, 0.08); color: #0284C7; border-color: rgba(2, 132, 199, 0.22); }
+.theme-dark .force-light .badge-gold { background: rgba(217, 119, 6, 0.08); color: #D97706; border-color: rgba(217, 119, 6, 0.22); }
+.theme-dark .force-light .badge-emerald { background: rgba(5, 150, 105, 0.08); color: #059669; border-color: rgba(5, 150, 105, 0.22); }
+.theme-dark .force-light .eyebrow,
+.theme-dark .force-light .serif-accent { color: #0284C7; }
+
+.theme-dark .force-light .bg-white { background-color: #FFFFFF !important; }
+.theme-dark .force-light .bg-slate-50 { background-color: #F8FAFC !important; }
+.theme-dark .force-light .bg-slate-100 { background-color: #F1F5F9 !important; }
+.theme-dark .force-light .bg-slate-100\/60 { background-color: rgba(241, 245, 249, 0.6) !important; }
+.theme-dark .force-light .bg-slate-100\/80 { background-color: rgba(241, 245, 249, 0.8) !important; }
+.theme-dark .force-light .bg-slate-200 { background-color: #E2E8F0 !important; }
+.theme-dark .force-light .hover\:bg-slate-50:hover { background-color: #F8FAFC !important; }
+.theme-dark .force-light .hover\:bg-slate-100:hover { background-color: #F1F5F9 !important; }
+.theme-dark .force-light .hover\:bg-white:hover { background-color: #FFFFFF !important; }
+
+.theme-dark .force-light .border-slate-100 { border-color: #F1F5F9 !important; }
+.theme-dark .force-light .border-slate-200 { border-color: #E2E8F0 !important; }
+.theme-dark .force-light .border-slate-200\/60 { border-color: rgba(226, 232, 240, 0.6) !important; }
+.theme-dark .force-light .border-slate-200\/80 { border-color: rgba(226, 232, 240, 0.8) !important; }
+.theme-dark .force-light .border-slate-200\/90 { border-color: rgba(226, 232, 240, 0.9) !important; }
+.theme-dark .force-light .border-slate-300 { border-color: #CBD5E1 !important; }
+.theme-dark .force-light .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.theme-dark .force-light .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #F1F5F9 !important;
+}
+
+.theme-dark .force-light .bg-sky-50 { background-color: #F0F9FF !important; }
+.theme-dark .force-light .border-sky-200 { border-color: #BAE6FD !important; }
+.theme-dark .force-light .bg-amber-50 { background-color: #FFFBEB !important; }
+.theme-dark .force-light .border-amber-200 { border-color: #FDE68A !important; }
+.theme-dark .force-light .bg-slate-50\/50 { background-color: rgba(248, 250, 252, 0.5) !important; }
+
+.theme-dark .force-light .text-slate-900 { color: #0F172A !important; }
+.theme-dark .force-light .text-slate-800 { color: #1E293B !important; }
+.theme-dark .force-light .text-slate-700 { color: #334155 !important; }
+.theme-dark .force-light .text-slate-600 { color: #475569 !important; }
+.theme-dark .force-light .text-slate-500 { color: #64748B !important; }
+.theme-dark .force-light .text-slate-400 { color: #94A3B8 !important; }
+.theme-dark .force-light .text-slate-300 { color: #CBD5E1 !important; }
+.theme-dark .force-light .text-ink { color: #0F172A !important; }
+.theme-dark .force-light .text-ink-secondary { color: #475569 !important; }
+.theme-dark .force-light .text-ink-muted { color: #64748B !important; }
+.theme-dark .force-light .text-emerald-600 { color: #059669 !important; }
+.theme-dark .force-light .text-emerald-500 { color: #10B981 !important; }
+.theme-dark .force-light .text-red-600 { color: #DC2626 !important; }
+
+/* force-light ildiz elementning o'zida turgan klasslar ham himoyalangan:
+   admin panel root'da bg-white/text-slate-900 kabi klasslar bevosita
+   force-light bilan bir elementda bo'lishi mumkin */
+.theme-dark .force-light.bg-white { background-color: #FFFFFF !important; }
+.theme-dark .force-light.bg-slate-50 { background-color: #F8FAFC !important; }
+.theme-dark .force-light.text-slate-900 { color: #0F172A !important; }
+.theme-dark .force-light.text-ink { color: #0F172A !important; }

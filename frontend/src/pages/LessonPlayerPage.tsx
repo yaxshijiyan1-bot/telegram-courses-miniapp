@@ -15,6 +15,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Course, Lesson } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { api, toMediaUrl } from '../services/api';
 
 interface LessonPlayerPageProps {
@@ -42,6 +43,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
   const [isCompleted, setIsCompleted] = useState(lesson.completed || false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const { haptic } = useTelegram();
+  const { t } = useSettings();
 
   // Zoom rejimida orqa sahifa scroll bo'lmasligi uchun tanani qulflash
   useEffect(() => {
@@ -65,10 +67,10 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
   const lessonImage = toMediaUrl((lesson as any).cover_url || course.cover_url || '/images/hero_books.jpg');
 
   return (
-    <div className="flex-1 pb-safe bg-white text-slate-900 animate-fade-up flex flex-col justify-between">
+    <div className="flex-1 pb-safe bg-white text-slate-900 animate-fade-up flex flex-col justify-between dark-scope">
       <div className="flex-1">
         {/* Top bar */}
-        <div className="p-4 flex items-center justify-between border-b border-slate-200 bg-white/95">
+        <div className="p-4 flex items-center justify-between border-b border-slate-200 bg-[color:var(--surface-bar)]">
           <button
             onClick={() => {
               haptic.selection();
@@ -112,11 +114,11 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             <div className="flex justify-end">
               <span className="p-1.5 rounded-xl bg-black/70 text-white text-[10px] flex items-center space-x-1">
                 <Maximize2 className="w-3.5 h-3.5" />
-                <span>Kattalashtirish</span>
+                <span>{t('Kattalashtirish')}</span>
               </span>
             </div>
             <div className="space-y-0.5">
-              <span className="badge-cyan text-[8px] py-0 px-1.5 font-bold">Amaliy Dars Materiali</span>
+              <span className="badge-cyan text-[8px] py-0 px-1.5 font-bold">{t('Amaliy Dars Materiali')}</span>
               <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">{lesson.title}</h3>
             </div>
           </div>
@@ -125,7 +127,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
         {/* Content Details */}
         <div className="p-4 space-y-4">
           <div>
-            <span className="text-[10px] font-bold text-slate-400">Dars tartibi: {lesson.duration || '15 daqiqa'}</span>
+            <span className="text-[10px] font-bold text-slate-400">{t('Dars tartibi')}: {lesson.duration || t('15 daqiqa')}</span>
             <h1 className="text-base font-extrabold text-slate-900 mt-0.5">{lesson.title}</h1>
           </div>
 
@@ -140,7 +142,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             }`}
           >
             <CheckCircle2 className={`w-4 h-4 ${isCompleted ? '' : 'text-white'}`} strokeWidth={2.4} />
-            <span>{isCompleted ? 'Dars tugallandi ✓' : 'Darsni tugallangan deb belgilash'}</span>
+            <span>{isCompleted ? t('Dars tugallandi ✓') : t('Darsni tugallangan deb belgilash')}</span>
           </motion.button>
 
           {/* Tabs */}
@@ -152,7 +154,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
               }}
               className={`segmented-pill ${activeTab === 'about' ? 'active' : ''}`}
             >
-              Dars haqida
+              {t('Dars haqida')}
             </button>
             <button
               onClick={() => {
@@ -161,7 +163,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
               }}
               className={`segmented-pill ${activeTab === 'files' ? 'active' : ''}`}
             >
-              Fayllar ({lesson.resources?.length || 0})
+              {t('Fayllar')} ({lesson.resources?.length || 0})
             </button>
           </div>
 
@@ -177,17 +179,17 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
               >
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
                   <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                    Qisqacha mazmun
+                    {t('Qisqacha mazmun')}
                   </span>
                   <p className="text-xs text-slate-600 leading-relaxed font-normal whitespace-pre-line">
-                    {lesson.description || "Ushbu amaliy darsda siz kursning asosiy mavzularini o'rganasiz va real amaliy topshiriqlarni bajarasiz."}
+                    {lesson.description || t("Ushbu amaliy darsda siz kursning asosiy mavzularini o'rganasiz va real amaliy topshiriqlarni bajarasiz.")}
                   </p>
                 </div>
 
                 <div className="p-3 bg-sky-50 rounded-2xl border border-sky-100 flex items-start space-x-2.5">
                   <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
                   <p className="text-[11px] text-sky-900 leading-relaxed font-medium">
-                    Darsdagi tushunarsiz joylar bo'lsa, bemalol adminlarga murojaat qiling — ular sizga yordam berishadi.
+                    {t("Darsdagi tushunarsiz joylar bo'lsa, bemalol adminlarga murojaat qiling — ular sizga yordam berishadi.")}
                   </p>
                 </div>
               </motion.div>
@@ -229,7 +231,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
                   ))
                 ) : (
                   <div className="p-6 text-center text-xs text-slate-400">
-                    Ushbu dars uchun qo'shimcha fayl yo'q.
+                    {t("Ushbu dars uchun qo'shimcha fayl yo'q.")}
                   </div>
                 )}
               </motion.div>
@@ -246,7 +248,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
           className="py-3 px-4 rounded-2xl border border-slate-200 text-xs font-bold flex items-center justify-center space-x-1.5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 active:scale-95 transition-all text-slate-700"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Oldingi dars</span>
+          <span>{t('Oldingi dars')}</span>
         </button>
 
         <button
@@ -254,7 +256,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
           disabled={!nextLessonId}
           className="py-3 px-4 rounded-2xl bg-slate-900 text-white text-xs font-bold flex items-center justify-center space-x-1.5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-800 active:scale-95 transition-all shadow-sm"
         >
-          <span>Keyingi dars</span>
+          <span>{t('Keyingi dars')}</span>
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -279,7 +281,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
               setIsImageZoomed(false);
             }}
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-            aria-label="Yopish"
+            aria-label={t('Yopish')}
           >
             <X className="w-5 h-5" strokeWidth={2.4} />
           </button>

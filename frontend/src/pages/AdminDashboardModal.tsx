@@ -834,7 +834,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#F8FAFC] text-slate-900 overflow-hidden animate-fade-in">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#F8FAFC] text-slate-900 overflow-hidden animate-fade-in force-light">
       {/* 1. Header with glass styling */}
       <div className="pt-safe px-4 py-3 bg-white border-b border-slate-200/90 flex items-center justify-between flex-shrink-0 shadow-sm">
         <div className="flex items-center space-x-2.5">

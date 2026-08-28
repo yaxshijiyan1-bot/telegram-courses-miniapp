@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Course, Lesson } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { formatNumber } from '../utils/format';
 import { api, toMediaUrl } from '../services/api';
 
@@ -77,6 +78,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   const [activePreviewIdx, setActivePreviewIdx] = useState<number | null>(null);
   const swipeStartX = useRef<number | null>(null);
   const { haptic } = useTelegram();
+  const { t } = useSettings();
 
   // Bo'lim tugmalari uchun havolalar
   const aboutRef = useRef<HTMLDivElement>(null);
@@ -136,7 +138,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       }
     } catch (err: any) {
       haptic?.notification?.('error');
-      setChannelError(err?.message || "Kanal havolasini olishda xatolik");
+      setChannelError(err?.message || t("Kanal havolasini olishda xatolik"));
     } finally {
       setChannelLoading(false);
     }
@@ -146,24 +148,24 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
   const durationParts = (course.duration || '').split(' ');
   const durationVal = durationParts[0] || '—';
-  const durationLbl = durationParts.slice(1).join(' ') || 'davom';
+  const durationLbl = durationParts.slice(1).join(' ') || t('davom');
 
   const faqs = [
     {
-      q: "Darslar qayerda va qanday ko‘riladi?",
-      a: "To‘lov tasdiqlanishi bilan Telegram botimiz orqali sizga rasmiy yopiq kanalga bir martalik maxsus havola (invite link) yuboriladi. Barcha darslar to‘liq shu yopiq kanalda joylashtirilgan va o‘sha yerda tomosha qilinadi."
+      q: t("Darslar qayerda va qanday ko‘riladi?"),
+      a: t("To‘lov tasdiqlanishi bilan Telegram botimiz orqali sizga rasmiy yopiq kanalga bir martalik maxsus havola (invite link) yuboriladi. Barcha darslar to‘liq shu yopiq kanalda joylashtirilgan va o‘sha yerda tomosha qilinadi.")
     },
     {
-      q: "Darslarni saqlab olish yoki tarqatish mumkinmi?",
-      a: "Qat'iyan taqiqlanadi! Barcha video va materiallar mualliflik huquqi bilan himoyalangan. Darslarni saqlab olish, yozib olish yoki tarqatish qat'iy man etiladi."
+      q: t("Darslarni saqlab olish yoki tarqatish mumkinmi?"),
+      a: t("Qat'iyan taqiqlanadi! Barcha video va materiallar mualliflik huquqi bilan himoyalangan. Darslarni saqlab olish, yozib olish yoki tarqatish qat'iy man etiladi.")
     },
     {
-      q: "Yopiq kanalga kirish muddati qancha?",
-      a: "Bir martalik havola orqali yopiq kanalga kirib, barcha darslardan doimiy va cheksiz foydalanishingiz mumkin."
+      q: t("Yopiq kanalga kirish muddati qancha?"),
+      a: t("Bir martalik havola orqali yopiq kanalga kirib, barcha darslardan doimiy va cheksiz foydalanishingiz mumkin.")
     },
     {
-      q: "Savollar bo‘yicha kimga murojaat qilinadi?",
-      a: "Darslar bo‘yicha barcha savollaringizga kanal admini va qo‘llab-quvvatlash mutaxassislari to‘g‘ridan-to‘g‘ri yordam beradi."
+      q: t("Savollar bo‘yicha kimga murojaat qilinadi?"),
+      a: t("Darslar bo‘yicha barcha savollaringizga kanal admini va qo‘llab-quvvatlash mutaxassislari to‘g‘ridan-to‘g‘ri yordam beradi.")
     }
   ];
 
@@ -176,28 +178,28 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   const outcomesList = Array.isArray(course.learning_outcomes) && course.learning_outcomes.length > 0
     ? course.learning_outcomes
     : [
-        "Noldan boshlab professional darajagacha amaliy ko‘nikma va real keyslar",
-        "Bozorda talab yuqori bo‘lgan zamonaviy vositalar va sun'iy intellekt instrumentlari",
-        "Portfolio uchun xalqaro standartdagi to‘liq amaliy loyihalar tayyorlash",
-        "Yopiq Telegram jamiyatida ustoz va mutaxassislardan doimiy yordom",
+        t("Noldan boshlab professional darajagacha amaliy ko‘nikma va real keyslar"),
+        t("Bozorda talab yuqori bo‘lgan zamonaviy vositalar va sun’iy intellekt instrumentlari"),
+        t("Portfolio uchun xalqaro standartdagi to‘liq amaliy loyihalar tayyorlash"),
+        t("Yopiq Telegram jamiyatida ustoz va mutaxassislardan doimiy yordam"),
       ];
 
   const showOutcomes = course.show_outcomes !== false;
   const showInstructor = course.show_instructor !== false;
 
   const stats = [
-    { icon: BookOpen, val: `${totalLessons}`, lbl: 'dars' },
+    { icon: BookOpen, val: `${totalLessons}`, lbl: t('dars') },
     { icon: Clock, val: durationVal, lbl: durationLbl },
-    { icon: Users, val: course.student_count ? `${formatNumber(course.student_count)}+` : '—', lbl: 'talaba' },
-    { icon: Star, val: course.rating ? String(course.rating) : '—', lbl: 'reyting' },
+    { icon: Users, val: course.student_count ? `${formatNumber(course.student_count)}+` : '—', lbl: t('talaba') },
+    { icon: Star, val: course.rating ? String(course.rating) : '—', lbl: t('reyting') },
   ];
 
   // Bo'limlar bo'ylab navigatsiya — faqat mavjud bo'limlar ko'rsatiladi
   const sections = [
-    { id: 'about', label: 'Kurs haqida', ref: aboutRef, show: Boolean(course.description || course.short_description) },
-    { id: 'lavhalar', label: 'Lavhalar', ref: galleryRef, show: galleryList.length > 0 },
-    { id: 'dastur', label: 'Dastur', ref: programRef, show: (course.modules?.length ?? 0) > 0 },
-    { id: 'savollar', label: 'Savollar', ref: faqRef, show: true },
+    { id: 'about', label: t('Kurs haqida'), ref: aboutRef, show: Boolean(course.description || course.short_description) },
+    { id: 'lavhalar', label: t('Lavhalar'), ref: galleryRef, show: galleryList.length > 0 },
+    { id: 'dastur', label: t('Dastur'), ref: programRef, show: (course.modules?.length ?? 0) > 0 },
+    { id: 'savollar', label: t('Savollar'), ref: faqRef, show: true },
   ].filter((s) => s.show);
 
   // Scroll holatiga qarab faol bo'limni belgilash
@@ -226,7 +228,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white text-ink pb-32 animate-fade-up">
+    <div className="min-h-screen bg-white text-ink pb-32 animate-fade-up dark-scope">
       {/* Back header — hero ustida shaffof */}
       <div className="sticky top-0 z-30 flex items-center justify-between" style={{ padding: '12px 16px' }}>
         <button
@@ -237,12 +239,12 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           }}
           className="w-10 h-10 rounded-xl inline-flex items-center justify-center text-ink active:scale-90 transition-transform"
           style={{
-            background: 'rgba(255,255,255,0.9)',
+            background: 'var(--surface-card)',
             backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(15,23,42,0.06)',
+            border: '1px solid var(--soft-border-2)',
             boxShadow: '0 4px 12px -4px rgba(15,23,42,0.10)',
           }}
-          aria-label="Orqaga"
+          aria-label={t('Orqaga')}
         >
           <ArrowLeft className="w-[18px] h-[18px]" strokeWidth={2.4} />
         </button>
@@ -255,7 +257,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           style={{
             height: 200,
             borderRadius: 24,
-            border: '1px solid rgba(15,23,42,0.06)',
+            border: '1px solid var(--soft-border-2)',
             boxShadow: '0 12px 30px -16px rgba(15,23,42,0.20)',
           }}
         >
@@ -280,7 +282,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               style={{ background: 'rgba(255,255,255,0.95)' }}
             >
               <Sparkles className="w-[11px] h-[11px]" />
-              {course.category || 'Kurs'}
+              {course.category || t('Kurs')}
             </span>
             {course.discount_percent ? (
               <span
@@ -288,7 +290,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                 style={{ background: 'rgba(255,255,255,0.95)' }}
               >
                 <Zap className="w-[11px] h-[11px] fill-gold/20" />
-                −{course.discount_percent}% chegirma
+                −{course.discount_percent}% {t('chegirma')}
               </span>
             ) : null}
           </div>
@@ -315,7 +317,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               className="flex-1 text-center bg-white"
               style={{
                 padding: '10px 8px',
-                border: '1px solid rgba(15,23,42,0.05)',
+                border: '1px solid var(--soft-border)',
                 borderRadius: 14,
               }}
             >
@@ -342,7 +344,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             className="w-full bg-white flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
             style={{
               padding: 12,
-              border: '1px solid rgba(15,23,42,0.05)',
+              border: '1px solid var(--soft-border)',
               borderRadius: 20,
               boxShadow: '0 4px 12px -8px rgba(15,23,42,0.08)',
             }}
@@ -358,13 +360,13 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             />
             <div className="flex-1 min-w-0">
               <div className="text-[10px] font-bold text-ink-muted tracking-[0.08em] uppercase">
-                Ustoz
+                {t('Ustoz')}
               </div>
               <div className="text-sm font-extrabold text-ink tracking-[-0.01em] mt-0.5 truncate">
                 {course.instructor_name || 'Kreativ AI'}
               </div>
               <div className="text-[11px] text-ink-muted font-medium mt-0.5 truncate">
-                {course.instructor_title || 'Katta Ekspert'}
+                {course.instructor_title || t('Katta Ekspert')}
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
@@ -377,10 +379,10 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         className="sticky z-20"
         style={{
           top: 62,
-          background: 'rgba(255,255,255,0.92)',
+          background: 'var(--surface-bar)',
           backdropFilter: 'blur(14px)',
           WebkitBackdropFilter: 'blur(14px)',
-          borderBottom: '1px solid rgba(15,23,42,0.05)',
+          borderBottom: '1px solid var(--soft-border)',
         }}
       >
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar" style={{ padding: '8px 20px' }}>
@@ -392,12 +394,13 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                 type="button"
                 onClick={() => scrollToSection(s.id)}
                 className={`flex-shrink-0 text-[12px] font-bold tracking-[-0.005em] transition-all active:scale-95 ${
-                  active ? 'text-white' : 'text-ink-muted'
+                  active ? '' : 'text-ink-muted'
                 }`}
                 style={{
                   padding: '7px 14px',
                   borderRadius: 999,
-                  background: active ? '#0F172A' : 'rgba(15,23,42,0.045)',
+                  background: active ? 'var(--chip-active-bg)' : 'var(--chip-idle-bg)',
+                  color: active ? 'var(--chip-active-text)' : undefined,
                 }}
               >
                 {s.label}
@@ -410,7 +413,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       {/* Kurs haqida */}
       {(course.description || course.short_description) && (
         <div ref={aboutRef} style={{ padding: '12px 20px' }}>
-          <SectionInline title="Kurs haqida" />
+          <SectionInline title={t('Kurs haqida')} />
           <p className="text-[13px] text-ink-secondary leading-[1.65] font-medium tracking-[-0.005em] mt-1.5 whitespace-pre-line">
             {course.description || course.short_description}
           </p>
@@ -420,7 +423,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       {/* Nima olasiz */}
       {showOutcomes && outcomesList.length > 0 && (
         <div style={{ padding: '12px 20px' }}>
-          <SectionInline title="Nima olasiz" />
+          <SectionInline title={t('Nima olasiz')} />
           <div className="mt-2 grid grid-cols-2 gap-2">
             {outcomesList.map((item, i) => (
               <div
@@ -446,7 +449,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       {/* Kursdan lavhalar (galereya) */}
       {galleryList.length > 0 && (
         <div ref={galleryRef} style={{ padding: '12px 20px' }}>
-          <SectionInline title="Kursdan lavhalar" right={<span className="text-[11px] text-ink-muted font-semibold">{galleryList.length} ta</span>} />
+          <SectionInline title={t('Kursdan lavhalar')} right={<span className="text-[11px] text-ink-muted font-semibold">{galleryList.length} {t('ta')}</span>} />
           <div className="mt-2 grid grid-cols-2 gap-2">
             {galleryList.map((imgUrl, idx) => (
               <div
@@ -485,7 +488,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             <div
               key={idx}
               className="bg-white mb-2"
-              style={{ padding: 14, border: '1px solid rgba(15,23,42,0.05)', borderRadius: 20 }}
+              style={{ padding: 14, border: '1px solid var(--soft-border)', borderRadius: 20 }}
             >
               <h4 className="text-[13px] font-bold text-ink flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-cyan" />
@@ -503,30 +506,30 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       {testimonialList.length > 0 && (
         <div style={{ padding: '12px 20px' }}>
           <SectionInline
-            title="O‘quvchilar fikrlari"
+            title={t('O‘quvchilar fikrlari')}
             right={<span className="text-[11px] text-gold font-bold inline-flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> 5.0</span>}
           />
           <div className="mt-2 space-y-2">
-            {testimonialList.map((t, idx) => (
+            {testimonialList.map((tst, idx) => (
               <div key={idx} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
                     <div className="w-7 h-7 rounded-full bg-cyan/10 border border-cyan/20 text-cyan font-bold text-xs flex items-center justify-center">
-                      {t.name.charAt(0).toUpperCase()}
+                      {tst.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <strong className="text-xs font-bold text-ink block leading-tight">{t.name}</strong>
-                      <span className="text-[10px] text-ink-muted">{t.role || 'Talaba'}</span>
+                      <strong className="text-xs font-bold text-ink block leading-tight">{tst.name}</strong>
+                      <span className="text-[10px] text-ink-muted">{tst.role || t('Talaba')}</span>
                     </div>
                   </div>
                   <div className="flex text-gold">
-                    {Array.from({ length: t.rating || 5 }).map((_, s) => (
+                    {Array.from({ length: tst.rating || 5 }).map((_, s) => (
                       <Star key={s} className="w-3 h-3 fill-current" />
                     ))}
                   </div>
                 </div>
                 <p className="text-xs text-ink-secondary leading-relaxed italic">
-                  &ldquo;{t.text}&rdquo;
+                  &ldquo;{tst.text}&rdquo;
                 </p>
               </div>
             ))}
@@ -538,8 +541,8 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       {(course.modules?.length ?? 0) > 0 && (
         <div ref={programRef} style={{ padding: '12px 20px' }}>
           <SectionInline
-            title="Dastur"
-            right={<span className="text-[11px] text-ink-muted font-semibold">{course.modules?.length || 0} modul · {totalLessons} dars</span>}
+            title={t('Dastur')}
+            right={<span className="text-[11px] text-ink-muted font-semibold">{course.modules?.length || 0} {t('modul')} · {totalLessons} {t('dars')}</span>}
           />
 
           {/* Yopiq kanal haqida eslatma */}
@@ -554,9 +557,9 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           >
             <ShieldAlert className="w-4 h-4 text-cyan flex-shrink-0 mt-0.5" />
             <div>
-              <b className="font-extrabold block text-ink mb-0.5">Yopiq kanal orqali o‘rganish:</b>
+              <b className="font-extrabold block text-ink mb-0.5">{t('Yopiq kanal orqali o‘rganish:')}</b>
               <span className="text-ink-secondary">
-                Barcha to‘liq video darslar xavfsiz Telegram yopiq kanalida joylashgan. To‘lov tasdiqlangach, bot sizga bir martalik kirish havolasini yuboradi.
+                {t("Barcha to‘liq video darslar xavfsiz Telegram yopiq kanalida joylashgan. To‘lov tasdiqlangach, bot sizga bir martalik kirish havolasini yuboradi.")}
               </span>
             </div>
           </div>
@@ -567,7 +570,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               const doneCount = module.lessons.filter((l) => l.completed).length;
 
               return (
-                <div key={module.id} className="bg-white overflow-hidden" style={{ border: '1px solid rgba(15,23,42,0.05)', borderRadius: 20 }}>
+                <div key={module.id} className="bg-white overflow-hidden" style={{ border: '1px solid var(--soft-border)', borderRadius: 20 }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -587,8 +590,8 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                       <div className="min-w-0">
                         <span className="text-[13px] font-bold text-ink block truncate tracking-[-0.005em]">{module.title}</span>
                         <span className="text-[10.5px] text-ink-muted font-medium">
-                          {module.lessons.length} dars
-                          {course.is_enrolled && doneCount > 0 ? ` · ${doneCount} yakunlandi` : ''}
+                          {module.lessons.length} {t('dars')}
+                          {course.is_enrolled && doneCount > 0 ? ` · ${doneCount} ${t('yakunlandi')}` : ''}
                         </span>
                       </div>
                     </div>
@@ -596,7 +599,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                   </button>
 
                   {isOpen && (
-                    <div className="px-3 pb-3 pt-1 space-y-1.5" style={{ borderTop: '1px solid rgba(15,23,42,0.05)' }}>
+                    <div className="px-3 pb-3 pt-1 space-y-1.5" style={{ borderTop: '1px solid var(--soft-border)' }}>
                       {module.lessons.map((lesson, lIdx) => {
                         const unlocked = lesson.is_preview || course.is_enrolled;
                         return (
@@ -623,7 +626,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                                   {lesson.title}
                                 </span>
                                 {lesson.completed && (
-                                  <span className="text-[9px] text-emerald-600 font-bold">Yakunlangan ✓</span>
+                                  <span className="text-[9px] text-emerald-600 font-bold">{t('Yakunlangan ✓')}</span>
                                 )}
                               </div>
                             </div>
@@ -633,7 +636,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                               {lesson.is_preview ? (
                                 <span className="text-[9px] font-bold bg-cyan/10 border border-cyan/20 text-cyan px-2 py-0.5 rounded-md flex items-center space-x-1">
                                   <Play className="w-2.5 h-2.5 fill-current" />
-                                  <span>Ochiq</span>
+                                  <span>{t('Ochiq')}</span>
                                 </span>
                               ) : course.is_enrolled ? (
                                 <Play className="w-3.5 h-3.5 text-cyan fill-current" />
@@ -655,12 +658,12 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
       {/* Ko'p beriladigan savollar */}
       <div ref={faqRef} style={{ padding: '12px 20px 16px' }}>
-        <SectionInline title="Ko‘p beriladigan savollar" />
+        <SectionInline title={t('Ko‘p beriladigan savollar')} />
         <div className="space-y-1.5 mt-2">
           {faqs.map((faq, idx) => {
             const isOpen = openFaqIdx === idx;
             return (
-              <div key={idx} className="bg-white overflow-hidden" style={{ border: '1px solid rgba(15,23,42,0.05)', borderRadius: 20 }}>
+              <div key={idx} className="bg-white overflow-hidden" style={{ border: '1px solid var(--soft-border)', borderRadius: 20 }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -674,7 +677,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                   <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isOpen && (
-                  <div className="text-xs text-ink-secondary leading-relaxed" style={{ padding: '0 14px 14px', borderTop: '1px solid rgba(15,23,42,0.05)', paddingTop: 10 }}>
+                  <div className="text-xs text-ink-secondary leading-relaxed" style={{ padding: '0 14px 14px', borderTop: '1px solid var(--soft-border)', paddingTop: 10 }}>
                     {faq.a}
                   </div>
                 )}
@@ -688,10 +691,10 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
       <div
         className="fixed bottom-0 left-0 right-0 z-40"
         style={{
-          background: 'rgba(255,255,255,0.94)',
+          background: 'var(--surface-bar)',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderTop: '1px solid rgba(15,23,42,0.06)',
+          borderTop: '1px solid var(--soft-border-2)',
         }}
       >
         <div className="max-w-[440px] mx-auto pb-safe" style={{ padding: '10px 12px' }}>
@@ -704,16 +707,16 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             <div style={{ paddingLeft: 8 }}>
               {course.old_price && course.old_price > course.price && !course.is_enrolled ? (
                 <div className="text-[9.5px] text-slate-400 font-bold tracking-[0.06em] uppercase line-through">
-                  {formatNumber(course.old_price)} so&apos;m
+                  {formatNumber(course.old_price)} {t("so'm")}
                 </div>
               ) : null}
               <div className="text-[17px] font-extrabold text-ink tracking-[-0.02em] leading-none">
                 {course.is_enrolled ? (
-                  <span className="text-emerald-600">Sizda</span>
+                  <span className="text-emerald-600">{t('Sizda')}</span>
                 ) : (
                   <>
                     {formatNumber(course.price)}{' '}
-                    <span className="text-[10.5px] font-bold text-ink-muted">so&apos;m</span>
+                    <span className="text-[10.5px] font-bold text-ink-muted">{t("so'm")}</span>
                   </>
                 )}
               </div>
@@ -737,7 +740,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               ) : (
                 <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
               )}
-              <span>{course.is_enrolled ? "Kanalga o'tish" : 'Sotib olish'}</span>
+              <span>{course.is_enrolled ? t("Kanalga o'tish") : t('Sotib olish')}</span>
             </button>
           </div>
         </div>
@@ -780,7 +783,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               setActivePreviewIdx(null);
             }}
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-            aria-label="Yopish"
+            aria-label={t('Yopish')}
           >
             <X className="w-5 h-5" strokeWidth={2.4} />
           </button>
@@ -794,7 +797,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                 setActivePreviewIdx(activePreviewIdx - 1);
               }}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-              aria-label="Oldingi surat"
+              aria-label={t('Oldingi surat')}
             >
               <ChevronLeft className="w-5 h-5" strokeWidth={2.4} />
             </button>
@@ -809,7 +812,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                 setActivePreviewIdx(activePreviewIdx + 1);
               }}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-              aria-label="Keyingi surat"
+              aria-label={t('Keyingi surat')}
             >
               <ChevronRight className="w-5 h-5" strokeWidth={2.4} />
             </button>

@@ -4,6 +4,7 @@ import { Course } from '../types';
 import { Instructor, RichText, linkColor } from '../components/InstructorsSection';
 import { CourseCard } from '../components/CourseCard';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 
 interface TeacherPageProps {
   instructor: Instructor;
@@ -20,6 +21,7 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
   onSelectCourse,
 }) => {
   const { haptic, webApp } = useTelegram();
+  const { t } = useSettings();
   const isViolet = instructor.accent === 'violet';
   const accentColor = isViolet ? '#7C3AED' : '#0284C7';
   const heroGrad = isViolet
@@ -41,7 +43,7 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white animate-fade-up pb-safe">
+    <div className="min-h-screen bg-white animate-fade-up pb-safe dark-scope">
       {/* Gradient hero header */}
       <div
         className="relative text-white px-4 pt-4"
@@ -59,13 +61,13 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
         <div className="relative flex items-center justify-between">
           <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full text-white bg-white/20 border border-white/25">
             <Sparkles className="w-[11px] h-[11px]" />
-            Ustoz
+            {t('Ustoz')}
           </span>
           <button
             type="button"
             onClick={() => { haptic?.impact?.('light'); onBack(); }}
             className="w-9 h-9 rounded-full bg-white/20 border border-white/25 flex items-center justify-center text-white active:scale-90 transition-transform"
-            aria-label="Yopish"
+            aria-label={t('Yopish')}
           >
             <X className="w-[18px] h-[18px]" />
           </button>
@@ -103,7 +105,7 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
           <div
             key={s.label}
             className="py-3.5 px-2 bg-white border border-slate-900/5 rounded-[18px] text-center"
-            style={{ boxShadow: '0 6px 20px -12px rgba(15,23,42,0.15)' }}
+            style={{ boxShadow: '0 6px 20px -12px rgba(15,23,42,0.15)', borderColor: 'var(--soft-border)' }}
           >
             <div
               className="text-lg font-extrabold tracking-[-0.02em] leading-none"
@@ -121,7 +123,7 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
       {/* Tarjimai hol */}
       <div className="px-5 py-4">
         <div className="text-sm font-extrabold text-ink tracking-[-0.01em] mb-2">
-          Ustoz haqida
+          {t('Ustoz haqida')}
         </div>
         {instructor.paragraphs.map((p, i) => (
           <p
@@ -137,7 +139,7 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
         <div className="mt-4">
           <div className="text-[11px] font-extrabold text-ink uppercase tracking-wider flex items-center gap-1.5 mb-2">
             <Award className="w-3.5 h-3.5 text-gold" />
-            Ixtisoslik
+            {t('Ixtisoslik')}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {instructor.highlights.map((h) => (
@@ -159,7 +161,7 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
         {/* Sahifalari */}
         <div className="mt-4">
           <div className="text-[11px] font-extrabold text-ink uppercase tracking-wider mb-2">
-            Sahifalari
+            {t('Sahifalari')}
           </div>
           <div className="grid grid-cols-2 gap-2">
             {instructor.socials.map((s) => {
@@ -185,8 +187,8 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
       {/* Ustoz kurslari */}
       <div className="px-5 pb-10">
         <div className="text-sm font-extrabold text-ink tracking-[-0.01em] mb-3 flex items-baseline justify-between">
-          <span>Kurslar</span>
-          <span className="text-[11px] text-ink-muted font-semibold">{teacherCourses.length} ta</span>
+          <span>{t('Kurslar')}</span>
+          <span className="text-[11px] text-ink-muted font-semibold">{teacherCourses.length} {t('ta')}</span>
         </div>
 
         {teacherCourses.length > 0 ? (
@@ -197,7 +199,7 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
           </div>
         ) : (
           <div className="text-[12px] text-ink-muted font-medium text-center py-6 bg-slate-50 rounded-2xl border border-slate-200/60">
-            Hozircha kurslar tez orada qo'shiladi
+            {t("Hozircha kurslar tez orada qo'shiladi")}
           </div>
         )}
 
@@ -217,10 +219,10 @@ export const TeacherPage: React.FC<TeacherPageProps> = ({
             </span>
             <span className="flex-1 min-w-0">
               <span className="block text-[13px] font-extrabold text-ink tracking-[-0.01em]">
-                Ustoz bilan Telegram'da
+                {t("Ustoz bilan Telegram'da")}
               </span>
               <span className="block text-[11px] text-ink-muted mt-0.5 font-medium">
-                To'g'ridan-to'g'ri savol bering
+                {t("To'g'ridan-to'g'ri savol bering")}
               </span>
             </span>
             <ArrowRight className="w-4 h-4 text-cyan flex-shrink-0" />

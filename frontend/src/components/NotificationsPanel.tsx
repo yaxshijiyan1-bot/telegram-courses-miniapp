@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { NotificationItem } from '../types';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 import { relativeTime } from '../utils/format';
 
 interface NotificationsPanelProps {
@@ -32,6 +33,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
   onClose
 }) => {
   const { haptic } = useTelegram();
+  const { t } = useSettings();
 
   const unread = notifications.filter((n) => !n.is_read).length;
 
@@ -49,7 +51,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-slate-900/50 animate-fade-up"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-slate-900/50 animate-fade-up dark-scope"
       onClick={onClose}
     >
       <div
@@ -63,9 +65,9 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
               <Bell className="w-4 h-4" strokeWidth={2.2} />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900 leading-tight">Bildirishnomalar</h3>
+              <h3 className="text-sm font-extrabold text-slate-900 leading-tight">{t('Bildirishnomalar')}</h3>
               <span className="text-[10px] text-slate-500 font-medium">
-                {unread > 0 ? `${unread} ta yangi xabar` : `${notifications.length} ta xabar`}
+                {unread > 0 ? `${unread} ${t('ta yangi xabar')}` : `${notifications.length} ${t('ta xabar')}`}
               </span>
             </div>
           </div>
@@ -76,7 +78,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
               onClose();
             }}
             className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 active:scale-90 transition-all"
-            aria-label="Yopish"
+            aria-label={t('Yopish')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -90,10 +92,10 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                 <Sparkles className="w-5 h-5" strokeWidth={2} />
               </div>
               <p className="text-xs text-slate-600 font-medium">
-                Hozircha yangi bildirishnomalar yo‘q
+                {t('Hozircha yangi bildirishnomalar yo‘q')}
               </p>
               <p className="text-[10px] text-slate-400 max-w-[220px] mx-auto leading-relaxed">
-                Kurs tasdiqlanishi, yangi darslar va foydali ma'lumotlar shu yerda ko'rinadi
+                {t("Kurs tasdiqlanishi, yangi darslar va foydali ma'lumotlar shu yerda ko'rinadi")}
               </p>
             </div>
           ) : (
