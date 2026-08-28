@@ -65,6 +65,7 @@ export interface Course {
   instructor_name: string;
   instructor_title: string;
   instructor_avatar?: string;
+  instructor_id?: string;
   instructor_bio?: string;
   /** Yopiq dars kanali IDsi, masalan: -1001234567890 */
   telegram_channel_id?: number | string;
@@ -184,6 +185,9 @@ export type BannerActionType = 'link' | 'course' | 'none';
 export interface Banner {
   id: string;
   title?: string;
+  subtitle?: string;
+  tag?: string;
+  tag_color?: string;
   image_url: string;
   action_type: BannerActionType;
   action_value?: string;

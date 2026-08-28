@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, ShieldCheck, Zap, GraduationCap } from 'lucide-react';
+import { ArrowRight, Sparkles, Trophy, GraduationCap } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 
 interface SplashPageProps {
   onStart: () => void;
 }
+
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
   const { haptic } = useTelegram();
@@ -16,96 +18,175 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
   };
 
   return (
-    <div className="min-h-screen flex-1 flex flex-col justify-between p-6 bg-white text-slate-900 select-none relative overflow-hidden">
-      {/* Ambient glows — radial gradient (blur filterisiz, GPU'ga yuklama bermaydi) */}
+    <div
+      className="min-h-screen flex-1 flex flex-col text-slate-900 select-none relative overflow-hidden"
+      style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #FAFCFE 100%)' }}
+    >
+      {/* Ambient glows */}
       <div className="blob blob-cyan absolute -top-32 -left-24 w-80 h-80 pointer-events-none" />
       <div className="blob blob-violet absolute -bottom-36 -right-24 w-96 h-96 pointer-events-none" />
 
-      {/* Top brand pill */}
+      {/* Nozik grid nuqtalar */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(2,132,199,0.055) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+          maskImage: 'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.55) 0%, transparent 68%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.55) 0%, transparent 68%)',
+        }}
+      />
+
+      {/* Yuqori brend pill */}
       <motion.div
         initial={{ opacity: 0, y: -14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
         className="pt-safe flex justify-center relative z-10"
       >
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full glass-chip text-cyan">
+        <div className="mt-5 inline-flex items-center space-x-2 px-3.5 py-[7px] rounded-full glass-chip">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse-glow" />
-          <span className="text-[10px] font-extrabold tracking-[0.18em] uppercase">
+          <span className="text-[10px] font-extrabold tracking-[0.20em] uppercase text-cyan">
             Kreativ AI
           </span>
         </div>
       </motion.div>
 
-      {/* Center hero */}
-      <div className="my-auto flex flex-col items-center text-center space-y-7 relative z-10 max-w-xs mx-auto">
-        {/* 3D artwork — foni kesilgan maxsus rasm */}
+      {/* Markaziy hero */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 relative z-[5] min-h-0">
         <motion.div
-          initial={{ opacity: 0, scale: 0.8, y: 24 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 160, damping: 20, delay: 0.15 }}
-          className="relative w-64 h-56 flex items-center justify-center"
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.65, ease: EASE, delay: 0.2 }}
+          className="relative w-[300px] max-w-full h-[220px] flex items-center justify-center mb-5"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(2,132,199,0.14),transparent_65%)]" />
-          <motion.img
+          {/* Hero ortidagi radial nur */}
+          <div
+            className="absolute -inset-5"
+            style={{
+              background:
+                'radial-gradient(circle at 50% 55%, rgba(2,132,199,0.22) 0%, rgba(56,189,248,0.08) 40%, transparent 68%)',
+            }}
+          />
+
+          {/* Suzuvchi chip — chap yuqori */}
+          <motion.div
+            initial={{ opacity: 0, x: -18 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.65, ease: EASE, delay: 0.7 }}
+            className="absolute -left-3.5 top-6 z-[3]"
+          >
+            <div
+              className="animate-floaty bg-white border border-slate-900/[0.06] rounded-[14px] px-3 py-2 flex items-center gap-1.5"
+              style={{ boxShadow: '0 12px 30px -12px rgba(2,132,199,0.28)', animationDelay: '0.4s' }}
+            >
+              <span className="w-[22px] h-[22px] rounded-lg bg-cyan/10 text-cyan inline-flex items-center justify-center shrink-0">
+                <Sparkles className="w-3 h-3" strokeWidth={2.2} />
+              </span>
+              <span className="text-left">
+                <span className="block text-[9px] text-slate-500 font-semibold leading-none">AI-yordamchi</span>
+                <span className="block text-[11px] text-slate-900 font-extrabold tracking-[-0.01em] mt-0.5">Real amaliyot</span>
+              </span>
+            </div>
+          </motion.div>
+
+          {/* Suzuvchi chip — o'ng past */}
+          <motion.div
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.65, ease: EASE, delay: 0.85 }}
+            className="absolute -right-2.5 bottom-[26px] z-[3]"
+          >
+            <div
+              className="animate-floaty bg-white border border-slate-900/[0.06] rounded-[14px] px-3 py-2 flex items-center gap-1.5"
+              style={{ boxShadow: '0 12px 30px -12px rgba(124,58,237,0.28)', animationDelay: '1.1s' }}
+            >
+              <span className="w-[22px] h-[22px] rounded-lg bg-violet/10 text-violet inline-flex items-center justify-center shrink-0">
+                <Trophy className="w-3 h-3" strokeWidth={2.2} />
+              </span>
+              <span className="text-left">
+                <span className="block text-[9px] text-slate-500 font-semibold leading-none">9 000+</span>
+                <span className="block text-[11px] text-slate-900 font-extrabold tracking-[-0.01em] mt-0.5">obunachi</span>
+              </span>
+            </div>
+          </motion.div>
+
+          {/* Hero rasm — o'z maxsus 3D rasmlarimiz */}
+          <img
             src="/images/splash_hero_v2.webp"
             alt=""
             draggable={false}
-            className="relative z-10 w-full h-full object-contain animate-floaty pointer-events-none drop-shadow-xl"
+            className="animate-floaty relative z-[2] w-full h-full object-contain pointer-events-none"
+            style={{ filter: 'drop-shadow(0 20px 30px rgba(15,23,42,0.15))' }}
           />
         </motion.div>
 
+        {/* Sarlavha */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="space-y-2.5"
+          transition={{ duration: 0.65, ease: EASE, delay: 0.28 }}
+          className="text-center max-w-[300px]"
         >
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight">
-            Bilimingizni<br />
-            <em className="serif-accent">oshiring.</em>
+          <h1 className="text-[34px] font-extrabold text-slate-900 tracking-[-0.03em] leading-[1.05]">
+            Yangi kasb.
+            <br />
+            <em className="serif-accent text-cyan text-[38px]">Bir mini-ilovada.</em>
           </h1>
-          <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            Professional amaliy kurslar, tizimli o‘quv yo‘li va Telegram uchun moslashtirilgan qulay muhit.
+          <p className="text-[13.5px] text-slate-600 leading-[1.55] font-medium mt-3.5 tracking-[-0.005em]">
+            AI, dizayn va SMM bo'yicha amaliy kurslar — Telegram
+            ichida, o'zbek tilida.
           </p>
         </motion.div>
 
+        {/* Ustozlar qatori — real rasmlar */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="flex items-center space-x-2 text-[11px] font-bold"
+          transition={{ duration: 0.65, ease: EASE, delay: 0.4 }}
+          className="mt-[22px] flex items-center gap-2.5 pl-3 pr-4 py-2.5 bg-white border border-slate-900/5 rounded-full"
+          style={{ boxShadow: '0 8px 24px -12px rgba(15,23,42,0.08)' }}
         >
-          <span className="flex items-center space-x-1.5 glass-chip text-slate-800 px-3 py-1.5 rounded-full">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan" strokeWidth={2.2} />
-            <span>Amaliy Ta'lim</span>
+          <span className="flex">
+            <img
+              src="/images/ustoz_zuhra_olimova.webp"
+              alt="Zuhra Olimova"
+              className="w-[30px] h-[30px] rounded-full border-2 border-white object-cover object-top"
+            />
+            <img
+              src="/images/ustoz_yaxshi_bola.webp"
+              alt="Yaxshi Bola"
+              className="w-[30px] h-[30px] rounded-full border-2 border-white object-cover object-top -ml-2.5"
+            />
           </span>
-
-          <span className="flex items-center space-x-1.5 glass-chip text-slate-800 px-3 py-1.5 rounded-full">
-            <Zap className="w-3.5 h-3.5 text-cyan" strokeWidth={2.2} />
-            <span>Telegramga mos</span>
+          <span className="text-[11.5px] text-slate-600 font-semibold leading-[1.3]">
+            <span className="text-slate-900 font-extrabold">2 amaliyotchi ustoz</span>
+            <br />
+            sizga yo'lni ko'rsatadi
           </span>
         </motion.div>
       </div>
 
-      {/* Bottom CTA */}
+      {/* Pastki CTA */}
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="pb-safe w-full space-y-3 relative z-10"
+        transition={{ duration: 0.65, ease: EASE, delay: 0.55 }}
+        className="px-5 pb-safe relative z-10"
       >
         <motion.button
           type="button"
           onClick={handleStart}
           whileTap={{ scale: 0.97 }}
-          className="w-full py-3.5 px-4 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl text-sm flex items-center justify-center space-x-2 shadow-cyanGlow"
+          className="w-full py-[17px] px-[22px] bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl text-[15.5px] flex items-center justify-center space-x-2 shadow-cyanGlow"
         >
-          <GraduationCap className="w-[18px] h-[18px]" strokeWidth={2.4} />
+          <GraduationCap className="w-[18px] h-[18px]" strokeWidth={2.2} />
           <span>Boshlash</span>
-          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+          <ArrowRight className="w-4 h-4 stroke-[2.4]" />
         </motion.button>
-        <p className="text-[10px] text-center text-slate-400 font-medium">
-          bilim qiymatga aylanadi · Kreativ AI 2026
+        <p className="text-center mt-3 mb-[10px] text-[10.5px] text-slate-400 font-semibold tracking-[0.02em]">
+          <em className="serif-accent text-slate-500 text-xs mr-1">bilim qiymatga aylanadi</em>
+          · Kreativ AI 2026
         </p>
       </motion.div>
     </div>

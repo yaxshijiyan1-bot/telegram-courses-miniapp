@@ -148,6 +148,7 @@ class SqliteStore(Store):
                 ("learning_outcomes", "TEXT"),
                 ("show_instructor", "INTEGER DEFAULT 1"),
                 ("show_outcomes", "INTEGER DEFAULT 1"),
+                ("instructor_id", "TEXT"),
             ):
                 try:
                     c.execute(f"ALTER TABLE courses ADD COLUMN {col} {ddl};")
@@ -278,8 +279,8 @@ class SqliteStore(Store):
                    preview_video_url,price,old_price,discount_percent,duration,lesson_count,level,
                    instructor_name,instructor_title,instructor_avatar,instructor_bio,access_duration,
                    copyright_notice,rating,student_count,telegram_channel_id,gallery_urls,testimonials,custom_info,
-                   learning_outcomes,show_instructor,show_outcomes,published,created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   learning_outcomes,show_instructor,show_outcomes,instructor_id,published,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(id) DO UPDATE SET title=excluded.title, slug=excluded.slug,
                    category=excluded.category, description=excluded.description,
                    short_description=excluded.short_description, cover_url=excluded.cover_url,
@@ -297,6 +298,7 @@ class SqliteStore(Store):
                    learning_outcomes=excluded.learning_outcomes,
                    show_instructor=excluded.show_instructor,
                    show_outcomes=excluded.show_outcomes,
+                   instructor_id=excluded.instructor_id,
                    published=excluded.published""",
                 (row.get("id"), row.get("title"), row.get("slug"), row.get("category"),
                  row.get("description"), row.get("short_description"), row.get("cover_url"),
@@ -307,7 +309,7 @@ class SqliteStore(Store):
                  row.get("copyright_notice"), row.get("rating", 5.0), row.get("student_count", 0),
                  row.get("telegram_channel_id"), gallery_json, testimonials_json, custom_info_json,
                  outcomes_json, row.get("show_instructor", 1), row.get("show_outcomes", 1),
-                 row.get("published", 1), row.get("created_at", _now()))
+                 row.get("instructor_id"), row.get("published", 1), row.get("created_at", _now()))
             )
         row["published"] = bool(row.get("published"))
         row["show_instructor"] = bool(row.get("show_instructor"))

@@ -63,6 +63,19 @@ const PRESET_COVERS = [
   { url: '/images/hero_seal.webp', label: '3D Gradient Muhr' },
 ];
 
+// Platformadagi real ustozlar — kurs muallifini tanlash uchun
+const INSTRUCTOR_PRESETS: { key: string; id: string; name: string; title: string; avatar: string }[] = [
+  { key: 'zuhra', id: 'zuhra-olimova', name: 'Zuhra Olimova', title: 'SMM & AI Kontent', avatar: '/images/ustoz_zuhra_olimova.webp' },
+  { key: 'yaxshi', id: 'yaxshi-bola', name: 'Yaxshi Bola', title: 'Dasturlash & Dizayn', avatar: '/images/ustoz_yaxshi_bola.webp' },
+];
+
+const BANNER_TAG_COLORS = [
+  { id: 'cyan', label: 'Moviy', className: 'bg-sky-100 text-sky-700 border-sky-200' },
+  { id: 'violet', label: 'Binafsha', className: 'bg-violet-100 text-violet-700 border-violet-200' },
+  { id: 'gold', label: 'Oltin', className: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { id: 'emerald', label: 'Yashil', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+];
+
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
   onClose,
@@ -113,6 +126,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [newInfoContent, setNewInfoContent] = useState('');
 
   // Instructor & Learning Outcomes Section States
+  const [courseInstructorId, setCourseInstructorId] = useState('yaxshi');
   const [courseInstructorName, setCourseInstructorName] = useState('Kreativ AI');
   const [courseInstructorTitle, setCourseInstructorTitle] = useState('Katta Ekspert');
   const [courseInstructorAvatar, setCourseInstructorAvatar] = useState('/images/ustoz_yaxshi_bola.webp');
@@ -130,6 +144,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [banners, setBanners] = useState<Banner[]>([]);
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
   const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerSubtitle, setBannerSubtitle] = useState('');
+  const [bannerTag, setBannerTag] = useState('');
+  const [bannerTagColor, setBannerTagColor] = useState('cyan');
   const [bannerImageUrl, setBannerImageUrl] = useState('');
   const [bannerActionType, setBannerActionType] = useState<BannerActionType>('none');
   const [bannerActionValue, setBannerActionValue] = useState('');
@@ -289,6 +306,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseInstructorName(c.instructor_name || 'Kreativ AI');
     setCourseInstructorTitle(c.instructor_title || 'Katta Ekspert');
     setCourseInstructorAvatar(c.instructor_avatar || '/images/ustoz_yaxshi_bola.webp');
+    {
+      const preset = INSTRUCTOR_PRESETS.find(p => p.id === c.instructor_id || p.name === c.instructor_name);
+      setCourseInstructorId(preset ? preset.key : 'custom');
+    }
     setShowInstructor(c.show_instructor !== false);
     setShowOutcomes(c.show_outcomes !== false);
     setCourseLearningOutcomes(Array.isArray(c.learning_outcomes) ? c.learning_outcomes : []);
@@ -312,6 +333,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCourseInstructorName('Kreativ AI');
     setCourseInstructorTitle('Katta Ekspert');
     setCourseInstructorAvatar('/images/ustoz_yaxshi_bola.webp');
+    setCourseInstructorId('yaxshi');
     setShowInstructor(true);
     setShowOutcomes(true);
     setCourseLearningOutcomes([]);
@@ -399,13 +421,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     e.preventDefault();
     haptic?.impact?.('heavy');
     setIsActionLoading('course_form');
+    const priceNum = parseInt(coursePrice) || 0;
+    const oldPriceNum = courseOldPrice ? parseInt(courseOldPrice) : null;
+    // Chegirma foizini narx va eski narxdan avtomatik hisoblaymiz
+    const discountPercent = oldPriceNum && priceNum > 0 && oldPriceNum > priceNum
+      ? Math.round((1 - priceNum / oldPriceNum) * 100)
+      : null;
+    const instructorPreset = INSTRUCTOR_PRESETS.find(p => p.key === courseInstructorId);
+    const instructorId = instructorPreset ? instructorPreset.id : null;
     try {
       let res;
       if (editingCourseId) {
         res = await api.updateCourse(editingCourseId, {
           title: courseTitle,
-          price: parseInt(coursePrice) || 0,
-          old_price: courseOldPrice ? parseInt(courseOldPrice) : null,
+          price: priceNum,
+          old_price: oldPriceNum ?? null,
+          discount_percent: discountPercent,
           category: courseCategory,
           duration: courseDuration,
           lesson_count: parseInt(courseLessonsCount) || 12,
@@ -420,6 +451,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           instructor_name: courseInstructorName || 'Kreativ AI',
           instructor_title: courseInstructorTitle || 'Katta Ekspert',
           instructor_avatar: courseInstructorAvatar || '/images/ustoz_yaxshi_bola.webp',
+          instructor_id: instructorId,
           show_instructor: showInstructor,
           show_outcomes: showOutcomes,
           learning_outcomes: courseLearningOutcomes
@@ -435,8 +467,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         res = await api.createCourse({
           title: courseTitle,
           slug,
-          price: parseInt(coursePrice) || 0,
-          old_price: courseOldPrice ? parseInt(courseOldPrice) : null,
+          price: priceNum,
+          old_price: oldPriceNum ?? null,
+          discount_percent: discountPercent,
           category: courseCategory,
           duration: courseDuration,
           lesson_count: parseInt(courseLessonsCount) || 12,
@@ -447,6 +480,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           instructor_name: courseInstructorName || 'Kreativ AI',
           instructor_title: courseInstructorTitle || 'Katta Ekspert',
           instructor_avatar: courseInstructorAvatar || '/images/ustoz_yaxshi_bola.webp',
+          instructor_id: instructorId,
           show_instructor: showInstructor,
           show_outcomes: showOutcomes,
           learning_outcomes: courseLearningOutcomes,
@@ -674,6 +708,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const resetBannerForm = () => {
     setEditingBannerId(null);
     setBannerTitle('');
+    setBannerSubtitle('');
+    setBannerTag('');
+    setBannerTagColor('cyan');
     setBannerImageUrl('');
     setBannerActionType('none');
     setBannerActionValue('');
@@ -682,6 +719,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const startEditBanner = (b: Banner) => {
     setEditingBannerId(b.id);
     setBannerTitle(b.title || '');
+    setBannerSubtitle(b.subtitle || '');
+    setBannerTag(b.tag || '');
+    setBannerTagColor(b.tag_color || 'cyan');
     setBannerImageUrl(b.image_url || '');
     setBannerActionType(b.action_type || 'none');
     setBannerActionValue(b.action_value || '');
@@ -727,6 +767,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     try {
       const payload = {
         title: bannerTitle.trim() || null,
+        subtitle: bannerSubtitle.trim() || null,
+        tag: bannerTag.trim() || null,
+        tag_color: bannerTagColor,
         image_url: bannerImageUrl.trim(),
         action_type: bannerActionType,
         action_value: bannerActionType === 'none' ? '' : bannerActionValue.trim(),
@@ -1548,7 +1591,48 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
 
                     {showInstructor && (
-                      <div className="bg-slate-50 p-3 rounded-2xl space-y-2 border border-slate-200">
+                      <div className="bg-slate-50 p-3 rounded-2xl space-y-2.5 border border-slate-200">
+                        {/* Ustoz tanlash — bir bosishda ism/lavozim/rasm avtomatik to'ldiriladi */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-600 block">Kurs muallifi qaysi ustoz?</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {INSTRUCTOR_PRESETS.map((p) => (
+                              <button
+                                key={p.key}
+                                type="button"
+                                onClick={() => {
+                                  setCourseInstructorId(p.key);
+                                  setCourseInstructorName(p.name);
+                                  setCourseInstructorTitle(p.title);
+                                  setCourseInstructorAvatar(p.avatar);
+                                  haptic?.selection?.();
+                                }}
+                                className={`p-2 rounded-2xl border-2 flex flex-col items-center space-y-1 transition-all active:scale-95 ${
+                                  courseInstructorId === p.key
+                                    ? 'border-sky-500 bg-sky-50 shadow-sm shadow-sky-500/10'
+                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                }`}
+                              >
+                                <img src={p.avatar} alt={p.name} className="w-9 h-9 rounded-xl object-cover" />
+                                <span className="text-[9px] font-bold text-slate-800 text-center leading-tight">{p.name}</span>
+                                <span className="text-[8px] text-slate-400 text-center leading-tight">{p.title}</span>
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => { setCourseInstructorId('custom'); haptic?.selection?.(); }}
+                              className={`p-2 rounded-2xl border-2 flex flex-col items-center justify-center space-y-1.5 transition-all active:scale-95 ${
+                                courseInstructorId === 'custom'
+                                  ? 'border-sky-500 bg-sky-50 shadow-sm shadow-sky-500/10'
+                                  : 'border-slate-200 bg-white hover:border-slate-300'
+                              }`}
+                            >
+                              <Pencil className="w-4 h-4 text-slate-400" />
+                              <span className="text-[9px] font-bold text-slate-500 text-center leading-tight">Boshqa / qo'lda</span>
+                            </button>
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <label className="text-[10px] font-bold text-slate-600 block">Muallif Ismi</label>
@@ -1987,6 +2071,52 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     />
                   </div>
 
+                  {/* Pastki sarlavha (ixtiyoriy) */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 block">Pastki sarlavha <span className="text-slate-400 font-normal">(ixtiyoriy)</span></label>
+                    <input
+                      type="text"
+                      value={bannerSubtitle}
+                      onChange={(e) => setBannerSubtitle(e.target.value)}
+                      placeholder="Masalan: AI bilan kontent yaratishni o'rganing"
+                      maxLength={300}
+                      className="glass-input w-full text-xs"
+                    />
+                  </div>
+
+                  {/* Yorliq va rangi */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700 block">Yorliq <span className="text-slate-400 font-normal">(ixtiyoriy)</span></label>
+                      <input
+                        type="text"
+                        value={bannerTag}
+                        onChange={(e) => setBannerTag(e.target.value)}
+                        placeholder="Yangi kurs / Chegirma / SMM"
+                        maxLength={50}
+                        className="glass-input w-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700 block">Yorliq rangi</label>
+                      <div className="flex items-center gap-1.5 pt-1">
+                        {BANNER_TAG_COLORS.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            title={c.label}
+                            onClick={() => { setBannerTagColor(c.id); haptic?.selection?.(); }}
+                            className={`h-7 px-2 rounded-xl border text-[9px] font-bold transition-all active:scale-95 ${c.className} ${
+                              bannerTagColor === c.id ? 'ring-2 ring-sky-400 ring-offset-1' : 'opacity-70'
+                            }`}
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Harakat turi */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700 block">Bosilganda nima bo'lsin?</label>
@@ -2101,6 +2231,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                               </b>
                             </div>
                             <div className="flex flex-wrap items-center gap-1">
+                              {b.tag && (
+                                <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-lg border ${BANNER_TAG_COLORS.find(c => c.id === (b.tag_color || 'cyan'))?.className || ''}`}>
+                                  {b.tag}
+                                </span>
+                              )}
                               {b.action_type === 'course' ? (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-lg">
                                   <BookOpen className="w-2.5 h-2.5" />

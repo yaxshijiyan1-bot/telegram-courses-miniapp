@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Search, Compass, X, Sparkles, SlidersHorizontal, BookOpen, GraduationCap } from 'lucide-react';
+import { Search, X, GraduationCap, ChevronDown } from 'lucide-react';
 import { Course } from '../types';
 import { CourseCard } from '../components/CourseCard';
 import { useTelegram } from '../context/TelegramContext';
@@ -9,7 +8,7 @@ interface CatalogPageProps {
   courses: Course[];
   purchasedCourseIds?: Set<string>;
   purchasesLoading?: boolean;
-  onSelectCourse: (course) => void;
+  onSelectCourse: (course: Course) => void;
   onNavigateToLearning?: () => void;
   isLoading?: boolean;
   searchFocusSignal?: number;
@@ -81,148 +80,175 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   };
 
   return (
-    <div className="px-4 pt-3 pb-36 space-y-4 animate-fade-up">
-      {/* Sarlavha */}
-      <div className="space-y-1">
-        <div className="flex items-center space-x-1.5">
-          <span className="badge-cyan text-[9px] py-0.5 px-2 flex items-center gap-1">
-            <Compass className="w-3 h-3" />
-            Kurs Marketi
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight tracking-tight">
-          Siz uchun tanlangan <em className="text-cyan font-serif not-italic">kurslar.</em>
+    <div className="pt-4 pb-36 animate-fade-up">
+      {/* Sarlavha + qidiruv */}
+      <div className="px-5 pb-4">
+        <p className="text-[10.5px] font-extrabold text-cyan tracking-[0.14em] uppercase mb-1.5">
+          Kurs marketi
+        </p>
+        <h1 className="text-[28px] font-extrabold text-ink tracking-[-0.03em] leading-[1.1] mb-3.5">
+          Siz uchun tanlangan
+          <br />
+          <em className="serif-accent text-[30px]">kurslar.</em>
         </h1>
-      </div>
 
-      {/* Mukammal Qidiruv Maydoni — barcha kurslar sotib olingan bo'lsa ham
-          qidiruv doim ko'rinadi va ishlaydi */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-          <Search className="w-4 h-4" strokeWidth={2.2} />
-        </div>
-
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Kurs, mavzu yoki ustoz bo‘yicha qidiring..."
-          className="w-full bg-white border border-slate-200 focus:border-cyan rounded-2xl py-3.5 pl-10 pr-10 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all shadow-sm focus:ring-2 focus:ring-cyan/20"
-        />
-
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700"
-            aria-label="Tozalash"
-          >
-            <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center">
-              <X className="w-3 h-3" />
-            </div>
-          </button>
-        )}
-      </div>
-
-      {allPurchased && !hasQuery ? (
-        <div className="py-14 text-center glass rounded-3xl space-y-3 p-6 animate-fade-up">
-          <div className="w-12 h-12 rounded-2xl bg-cyan/10 flex items-center justify-center mx-auto text-cyan">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <b className="text-sm text-slate-900 block">Barcha kurslar sizda!</b>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-            Sotib olingan kurslaringiz «Darslarim» bo‘limida — barcha darslar yopiq kanalda. Yangi kurslar chiqishi bilan bu yerda ko‘rasiz.
-          </p>
-          {onNavigateToLearning && (
+        {/* Qidiruv maydoni — barcha kurslar sotib olingan bo'lsa ham doim ishlaydi */}
+        <div
+          className="flex items-center gap-2.5 bg-white rounded-2xl"
+          style={{
+            padding: '12px 14px',
+            border: '1px solid rgba(15,23,42,0.06)',
+            boxShadow: '0 2px 8px -4px rgba(15,23,42,0.05)',
+          }}
+        >
+          <Search className="w-[17px] h-[17px] text-ink-muted flex-shrink-0" strokeWidth={2.2} />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Kurs, ustoz yoki mavzu qidiring..."
+            className="flex-1 min-w-0 border-none outline-none bg-transparent text-[13px] text-ink font-medium placeholder-ink-muted"
+          />
+          {searchQuery && (
             <button
               type="button"
-              onClick={() => {
-                haptic?.impact?.('medium');
-                onNavigateToLearning();
-              }}
-              className="px-5 py-2.5 bg-cyan text-white font-bold rounded-xl text-xs shadow-cyanGlowSm active:scale-95 transition-transform"
+              onClick={clearSearch}
+              className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-ink-muted flex-shrink-0"
+              aria-label="Tozalash"
             >
-              Darslarimga o‘tish
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>
+      </div>
+
+      {allPurchased && !hasQuery ? (
+        <div className="px-5">
+          <div
+            className="py-14 text-center rounded-[22px] space-y-3 p-6 animate-fade-up"
+            style={{ background: '#F8FAFC', border: '1px dashed rgba(15,23,42,0.10)' }}
+          >
+            <div className="w-14 h-14 rounded-[18px] bg-cyan/10 flex items-center justify-center mx-auto text-cyan">
+              <GraduationCap className="w-7 h-7" />
+            </div>
+            <b className="text-sm text-ink block">Barcha kurslar sizda!</b>
+            <p className="text-xs text-ink-muted max-w-xs mx-auto leading-relaxed">
+              Sotib olingan kurslaringiz «Darslarim» bo‘limida — barcha darslar yopiq kanalda. Yangi kurslar chiqishi bilan bu yerda ko‘rasiz.
+            </p>
+            {onNavigateToLearning && (
+              <button
+                type="button"
+                onClick={() => {
+                  haptic?.impact?.('medium');
+                  onNavigateToLearning();
+                }}
+                className="px-5 py-2.5 bg-cyan text-white font-bold rounded-xl text-xs shadow-cyanGlowSm active:scale-95 transition-transform"
+              >
+                Darslarimga o‘tish
+              </button>
+            )}
+          </div>
+        </div>
       ) : (
         <>
-      {/* Kategoriya Tanlovchi Pills */}
-      <div className="flex space-x-1.5 overflow-x-auto no-scrollbar py-0.5">
-        {categories.map((cat) => {
-          const isSelected = selectedCategory === cat;
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => {
-                haptic?.selection?.();
-                setSelectedCategory(cat);
-              }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                isSelected
-                  ? 'bg-cyan text-white shadow-sm border-cyan'
-                  : 'bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200'
-              }`}
-            >
-              {cat}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Natijalar Soni */}
-      <div className="flex items-center justify-between text-xs text-slate-500 px-0.5">
-        <span className="font-semibold">
-          {searchQuery ? `"${searchQuery}" bo‘yicha qidiruv` : `${selectedCategory} kurslar`}
-        </span>
-        <span className="text-[11px] font-mono text-cyan font-bold">
-          {filteredCourses.length} ta kurs
-        </span>
-      </div>
-
-      {/* Kurslar Ro'yxati / Grid — sotib olishlar aniqlanmaguncha skeleton,
-          sotib olingan kurslar qisqacha ko'rinib keyin yo'qolib qolmaydi */}
-      {purchasesLoading ? (
-        <div className="grid grid-cols-2 gap-3">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-56 rounded-2xl bg-slate-100/80 animate-pulse" />
-          ))}
-        </div>
-      ) : filteredCourses.length === 0 ? (
-        <div className="py-16 text-center glass rounded-3xl space-y-3 p-6">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
-            <Search className="w-6 h-6" />
+          {/* Kategoriya chiplari */}
+          <div className="px-5 pb-4 flex gap-2 overflow-x-auto no-scrollbar">
+            {categories.map((cat) => {
+              const active = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    haptic?.selection?.();
+                    setSelectedCategory(cat);
+                  }}
+                  className="flex-shrink-0 whitespace-nowrap text-xs font-bold transition-all duration-200"
+                  style={{
+                    padding: '8px 14px',
+                    background: active ? 'linear-gradient(135deg, #0284C7, #38BDF8)' : '#FFFFFF',
+                    color: active ? '#FFFFFF' : '#475569',
+                    border: active ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                    borderRadius: 999,
+                    boxShadow: active
+                      ? '0 4px 12px -4px rgba(2,132,199,0.4)'
+                      : '0 1px 3px rgba(15,23,42,0.03)',
+                  }}
+                >
+                  {cat}
+                </button>
+              );
+            })}
           </div>
-          <b className="text-sm text-slate-900 block">Hech qanday kurs topilmadi</b>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-            "{searchQuery}" so‘rovi bo‘yicha natija yo‘q. Boshqa so‘z yoki boshqa kategoriyani tanlab ko‘ring.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedCategory('Barchasi');
-            }}
-            className="px-4 py-2 bg-slate-100 text-slate-700 hover:text-slate-900 font-bold rounded-xl text-xs"
-          >
-            Filtrlarni tozalash
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {filteredCourses.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onClick={() => onSelectCourse(course)}
-              showTopBadge={course.rating ? course.rating >= 4.8 : false}
-            />
-          ))}
-        </div>
-      )}
+
+          {/* Natijalar soni */}
+          <div className="px-5 pb-3 flex items-center justify-between">
+            <span className="text-[11px] text-ink-muted font-semibold">
+              {hasQuery ? (
+                <>
+                  &ldquo;{searchQuery}&rdquo; bo‘yicha —{' '}
+                  <b className="text-ink font-extrabold">{filteredCourses.length}</b> ta
+                </>
+              ) : (
+                <>
+                  <b className="text-ink font-extrabold">{filteredCourses.length}</b> kurs topildi
+                </>
+              )}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan">
+              Ommabop
+              <ChevronDown className="w-3 h-3" />
+            </span>
+          </div>
+
+          {/* Kurslar ro'yxati — sotib olishlar aniqlanmaguncha skeleton */}
+          <div className="px-5">
+            {purchasesLoading ? (
+              <div className="flex flex-col gap-3.5">
+                {[0, 1].map((i) => (
+                  <div key={i} className="h-[260px] rounded-[24px] bg-slate-100/80 animate-pulse" />
+                ))}
+              </div>
+            ) : filteredCourses.length === 0 ? (
+              <div
+                className="py-12 text-center rounded-[22px] space-y-1"
+                style={{ background: '#F8FAFC', border: '1px dashed rgba(15,23,42,0.10)', padding: '48px 20px' }}
+              >
+                <div className="w-14 h-14 rounded-[18px] bg-cyan/10 flex items-center justify-center mx-auto text-cyan mb-3">
+                  <Search className="w-6 h-6" />
+                </div>
+                <div className="text-sm font-bold text-ink">
+                  {hasQuery ? 'Hech qanday kurs topilmadi' : 'Bu kategoriyada kurs yo‘q'}
+                </div>
+                <div className="text-[11.5px] text-ink-muted mt-1">
+                  {hasQuery ? 'Boshqa so‘z yoki kategoriyani tanlab ko‘ring' : 'Yaqin orada yangilari qo‘shiladi'}
+                </div>
+                {hasQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategory('Barchasi');
+                    }}
+                    className="mt-3 px-4 py-2 bg-slate-100 text-slate-700 hover:text-slate-900 font-bold rounded-xl text-xs"
+                  >
+                    Filtrlarni tozalash
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3.5">
+                {filteredCourses.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    onClick={() => onSelectCourse(course)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

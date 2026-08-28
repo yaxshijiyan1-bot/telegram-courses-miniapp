@@ -39,6 +39,7 @@ def _unpack_course(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
             res["learning_outcomes"] = meta.get("learning_outcomes") or []
             res["show_instructor"] = meta.get("show_instructor", True)
             res["show_outcomes"] = meta.get("show_outcomes", True)
+            res["instructor_id"] = meta.get("instructor_id")
         except Exception as e:
             logger.warning(f"Metadata parse error: {e}")
         # Tavsifdan tegni tozalab faqat haqiqiy matnni ko'rsatamiz
@@ -51,6 +52,7 @@ def _unpack_course(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         res.setdefault("learning_outcomes", [])
         res.setdefault("show_instructor", True)
         res.setdefault("show_outcomes", True)
+        res.setdefault("instructor_id", None)
         
     return res
 
@@ -65,7 +67,8 @@ def _pack_course_for_supabase(course: Dict[str, Any]) -> Dict[str, Any]:
         "custom_info": course.get("custom_info") or [],
         "learning_outcomes": course.get("learning_outcomes") or [],
         "show_instructor": course.get("show_instructor", True),
-        "show_outcomes": course.get("show_outcomes", True)
+        "show_outcomes": course.get("show_outcomes", True),
+        "instructor_id": course.get("instructor_id")
     }
     
     import re

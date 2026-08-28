@@ -4,15 +4,16 @@ import {
   ArrowRight,
   BookOpen,
   Trophy,
-  Plus,
   GraduationCap,
-  Award,
+  Sparkles,
+  ChevronRight,
+  Target,
 } from 'lucide-react';
 import { Course, ContinueLearningData, Banner } from '../types';
 import { CourseCard } from '../components/CourseCard';
-import { InstructorsSection } from '../components/InstructorsSection';
+import { SectionTitle } from '../components/SectionTitle';
+import { INSTRUCTORS, TEAM_GOAL, ACCENT } from '../components/InstructorsSection';
 import { useTelegram } from '../context/TelegramContext';
-import { getToday } from '../utils/format';
 import { api, toMediaUrl } from '../services/api';
 
 interface HomePageProps {
@@ -30,6 +31,7 @@ interface HomePageProps {
   onSelectCourse: (course: Course) => void;
   onNavigateToCatalog: () => void;
   onNavigateToLearning: () => void;
+  onOpenTeacher: (teacherId: string) => void;
 }
 
 const SLIDE_MS = 5200;
@@ -43,6 +45,22 @@ const item = {
   show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 26 } },
 };
 
+// Banner tag rangi — admin paneldan keladi
+const TAG_TEXT: Record<string, string> = {
+  cyan: 'text-cyan',
+  violet: 'text-violet',
+  gold: 'text-gold',
+  emerald: 'text-emerald-600',
+};
+
+// Ustoz avatarini kurs ma'lumotidan aniqlash
+const courseInstructorAvatar = (c: Course): string => {
+  if (c.instructor_avatar) return toMediaUrl(c.instructor_avatar);
+  return c.instructor_name?.toLowerCase().includes('zuhra')
+    ? '/images/ustoz_zuhra_olimova.webp'
+    : '/images/ustoz_yaxshi_bola.webp';
+};
+
 export const HomePage: React.FC<HomePageProps> = ({
   courses,
   banners,
@@ -54,9 +72,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   onSelectCourse,
   onNavigateToCatalog,
   onNavigateToLearning,
+  onOpenTeacher,
 }) => {
   const { haptic, webApp } = useTelegram();
-  const today = getToday();
 
   const [slideIdx, setSlideIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -92,6 +110,19 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   };
 
+  // Banner ostidagi ustoz qatori — biriktirilgan kursdan olinadi
+  const bannerTeacher = (b: Banner): { name: string; avatar: string } | null => {
+    if (b.action_type === 'course' && b.action_value) {
+      const c = courses.find(
+        (x) => String(x.id) === b.action_value || x.slug === b.action_value
+      );
+      if (c?.instructor_name) {
+        return { name: c.instructor_name, avatar: courseInstructorAvatar(c) };
+      }
+    }
+    return null;
+  };
+
   // Real statistika — backend'dan, sun'iy raqamlarsiz
   const completedLessons = stats?.completed_lessons_count ?? 0;
   const enrolledCount = stats?.enrolled_count ?? 0;
@@ -102,12 +133,21 @@ export const HomePage: React.FC<HomePageProps> = ({
     .filter((c) => c.id !== continueData?.course_id && !purchasedCourseIds?.has(c.id))
     .slice(0, 4);
 
+  // Maqsad matnidagi "natijaga" so'zi serif accent bilan ajratiladi
+  const goalParts = TEAM_GOAL.split('natijaga');
+
+  const statTiles = [
+    { icon: BookOpen, val: String(completedLessons), lbl: 'yakunlangan dars', cls: 'bg-cyan/10 text-cyan' },
+    { icon: GraduationCap, val: String(enrolledCount), lbl: 'aktiv kurs', cls: 'bg-violet/10 text-violet' },
+    { icon: Trophy, val: `${overallProgress}%`, lbl: 'umumiy progress', cls: 'bg-gold/10 text-gold' },
+  ];
+
   return (
     <motion.div
       variants={container}
       initial="hidden"
       animate="show"
-      className="px-4 pt-4 space-y-5"
+      className="pt-4 pb-2"
       onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
         if (touchX.current == null || banners.length < 2) return;
@@ -119,46 +159,41 @@ export const HomePage: React.FC<HomePageProps> = ({
         touchX.current = null;
       }}
     >
-      {/* ==== 1. Sarlavha + REAL sana ==== */}
-      <motion.div variants={item} className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="eyebrow">Sizning o‘quv hududingiz</p>
-          <h1 className="text-[30px] sm:text-[34px] font-extrabold text-ink leading-tight tracking-tight">
-            Bilimingizni<br />
-            <em className="serif-accent">oshiring.</em>
-          </h1>
-        </div>
-
-        <div className="glass-chip rounded-2xl px-3 py-2 text-center min-w-[68px]">
-          <span className="text-[20px] font-extrabold text-cyan block leading-none tabular-nums">
-            {today.day}
-          </span>
-          <span className="text-[11px] font-bold text-ink block mt-0.5">
-            {today.month}
-          </span>
-          <span className="text-[9px] text-ink-muted font-medium block">
-            {today.weekday}
-          </span>
-        </div>
+      {/* ==== 1. Salomlashuv ==== */}
+      <motion.div variants={item} className="px-5 mb-4">
+        <p className="text-[10.5px] font-extrabold text-cyan tracking-[0.14em] uppercase mb-1.5">
+          Xush kelibsiz
+        </p>
+        <h1 className="text-[28px] font-extrabold text-ink tracking-[-0.03em] leading-[1.12]">
+          Bugun nima
+          <br />
+          <em className="serif-accent text-[30px]">o'rganamiz?</em>
+        </h1>
       </motion.div>
 
-      {/* ==== 2. Hero Banner — dinamik (admin boshqaruvida) ==== */}
+      {/* ==== 2. Banner — dinamik (admin boshqaruvida) ==== */}
       {activeBanner ? (
         <motion.section
           variants={item}
-          className="relative w-full rounded-[24px] overflow-hidden shadow-xl"
+          className="px-5 mb-1"
           onTouchStart={() => setPaused(true)}
           onTouchEnd={() => setPaused(false)}
         >
-          <div className="relative w-full aspect-[21/9] bg-slate-100">
+          <div
+            className="relative w-full h-[190px] rounded-[24px] overflow-hidden bg-slate-100"
+            style={{
+              border: '1px solid rgba(15,23,42,0.06)',
+              boxShadow: '0 12px 30px -14px rgba(15,23,42,0.18)',
+            }}
+          >
             <AnimatePresence initial={false} mode="popLayout">
               <motion.div
                 key={activeBanner.id}
                 className="absolute inset-0"
-                initial={{ opacity: 0, scale: 1.04 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+                transition={{ duration: 0.6, ease: 'easeInOut' }}
               >
                 <img
                   src={toMediaUrl(activeBanner.image_url)}
@@ -172,32 +207,79 @@ export const HomePage: React.FC<HomePageProps> = ({
               </motion.div>
             </AnimatePresence>
 
-            {/* Sarlavha va pastki gradient */}
-            {activeBanner.title ? (
-              <>
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent pointer-events-none" />
-                <div className="absolute bottom-3 left-4 right-12 pointer-events-none">
-                  <h2 className="text-[15px] font-extrabold text-white leading-snug tracking-tight clamp-2 drop-shadow-md">
-                    {activeBanner.title}
-                  </h2>
-                </div>
-              </>
+            {/* Overlay gradient */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(15,23,42,0.55) 0%, rgba(15,23,42,0.25) 55%, rgba(15,23,42,0.05) 100%)',
+              }}
+            />
+
+            {/* Tag pill — admin paneldan */}
+            {activeBanner.tag ? (
+              <span
+                className={`absolute top-3.5 left-3.5 inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${TAG_TEXT[activeBanner.tag_color || 'cyan'] || 'text-cyan'}`}
+                style={{ background: 'rgba(255,255,255,0.92)' }}
+              >
+                <Sparkles className="w-[11px] h-[11px]" />
+                {activeBanner.tag}
+              </span>
             ) : null}
+
+            {/* Sarlavha + subtitle + ustoz qatori */}
+            <div
+              className={`absolute bottom-3.5 left-4 right-4 text-white pointer-events-none ${activeBanner.action_type !== 'none' ? '' : ''}`}
+            >
+              {activeBanner.title ? (
+                <h2 className="text-[20px] font-extrabold tracking-[-0.02em] leading-[1.15] clamp-2 drop-shadow-sm">
+                  {activeBanner.title}
+                </h2>
+              ) : null}
+              {activeBanner.subtitle ? (
+                <p className="text-xs opacity-90 mt-1 font-medium clamp-1">{activeBanner.subtitle}</p>
+              ) : null}
+
+              {(() => {
+                const t = bannerTeacher(activeBanner);
+                return (
+                  <div className="flex items-center gap-1.5 mt-3">
+                    {t ? (
+                      <>
+                        <img
+                          src={t.avatar}
+                          alt={t.name}
+                          className="w-[22px] h-[22px] rounded-full object-cover object-top border-[1.5px] border-white/80 bg-white/20"
+                        />
+                        <span className="text-[11px] font-semibold text-white/95">{t.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-[22px] h-[22px] rounded-full bg-gradient-to-br from-cyan to-violet text-white text-[9px] font-extrabold flex items-center justify-center border-[1.5px] border-white/80">
+                          K
+                        </span>
+                        <span className="text-[11px] font-semibold text-white/95">Kreativ AI</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
 
             {/* Nuqtalar indikatori */}
             {banners.length > 1 && (
-              <div className="absolute bottom-2.5 right-3.5 flex items-center space-x-1.5">
+              <div className="absolute bottom-3 right-3.5 flex items-center gap-1.5">
                 {banners.map((b, i) => (
                   <button
                     key={b.id}
                     type="button"
                     aria-label={`Banner ${i + 1}`}
                     onClick={() => { haptic.selection(); setSlideIdx(i); }}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === slideIdx % banners.length
-                        ? 'w-5 bg-white shadow-sm'
-                        : 'w-1.5 bg-white/50'
-                    }`}
+                    className="h-1.5 rounded-full transition-all duration-300"
+                    style={{
+                      width: i === slideIdx % banners.length ? 18 : 6,
+                      background: i === slideIdx % banners.length ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+                    }}
                   />
                 ))}
               </div>
@@ -205,134 +287,145 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </motion.section>
       ) : !bannersReady ? (
-        // Banner hali yuklanmadi (kesh ham yo'q) — hech qanday yozuv chiqmasin,
-        // faqat yuklanish belgisi; admin banneri kelishi bilan darhol ko'rinadi
-        <motion.section
-          variants={item}
-          className="w-full rounded-[24px] aspect-[21/9] bg-slate-100/80 animate-pulse"
-        />
+        // Banner hali yuklanmadi — faqat yuklanish belgisi
+        <motion.section variants={item} className="px-5 mb-1">
+          <div className="w-full h-[190px] rounded-[24px] bg-slate-100/80 animate-pulse" />
+        </motion.section>
       ) : null}
 
       {/* ==== 3. Statistika (REAL — backend'dan) ==== */}
-      <motion.div variants={item} className="glass rounded-[20px] p-3 grid grid-cols-3 divide-x divide-slate-200/80">
-        <div className="flex items-center space-x-2.5 px-1.5">
-          <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 border border-cyan/15">
-            <BookOpen className="w-4 h-4" strokeWidth={2.2} />
-          </div>
-          <div className="min-w-0">
-            <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
-              {completedLessons}
-            </b>
-            <span className="text-[9px] text-ink-muted block truncate leading-tight">
-              yakunlangan dars
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2.5 px-1.5">
-          <div className="w-9 h-9 rounded-xl bg-violet/10 text-violet flex items-center justify-center flex-shrink-0 border border-violet/15">
-            <GraduationCap className="w-4 h-4" strokeWidth={2.2} />
-          </div>
-          <div className="min-w-0">
-            <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
-              {enrolledCount}
-            </b>
-            <span className="text-[9px] text-ink-muted block truncate leading-tight">
-              aktiv kurs
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2.5 px-1.5">
-          <div className="w-9 h-9 rounded-xl bg-gold/10 text-gold flex items-center justify-center flex-shrink-0 border border-gold/15">
-            <Trophy className="w-4 h-4" strokeWidth={2.2} />
-          </div>
-          <div className="min-w-0">
-            <b className="text-[15px] font-extrabold text-ink block leading-tight tabular-nums">
-              {overallProgress}%
-            </b>
-            <span className="text-[9px] text-ink-muted block truncate leading-tight">
-              umumiy progress
-            </span>
-          </div>
-        </div>
+      <motion.div variants={item} className="px-5 pt-[18px] pb-2 grid grid-cols-3 gap-2.5">
+        {statTiles.map((s) => {
+          const Icon = s.icon;
+          return (
+            <div
+              key={s.lbl}
+              className="bg-white rounded-[18px]"
+              style={{ border: '1px solid rgba(15,23,42,0.05)', padding: '12px 12px 12px 14px' }}
+            >
+              <div className={`w-[30px] h-[30px] rounded-[10px] flex items-center justify-center ${s.cls}`}>
+                <Icon className="w-[15px] h-[15px]" strokeWidth={2.2} />
+              </div>
+              <b className="block text-lg font-extrabold text-ink tracking-[-0.02em] leading-none mt-2 tabular-nums">
+                {s.val}
+              </b>
+              <span className="block text-[10px] font-semibold text-ink-muted mt-1 truncate">
+                {s.lbl}
+              </span>
+            </div>
+          );
+        })}
       </motion.div>
 
-      {/* ==== 4. Yangi kurs topish ==== */}
-      {!continueData && (
-        <motion.button
-          variants={item}
-          type="button"
-          onClick={() => {
-            haptic?.impact?.('light');
-            onNavigateToCatalog();
-          }}
-          className="w-full p-3.5 glass-chip rounded-[20px] border-dashed border-cyan/30 flex items-center justify-between pressable text-left group"
-        >
-          <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-cyan/10 text-cyan flex items-center justify-center flex-shrink-0 group-hover:bg-cyan group-hover:text-white transition-colors">
-              <Plus className="w-5 h-5" strokeWidth={2.5} />
-            </div>
-            <div className="min-w-0">
-              <b className="text-[13px] font-bold text-ink block">
-                Birinchi kursingizni tanlang
-              </b>
-              <small className="text-[11px] text-ink-muted block truncate">
-                Katalogdagi amaliy kurslarni ko‘ring
-              </small>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-cyan flex-shrink-0" />
-        </motion.button>
-      )}
-
-      {/* ==== 5. Sizga mos kurslar (sotib olinganlar ko'rsatilmaydi) ==== */}
-      {/* purchasesLoading: sotib olishlar hali aniqlanmagan — eski ro'yxat qisqacha
-          ko'rinib, keyin yo'qolib qolmasligi uchun skeleton ko'rsatiladi */}
-      {(purchasesLoading || recommendedCourses.length > 0) && (
-      <motion.div variants={item} className="space-y-2.5">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm font-bold text-ink flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-cyan" strokeWidth={2.2} />
-            Sizga mos kurslar
-          </h2>
-          <button
-            type="button"
-            onClick={() => {
-              haptic.selection();
-              onNavigateToCatalog();
-            }}
-            className="text-[11px] font-bold text-cyan hover:underline flex items-center space-x-0.5"
-          >
-            <span>Hammasi</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {purchasesLoading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[0, 1].map((i) => (
-              <div key={i} className="h-56 rounded-2xl bg-slate-100/80 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {recommendedCourses.map((course, idx) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onClick={() => onSelectCourse(course)}
-              showTopBadge={idx === 0}
-            />
+      {/* ==== 4. Ustozlar ==== */}
+      <motion.div variants={item} className="pt-2">
+        <SectionTitle
+          eyebrow="JAMOA"
+          title="Ustozlar"
+          sub="Amaliyotdan, real loyihalardan"
+        />
+        <div className="px-5 space-y-2.5">
+          {INSTRUCTORS.map((ins) => (
+            <motion.button
+              key={ins.id}
+              type="button"
+              whileTap={{ scale: 0.97 }}
+              onClick={() => { haptic?.impact?.('light'); onOpenTeacher(ins.id); }}
+              className="w-full bg-white rounded-[22px] flex items-center gap-3 text-left pressable"
+              style={{ border: '1px solid rgba(15,23,42,0.05)', padding: '12px 14px' }}
+            >
+              <div
+                className="w-[54px] h-[54px] rounded-[18px] overflow-hidden flex-shrink-0"
+                style={{ background: ins.accent === 'violet' ? 'rgba(124,58,237,0.08)' : 'rgba(2,132,199,0.08)' }}
+              >
+                <img
+                  src={ins.photo}
+                  alt={ins.name}
+                  className="w-full h-full object-cover object-top"
+                  loading="lazy"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[15px] font-extrabold text-ink tracking-[-0.01em] leading-tight">
+                  {ins.name}
+                </h3>
+                <span
+                  className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border mt-1 ${ACCENT[ins.accent].chipBg}`}
+                >
+                  {ins.role}
+                </span>
+                <p className="text-[11px] text-ink-muted mt-1.5 clamp-1">{ins.tagline}</p>
+              </div>
+              <ChevronRight className="w-[18px] h-[18px] text-slate-400 flex-shrink-0" />
+            </motion.button>
           ))}
         </div>
-        )}
       </motion.div>
+
+      {/* ==== 5. Siz uchun tavsiyalar (sotib olinganlar ko'rsatilmaydi) ==== */}
+      {(purchasesLoading || recommendedCourses.length > 0) && (
+        <motion.div variants={item} className="pt-4">
+          <SectionTitle
+            eyebrow="TAVSIYA"
+            title="Siz uchun"
+            accent="tanlangan."
+            right={
+              <button
+                type="button"
+                onClick={() => { haptic.selection(); onNavigateToCatalog(); }}
+                className="flex items-center gap-1 text-xs font-bold text-cyan pb-1"
+              >
+                <span>Barchasi</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            }
+          />
+          <div className="px-5">
+            {purchasesLoading ? (
+              <div className="space-y-3.5">
+                {[0, 1].map((i) => (
+                  <div key={i} className="h-[260px] rounded-[24px] bg-slate-100/80 animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3.5">
+                {recommendedCourses.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    onClick={() => onSelectCourse(course)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
       )}
 
-      {/* ==== 6. Ustozlar haqida ==== */}
-      <motion.div variants={item}>
-        <InstructorsSection />
+      {/* ==== 6. Bizning maqsad ==== */}
+      <motion.div variants={item} className="px-5 pt-5 pb-3">
+        <div
+          className="rounded-[22px] flex items-start gap-3"
+          style={{
+            padding: '16px 18px',
+            background: 'linear-gradient(135deg, rgba(2,132,199,0.06), rgba(124,58,237,0.05))',
+            border: '1px solid rgba(2,132,199,0.10)',
+          }}
+        >
+          <div className="w-11 h-11 rounded-[14px] bg-white/90 text-cyan flex items-center justify-center flex-shrink-0 shadow-sm">
+            <Target className="w-[22px] h-[22px]" strokeWidth={2.2} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold text-cyan tracking-[0.12em] uppercase mb-1">
+              Bizning maqsad
+            </p>
+            <p className="text-[12.5px] text-ink-secondary leading-[1.6] font-medium">
+              {goalParts[0]}
+              <em className="serif-accent">natijaga</em>
+              {goalParts[1]}
+            </p>
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   );

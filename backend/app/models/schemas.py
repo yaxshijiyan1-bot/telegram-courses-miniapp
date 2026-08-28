@@ -73,6 +73,7 @@ class CourseCard(BaseModel):
     instructor_name: str
     instructor_title: str
     instructor_avatar: Optional[str] = None
+    instructor_id: Optional[str] = None
     rating: float = 5.0
     student_count: int = 0
     gallery_urls: List[str] = []

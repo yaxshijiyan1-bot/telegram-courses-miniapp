@@ -50,6 +50,7 @@ class CourseUpsertRequest(BaseModel):
     level: Optional[str] = Field(default=None, max_length=100)
     instructor_name: Optional[str] = Field(default=None, max_length=255)
     instructor_title: Optional[str] = Field(default=None, max_length=255)
+    instructor_id: Optional[str] = Field(default=None, max_length=100)
     instructor_bio: Optional[str] = Field(default=None, max_length=5000)
     preview_video_url: Optional[str] = Field(default=None, max_length=2000)
     access_duration: Optional[str] = Field(default=None, max_length=100)
@@ -569,6 +570,9 @@ async def upload_media_to_r2(
 class BannerUpsertRequest(BaseModel):
     """Banner yaratish/tahrirlash so'rovi."""
     title: Optional[str] = Field(default=None, max_length=300)
+    subtitle: Optional[str] = Field(default=None, max_length=300)
+    tag: Optional[str] = Field(default=None, max_length=50)
+    tag_color: Optional[str] = Field(default=None, max_length=30)
     image_url: str = Field(..., min_length=1, max_length=2_000_000)
     action_type: str = Field(..., pattern="^(link|course|none)$")
     action_value: Optional[str] = Field(default=None, max_length=2000)
@@ -608,6 +612,9 @@ async def create_banner(
     banner = {
         "id": uuid.uuid4().hex[:16],
         "title": payload.title.strip() if payload.title else "",
+        "subtitle": payload.subtitle.strip() if payload.subtitle else "",
+        "tag": payload.tag.strip() if payload.tag else "",
+        "tag_color": payload.tag_color.strip() if payload.tag_color else "cyan",
         "image_url": payload.image_url.strip(),
         "action_type": payload.action_type,
         "action_value": payload.action_value or "",
@@ -641,6 +648,9 @@ async def update_banner(
 
     target.update({
         "title": payload.title.strip() if payload.title else "",
+        "subtitle": payload.subtitle.strip() if payload.subtitle else "",
+        "tag": payload.tag.strip() if payload.tag else "",
+        "tag_color": payload.tag_color.strip() if payload.tag_color else target.get("tag_color") or "cyan",
         "image_url": payload.image_url.strip(),
         "action_type": payload.action_type,
         "action_value": payload.action_value or "",

@@ -6,6 +6,8 @@ import { SplashPage } from './pages/SplashPage';
 import { HomePage } from './pages/HomePage';
 import { CatalogPage } from './pages/CatalogPage';
 import { CourseDetailPage } from './pages/CourseDetailPage';
+import { TeacherPage } from './pages/TeacherPage';
+import { INSTRUCTORS, Instructor } from './components/InstructorsSection';
 import { PurchaseSuccessPage } from './pages/PurchaseSuccessPage';
 import { LoginPage } from './pages/LoginPage';
 import { MyCoursesPage } from './pages/MyCoursesPage';
@@ -79,6 +81,20 @@ export const AppContent: React.FC = () => {
     if (mainRef.current) mainRef.current.scrollTo(0, 0);
   }, [activeTab]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<Instructor | null>(null);
+  // Kurs va ustoz sahifasi istalgan tartibda ochilishi mumkin (kurs ichidan
+  // ustoz, ustoz ichidan kurs) — back bosilganda to'g'ri qatlam yopilishi
+  // uchun ochilish tartibi stack'da saqlanadi
+  const [overlayStack, setOverlayStack] = useState<('course' | 'teacher')[]>([]);
+
+  const openCourse = useCallback((c: Course) => {
+    setSelectedCourse(c);
+    setOverlayStack((s) => [...s.filter((x) => x !== 'course'), 'course']);
+  }, []);
+  const openTeacher = useCallback((t: Instructor) => {
+    setSelectedTeacher(t);
+    setOverlayStack((s) => [...s.filter((x) => x !== 'teacher'), 'teacher']);
+  }, []);
   const [selectedLesson, setSelectedLesson] = useState<{
     course: Course;
     lesson: Lesson;
@@ -108,16 +124,16 @@ export const AppContent: React.FC = () => {
   // tarixda doim kamida bitta yozuv (sentinel) saqlanadi — back bosilganda
   // chiqib ketmaydi, popstate orqali bir qatlam yopiladi.
   const navStateRef = useRef({
-    selectedCourse, selectedLesson, purchasedCourse,
+    selectedCourse, selectedTeacher, overlayStack, selectedLesson, purchasedCourse,
     isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
   });
   navStateRef.current = {
-    selectedCourse, selectedLesson, purchasedCourse,
+    selectedCourse, selectedTeacher, overlayStack, selectedLesson, purchasedCourse,
     isCheckoutOpen, isAdminOpen, isNotifsOpen, activeTab,
   };
 
   const canGoBack = !!(
-    selectedCourse || selectedLesson || purchasedCourse ||
+    selectedCourse || selectedTeacher || selectedLesson || purchasedCourse ||
     isCheckoutOpen || isAdminOpen || isNotifsOpen
   ) || activeTab !== 'home';
 
@@ -150,12 +166,20 @@ export const AppContent: React.FC = () => {
   // Bir bosishda faqat bitta eng ustki qatlamni yopadi
   const closeTopLevel = useCallback((): boolean => {
     const s = navStateRef.current;
+    const top = s.overlayStack[s.overlayStack.length - 1] || null;
     if (s.isCheckoutOpen) setIsCheckoutOpen(false);
     else if (s.isNotifsOpen) setIsNotifsOpen(false);
     else if (s.isAdminOpen) setIsAdminOpen(false);
     else if (s.selectedLesson) setSelectedLesson(null);
     else if (s.purchasedCourse) setPurchasedCourse(null);
-    else if (s.selectedCourse) setSelectedCourse(null);
+    else if (s.selectedTeacher && top === 'teacher') {
+      setSelectedTeacher(null);
+      setOverlayStack((st) => st.filter((x) => x !== 'teacher'));
+    }
+    else if (s.selectedCourse) {
+      setSelectedCourse(null);
+      setOverlayStack((st) => st.filter((x) => x !== 'course'));
+    }
     else if (s.activeTab !== 'home') setActiveTab('home');
     else return false;
     return true;
@@ -343,6 +367,24 @@ export const AppContent: React.FC = () => {
   // bu holatda sotuv ro'yxati o'rniga skeleton ko'rsatiladi, flicker bo'lmaydi
   const purchasesLoading = isAuthenticated && !dashboardData && purchasedCourseIds.size === 0;
 
+  // Eng ustki overlay qatlami: 'course' yoki 'teacher'. Kurs va ustoz sahifasi
+  // istalgan tartibda ochilishi mumkin, shuning uchun qaysi biri ustda turishini
+  // stack'ning oxirgi elementi belgilaydi.
+  const topOverlay = overlayStack[overlayStack.length - 1] || null;
+
+  // Kurs ichidan ustoz profilini ochish: kurs ustozini INSTRUCTORS ro'yxatidan topamiz
+  const openTeacherForCourse = useCallback(
+    (c: Course) => {
+      const t = INSTRUCTORS.find(
+        (i) =>
+          (c.instructor_id && i.id === c.instructor_id) ||
+          (c.instructor_name || '').toLowerCase() === i.name.toLowerCase()
+      );
+      if (t) openTeacher(t);
+    },
+    [openTeacher]
+  );
+
   // Splash Ekrani
   if (showSplash) {
     return <SplashPage onStart={() => setShowSplash(false)} />;
@@ -380,14 +422,28 @@ export const AppContent: React.FC = () => {
         onGoHome={() => {
           setPurchasedCourse(null);
           setSelectedCourse(null);
+          setSelectedTeacher(null);
+          setOverlayStack([]);
           setActiveTab('home');
         }}
       />
     );
   }
 
-  // 3. Course Detail View
-  if (selectedCourse) {
+  // 3. Teacher Profile View (ustoz sahifasi kurs ustida ham ochilishi mumkin)
+  if (selectedTeacher && topOverlay === 'teacher') {
+    return (
+      <TeacherPage
+        instructor={selectedTeacher}
+        courses={courses}
+        onBack={goBack}
+        onSelectCourse={openCourse}
+      />
+    );
+  }
+
+  // 4. Course Detail View
+  if (selectedCourse && topOverlay !== 'teacher') {
     return (
       <>
         <CourseDetailPage
@@ -398,6 +454,7 @@ export const AppContent: React.FC = () => {
             setIsCheckoutOpen(true);
           }}
           onPlayLesson={(c, l) => handlePlayLesson(c, l)}
+          onOpenTeacher={openTeacherForCourse}
         />
 
         {checkoutCourse && (
@@ -461,7 +518,11 @@ export const AppContent: React.FC = () => {
               overall_progress_percent: dashboardData.overall_progress_percent ?? 0,
               enrolled_count: dashboardData.enrolled_courses?.length ?? 0,
             } : null}
-            onSelectCourse={(c) => setSelectedCourse(c)}
+            onSelectCourse={openCourse}
+            onOpenTeacher={(id) => {
+              const t = INSTRUCTORS.find((i) => i.id === id);
+              if (t) openTeacher(t);
+            }}
             onNavigateToCatalog={() => setActiveTab('courses')}
             onNavigateToLearning={() => setActiveTab('learning')}
           />
@@ -472,7 +533,7 @@ export const AppContent: React.FC = () => {
             courses={courses}
             purchasedCourseIds={purchasedCourseIds}
             purchasesLoading={purchasesLoading}
-            onSelectCourse={(c) => setSelectedCourse(c)}
+            onSelectCourse={openCourse}
             onNavigateToLearning={() => setActiveTab('learning')}
             searchFocusSignal={searchFocusSignal}
           />
