@@ -21,6 +21,7 @@ class SubmitReceiptRequest(BaseModel):
     payment_method: str = "karta"
     receipt_image: str  # Base64 (data:image...) yoki URL
     comment: Optional[str] = None
+    promo_code: Optional[str] = None
 
 # Oddiy rate-limit: bir IP dan 1 daqiqada 6 tagacha chek
 _submit_times: dict = {}
@@ -149,6 +150,21 @@ async def submit_receipt(
     pricing = await course_pricing(store, course)
     amount = pricing["final_price"]
 
+    # Promokod: joriy (chegirmali) narxga qo'shimcha foiz. Kod TASDIQLANGANDA
+    # sarflanadi — rad etilsa foydalanuvchi kodini yo'qotmaydi.
+    promo_entry = None
+    promo_note = None
+    if (req.promo_code or "").strip():
+        from app.services.promos import validate_code, apply_percent
+        promo_entry, promo_message = await validate_code(store, req.promo_code, user_id)
+        if not promo_entry:
+            raise HTTPException(status_code=400, detail=promo_message)
+        amount = apply_percent(amount, promo_entry["percent"])
+        promo_note = f"promo:{promo_entry['code']}"
+
+    comment_parts = [p for p in [req.comment, promo_note] if p]
+    comment_text = " | ".join(comment_parts) if comment_parts else None
+
     await store.create_purchase({
         "user_id": user_id,
         "course_id": course["id"],
@@ -161,7 +177,7 @@ async def submit_receipt(
         "student_name": student_name,
         "username": username,
         "receipt_image_url": req.receipt_image if req.receipt_image.startswith("http") else None,
-        "comment": req.comment,
+        "comment": comment_text,
     })
 
     # Ikkala Superadminga to'g'ridan-to'g'ri Telegram Bot orqali to'lov cheki rasmi va tasdiqlash tugmalarini yuborish
@@ -180,6 +196,8 @@ async def submit_receipt(
                 f"🎁 <b>Chegirma:</b> −{course['discount_percent']}% "
                 f"(birinchi {course.get('discount_limit')} kishi)\n"
             )
+        if promo_entry:
+            caption += f"🎟 <b>Promokod:</b> {promo_entry['code']} (−{int(promo_entry['percent'])}%)\n"
         caption += (
             f"💳 <b>To'lov usuli:</b> Karta orqali o'tkazma\n"
             f"🔢 <b>Buyurtma ID:</b> <code>{order_id}</code>\n"

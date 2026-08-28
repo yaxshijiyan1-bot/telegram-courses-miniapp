@@ -68,6 +68,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(res.user);
           localStorage.setItem('user', JSON.stringify(res.user));
           setAuthVersion((v) => v + 1);
+          // Referal havolasi bilan ochilgan bo'lsa (t.me/bot?start=ref_KOD) — bog'laymiz
+          const startParam = String((webApp as any)?.initDataUnsafe?.start_param || '');
+          if (startParam.toLowerCase().startsWith('ref_')) {
+            api.applyReferralCode(startParam).catch(() => {});
+          }
         }
       }).catch(() => {
         // Offline yoki sekin internetda ham foydalanuvchi bemalol kiradi

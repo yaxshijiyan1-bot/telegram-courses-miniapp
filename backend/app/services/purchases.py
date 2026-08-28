@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional, Tuple
 import httpx
 
 from app.core.config import settings
+from app.services.promos import reward_referrer
 from app.storage import get_store
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,27 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
     course = await store.get_course(str(course_id)) if course_id else None
     course_title = purchase.get("course_title") or (course or {}).get("title") or "Kurs"
 
+    # Chek bilan yuborilgan promokodni faqat tasdiqlashda sarflaymiz —
+    # rad etilsa kod foydalanilmagan bo'lib qoladi.
+    promo_code = ""
+    comment = str(purchase.get("comment") or "")
+    marker = "promo:"
+    if marker in comment:
+        promo_code = comment.split(marker, 1)[1].split()[0].strip()
+    if promo_code:
+        try:
+            from app.services.promos import consume_code
+            await consume_code(store, promo_code, user_id)
+        except Exception:
+            logger.exception("Promokod sarflashda xato (%s)", promo_code)
+
+    # Referal mukofoti — xarid tasdiqlanganda referrerga bir martalik kod
+    referral_bonus = None
+    try:
+        referral_bonus = await reward_referrer(store, user_id)
+    except Exception:
+        logger.exception("Referal mukofoti oqimida xato")
+
     enrollment_granted = False
     try:
         if user_id and course_id:
@@ -191,6 +213,20 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
         "Hoziroq o'rganishni boshlashingiz mumkin 👇",
         invite_link=invite_link,
     )
+
+    # Referrerga bot orqali xabar (mukofot kodi reward_referrer ichida yaratilgan)
+    if referral_bonus and referral_bonus.get("referrer_telegram_id"):
+        try:
+            buyer_name = html.escape(str(purchase.get("student_name") or "Do'stingiz"))
+            await _notify_student(
+                int(referral_bonus["referrer_telegram_id"]),
+                "🎁 <b>Referal mukofoti!</b>\n\n"
+                f"<b>{buyer_name}</b> sizning havolangiz orqali kurs sotib oldi.\n"
+                f"Sizga bir martalik <b>−{int(referral_bonus['percent'])}%</b> promokod berildi:\n"
+                f"<code>{referral_bonus['code']}</code>",
+            )
+        except (TypeError, ValueError):
+            logger.warning("Referrer bot xabari yuborilmadi (noto'g'ri telegram_id)")
     return True, "To'lov tasdiqlandi va talabaga kurs ochildi"
 
 

@@ -475,21 +475,24 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                   haptic?.selection?.();
                   setActivePreviewIdx(idx);
                 }}
-                className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/60 cursor-pointer group"
+                className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/60 cursor-pointer group touch-pan-y"
               >
                 <img
                   src={toMediaUrl(imgUrl)}
                   alt={`Kurs lavhasi ${idx + 1}`}
                   loading="lazy"
                   decoding="async"
+                  draggable={false}
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement;
                     const fixed = toMediaUrl(target.src);
                     target.src = fixed !== target.src ? fixed : '/images/hero_books.jpg';
                   }}
-                  className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
+                  // pointer-events-none: skrol/drag paytida rasm "surilmaydi" —
+                  // barcha tegishlar katakchaga o'tadi, sahifa skrolli uzilmaydi
+                  className="w-full h-full object-cover object-top pointer-events-none select-none [@media(hover:hover)]:transition-transform [@media(hover:hover)]:group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white pointer-events-none">
                   <Maximize2 className="w-4 h-4" />
                 </div>
               </div>
@@ -790,7 +793,8 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             alt={`Kurs lavhasi ${activePreviewIdx + 1}`}
             draggable={false}
             onClick={(e) => e.stopPropagation()}
-            className="w-full h-full object-contain animate-zoom-in"
+            className="w-full h-full object-contain animate-zoom-in select-none"
+            style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
           />
 
           <button

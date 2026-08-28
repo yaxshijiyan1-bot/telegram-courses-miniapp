@@ -940,6 +940,23 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
 
     command = text.split(maxsplit=1)[0].split("@", 1)[0].lower()
     if command == "/start":
+        # Referal havolasi: /start ref_XYZ
+        payload = text.split(maxsplit=1)[1].strip() if len(text.split(maxsplit=1)) > 1 else ""
+        if payload.lower().startswith("ref_"):
+            from app.services.promos import link_referral
+            ok, message, bonus = await link_referral(get_store(), user["id"], payload)
+            if ok:
+                await _send_welcome(client, int(chat_id), tg_user)
+                await send_tg_message(
+                    client,
+                    int(chat_id),
+                    "🎁 <b>Do'stingiz taklifi qabul qilindi!</b>\n\n"
+                    f"Sizga bir martalik <b>−{int(bonus['percent'])}%</b> promokod berildi:\n"
+                    f"<code>{bonus['code']}</code>\n\n"
+                    "Kurs sotib olishda «Promokod» maydoniga shu kodni yozing.",
+                    {"inline_keyboard": [[{"text": "🚀 Kurslarni ko'rish", "web_app": {"url": settings.WEBAPP_URL}}]]},
+                )
+                return
         await _send_welcome(client, int(chat_id), tg_user)
     elif command in {"/kurslar", "/courses"}:
         await show_course_card(client, int(chat_id), 0)

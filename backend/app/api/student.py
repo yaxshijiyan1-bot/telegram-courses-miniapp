@@ -314,3 +314,75 @@ async def mark_all_notifications_read(current_user: dict = Depends(get_current_u
     store = get_store()
     await store.mark_notifications_read(current_user.get("sub"))
     return {"success": True, "message": "Barcha bildirishnomalar o'qilgan deb belgilandi"}
+
+# ---------------- PROMO & REFERAL ----------------
+
+from pydantic import BaseModel as _BaseModel
+from typing import Optional as _Optional
+from app.core.config import settings
+from app.services.pricing import course_pricing as _course_pricing
+from app.services.promos import (
+    validate_code as _validate_code,
+    apply_percent as _apply_percent,
+    get_or_create_referral_code as _get_or_create_referral_code,
+    link_referral as _link_referral,
+    referral_stats as _referral_stats,
+)
+
+
+class _PromoValidateRequest(_BaseModel):
+    code: str
+    course_id: str
+
+
+@router.post("/promo/validate")
+async def validate_promo(req: _PromoValidateRequest, current_user: dict = Depends(get_current_user)):
+    """Promokodni kursga qo'llashdan oldin tekshiradi va yakuniy narxni qaytaradi."""
+    store = get_store()
+    course = await store.get_course(req.course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Kurs topilmadi")
+
+    entry, message = await _validate_code(store, req.code, current_user.get("sub"))
+    if not entry:
+        return {"valid": False, "message": message}
+
+    pricing = await _course_pricing(store, course)
+    final_price = _apply_percent(pricing["final_price"], entry["percent"])
+    return {
+        "valid": True,
+        "message": message,
+        "code": entry["code"],
+        "percent": entry["percent"],
+        "base_price": pricing["final_price"],
+        "final_price": final_price,
+    }
+
+
+@router.get("/referral")
+async def get_referral_info(current_user: dict = Depends(get_current_user)):
+    """Profil uchun referal ma'lumotlari: shaxsiy kod, havola va statistika."""
+    store = get_store()
+    user_id = current_user.get("sub")
+    stats = await _referral_stats(store, user_id)
+    bot_username = settings.BOT_USERNAME
+    stats["link"] = f"https://t.me/{bot_username}?start=ref_{stats['code']}"
+    stats["bot_username"] = bot_username
+    return stats
+
+
+class _ApplyReferralRequest(_BaseModel):
+    code: str
+
+
+@router.post("/referral/apply")
+async def apply_referral_code(req: _ApplyReferralRequest, current_user: dict = Depends(get_current_user)):
+    """Mini App start_param orqali keldi: ref_XYZ kodi bilan bog'lanadi."""
+    store = get_store()
+    ok, message, bonus = await _link_referral(store, current_user.get("sub"), req.code)
+    return {
+        "success": ok,
+        "message": message,
+        "bonus_code": bonus["code"] if bonus else None,
+        "bonus_percent": bonus["percent"] if bonus else None,
+    }

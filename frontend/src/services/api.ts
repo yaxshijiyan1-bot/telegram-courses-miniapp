@@ -404,6 +404,7 @@ class ApiService {
     student_name: string;
     username: string;
     telegram_id: number;
+    promo_code?: string;
   }): Promise<{ success: boolean; message: string }> {
     const res = await fetch(`${API_BASE_URL}/checkout/submit-receipt`, {
       method: 'POST',
@@ -415,6 +416,52 @@ class ApiService {
       throw new Error(err.detail || 'To‘lov chekini yuborishda xatolik');
     }
     return await res.json();
+  }
+
+  // ===== PROMO & REFERAL =====
+
+  async validatePromo(code: string, courseId: string): Promise<{ valid: boolean; message: string; code?: string; percent?: number; base_price?: number; final_price?: number }> {
+    const res = await fetch(`${API_BASE_URL}/student/promo/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...this.getHeaders() },
+      body: JSON.stringify({ code, course_id: courseId })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 404) throw new Error('Kurs topilmadi');
+    if (!res.ok) throw new Error(data?.detail || 'Promokod tekshiruvda xatolik');
+    return data;
+  }
+
+  async getReferralInfo(): Promise<{ code: string; link: string; invited_count: number; reward_codes: { code: string; percent: number; used: boolean }[]; reward_percent: number; invitee_percent: number; bot_username: string }> {
+    const res = await fetch(`${API_BASE_URL}/student/referral`, { headers: this.getHeaders() });
+    if (!res.ok) throw new Error('Referal ma\'lumotini olishda xatolik');
+    return await res.json();
+  }
+
+  async applyReferralCode(code: string): Promise<{ success: boolean; message: string; bonus_code?: string; bonus_percent?: number }> {
+    const res = await fetch(`${API_BASE_URL}/student/referral/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...this.getHeaders() },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || 'Referal kodni bog\'lashda xatolik');
+    return data;
+  }
+
+  // ===== ADMIN: PROMO KODLAR =====
+
+  async getAdminPromoCodes(): Promise<any[]> {
+    const data = await this.adminFetch('/admin/promo-codes');
+    return Array.isArray(data) ? data : [];
+  }
+
+  async createPromoCode(payload: { code: string; percent: number; max_uses: number; days_valid: number; note?: string }): Promise<{ success: boolean; message: string; promo: any }> {
+    return this.adminFetch('/admin/promo-codes', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  async deletePromoCode(code: string): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch(`/admin/promo-codes/${encodeURIComponent(code)}`, { method: 'DELETE' });
   }
 
   async getCertificates(): Promise<Certificate[]> {

@@ -34,7 +34,8 @@ import {
   Link2,
   EyeOff,
   Layers,
-  Percent
+  Percent,
+  TicketPercent
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 import { api, toMediaUrl } from '../services/api';
@@ -48,12 +49,13 @@ interface AdminDashboardModalProps {
   adminName: string;
 }
 
-type AdminTab = 'receipts' | 'courses' | 'banners' | 'stats' | 'students' | 'broadcast' | 'settings';
+type AdminTab = 'receipts' | 'courses' | 'banners' | 'stats' | 'students' | 'broadcast' | 'settings' | 'promos';
 
 const TABS: { id: AdminTab; label: string; icon: typeof Clock }[] = [
   { id: 'receipts', label: 'Cheklar', icon: ReceiptText },
   { id: 'courses', label: 'Kurslar', icon: BookOpen },
   { id: 'banners', label: 'Bannerlar', icon: ImageIcon },
+  { id: 'promos', label: 'Promolar', icon: TicketPercent },
   { id: 'stats', label: 'Statistika', icon: TrendingUp },
   { id: 'students', label: 'Talabalar', icon: Users },
   { id: 'broadcast', label: 'Broadcast', icon: Megaphone },
@@ -93,6 +95,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [receipts, setReceipts] = useState<PendingReceipt[]>([]);
   const [students, setStudents] = useState<AdminStudent[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+
+  // Promokodlar holati
+  const [promoCodes, setPromoCodes] = useState<any[]>([]);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoPercent, setPromoPercent] = useState('10');
+  const [promoMaxUses, setPromoMaxUses] = useState('50');
+  const [promoDays, setPromoDays] = useState('0');
+  const [promoNote, setPromoNote] = useState('');
 
   // AI Course Generator States
   const [aiTopic, setAiTopic] = useState('');
@@ -198,18 +208,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const [s, r, st, c, bn] = await Promise.all([
+      const [s, r, st, c, bn, pc] = await Promise.all([
         api.getAdminStats(),
         api.getPendingReceipts(),
         api.getAdminStudents(),
         api.getAdminCourses(),
-        api.getAdminBanners()
+        api.getAdminBanners(),
+        api.getAdminPromoCodes().catch(() => [] as any[])
       ]);
       setStats(s);
       setReceipts(r);
       setStudents(st);
       setCourses(c);
       setBanners(bn);
+      setPromoCodes(pc);
     } catch (e: any) {
       showError(e?.message || 'Ma\'lumotlarni yuklashda xatolik');
     } finally {
@@ -259,6 +271,44 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       await loadData(true);
     } catch (e: any) {
       showError(e?.message || 'Rad etishda xatolik yuz berdi');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  // Promokod yaratish va o'chirish
+  const handleCreatePromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    haptic?.impact?.('medium');
+    setIsActionLoading('promo_create');
+    try {
+      const res = await api.createPromoCode({
+        code: promoCode.trim(),
+        percent: parseInt(promoPercent) || 0,
+        max_uses: parseInt(promoMaxUses) || 0,
+        days_valid: parseInt(promoDays) || 0,
+        note: promoNote.trim()
+      });
+      showNotification(res.message || 'Promokod yaratildi!');
+      setPromoCode('');
+      setPromoNote('');
+      await loadData(true);
+    } catch (e: any) {
+      showError(e?.message || 'Promokod yaratishda xatolik');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const handleDeletePromo = async (code: string) => {
+    haptic?.impact?.('heavy');
+    setIsActionLoading(`promo_del_${code}`);
+    try {
+      const res = await api.deletePromoCode(code);
+      showNotification(res.message || 'Promokod o\'chirildi');
+      await loadData(true);
+    } catch (e: any) {
+      showError(e?.message || 'O\'chirishda xatolik');
     } finally {
       setIsActionLoading(null);
     }
@@ -2195,6 +2245,141 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   )}
                 </button>
               </form>
+            )}
+
+            {/* TAB: PROMO KODLAR */}
+            {activeTab === 'promos' && (
+              <div className="space-y-4">
+                <form onSubmit={handleCreatePromo} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-4 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-7 h-7 rounded-xl bg-violet-600/10 text-violet-600 flex items-center justify-center">
+                      <TicketPercent className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Yangi Promokod</h4>
+                      <span className="text-[10px] text-slate-500">Talaba checkoutda kod yozib qo'shimcha chegirma oladi</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Kod (katta harf)</label>
+                      <input
+                        type="text"
+                        required
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        placeholder="YANGI10"
+                        className="glass-input w-full font-mono text-xs uppercase tracking-wider"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Foiz (%)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        max={90}
+                        value={promoPercent}
+                        onChange={(e) => setPromoPercent(e.target.value)}
+                        placeholder="10"
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Necha kishi ishlatsin (0=cheksiz)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={promoMaxUses}
+                        onChange={(e) => setPromoMaxUses(e.target.value)}
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Muddat (kun, 0=muddatsiz)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={promoDays}
+                        onChange={(e) => setPromoDays(e.target.value)}
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 block">Izoh (ixtiyoriy)</label>
+                    <input
+                      type="text"
+                      value={promoNote}
+                      onChange={(e) => setPromoNote(e.target.value)}
+                      placeholder="Masalan: Instagram aksiyasi"
+                      className="glass-input w-full text-xs"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isActionLoading === 'promo_create'}
+                    className="btn-primary w-full py-3 text-xs font-extrabold flex items-center justify-center space-x-2"
+                  >
+                    {isActionLoading === 'promo_create' ? (
+                      <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 stroke-[3]" />
+                        <span>Promokodni Yaratish</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {/* Mavjud promolar ro'yxati */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider px-1">
+                    Faol Promolar ({promoCodes.length})
+                  </h4>
+                  {promoCodes.length === 0 ? (
+                    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-6 text-center text-[11px] text-slate-500">
+                      Hozircha promokod yo'q. Yuqorida birinchi kodni yarating.
+                    </div>
+                  ) : (
+                    promoCodes.map((p: any) => {
+                      const used = (p.used_by || []).length;
+                      const maxUses = p.max_uses || 0;
+                      const exhausted = maxUses > 0 && used >= maxUses;
+                      return (
+                        <div key={p.code} className="bg-white border border-slate-200/90 rounded-2xl p-3.5 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 text-violet-600 flex items-center justify-center flex-shrink-0">
+                            <TicketPercent className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <b className="text-[13px] font-extrabold text-slate-900 font-mono tracking-wide">{p.code}</b>
+                              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-500 border border-rose-100">−{p.percent}%</span>
+                              {exhausted ? (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-400">TUGAGAN</span>
+                              ) : null}
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-0.5">
+                              {used}{maxUses > 0 ? `/${maxUses}` : ''} marta ishlatilgan
+                              {p.expires_at ? ` · ${new Date(p.expires_at).toLocaleDateString()} gacha` : ' · muddatsiz'}
+                              {p.note ? ` · ${p.note}` : ''}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={isActionLoading === `promo_del_${p.code}`}
+                            onClick={() => handleDeletePromo(p.code)}
+                            className="p-2 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors flex-shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             )}
 
             {/* TAB 7: BANNERS (Bosh sahifa banner boshqaruvi) */}

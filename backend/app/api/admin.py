@@ -715,3 +715,51 @@ async def delete_banner(
     if not await save_banners(remaining):
         raise HTTPException(status_code=500, detail="Bannerni o'chirib bo'lmadi")
     return {"success": True, "message": "Banner o'chirildi"}
+
+# ---------------- PROMO KODLAR (Admin) ----------------
+
+from pydantic import BaseModel as _PM
+from app.services.promos import (
+    list_codes as _promo_list,
+    create_code as _promo_create,
+    delete_code as _promo_delete,
+    referral_stats as _ref_stats,
+)
+
+
+class _PromoCreateRequest(_PM):
+    code: str
+    percent: int
+    max_uses: int = 0          # 0 = cheksiz
+    days_valid: int = 0        # 0 = muddatsiz
+    note: str = ""
+
+
+@router.get("/promo-codes")
+async def admin_list_promo_codes(admin: dict = Depends(get_current_admin)):
+    store = get_store()
+    return await _promo_list(store)
+
+
+@router.post("/promo-codes")
+async def admin_create_promo_code(req: _PromoCreateRequest, admin: dict = Depends(get_current_admin)):
+    store = get_store()
+    obj, message = await _promo_create(store, req.code, req.percent, req.max_uses, req.days_valid, req.note)
+    if not obj:
+        raise HTTPException(status_code=400, detail=message)
+    return {"success": True, "message": message, "promo": obj}
+
+
+@router.delete("/promo-codes/{code}")
+async def admin_delete_promo_code(code: str, admin: dict = Depends(get_current_admin)):
+    store = get_store()
+    if not await _promo_delete(store, code):
+        raise HTTPException(status_code=404, detail="Kod topilmadi")
+    return {"success": True, "message": f"«{code.upper()}» kodi o'chirildi"}
+
+
+@router.get("/referral/{user_id}")
+async def admin_referral_info(user_id: str, admin: dict = Depends(get_current_admin)):
+    """Admin panelda talaba profilida referal statistikasini ko'rish."""
+    store = get_store()
+    return await _ref_stats(store, user_id)

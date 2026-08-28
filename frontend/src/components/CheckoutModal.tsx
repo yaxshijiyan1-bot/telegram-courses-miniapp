@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   ArrowLeft,
   Sparkles,
+  TicketPercent,
 } from 'lucide-react';
 import { Course } from '../types';
 import { api, toMediaUrl } from '../services/api';
@@ -45,6 +46,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     card_holder: '',
     bank_name: ''
   });
+  // Promokod holati
+  const [promoInput, setPromoInput] = useState('');
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promoInfo, setPromoInfo] = useState<{ code: string; percent: number; final_price: number } | null>(null);
+  const [promoError, setPromoError] = useState('');
   const { haptic, user } = useTelegram();
   const { t } = useSettings();
 
@@ -67,6 +73,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setIsSubmitted(false);
       setErrorMsg('');
       setCopied(false);
+      setPromoInput('');
+      setPromoInfo(null);
+      setPromoError('');
     }
   }, [isOpen]);
 
@@ -93,10 +102,44 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  // "Birinchi N kishi" chegirmasi faol bo'lsa — to'lanadigan yakuniy narx
-  const finalPrice = course.discount_active && course.final_price != null && course.final_price < course.price
+  // "Birinchi N kishi" chegirmasi faol bo'lsa — asos narx; promokod ustiga qo'shiladi
+  const basePrice = course.discount_active && course.final_price != null && course.final_price < course.price
     ? course.final_price
     : course.price;
+  const finalPrice = promoInfo ? promoInfo.final_price : basePrice;
+  const hasPromo = !!promoInfo;
+
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim();
+    if (!code || promoApplying) return;
+    setPromoApplying(true);
+    setPromoError('');
+    haptic?.impact?.('light');
+    try {
+      const res = await api.validatePromo(code, course.id);
+      if (res.valid && res.code && res.percent != null && res.final_price != null) {
+        setPromoInfo({ code: res.code, percent: res.percent, final_price: res.final_price });
+        haptic?.notification?.('success');
+      } else {
+        setPromoInfo(null);
+        setPromoError(res.message || t('Promokod yaroqsiz'));
+        haptic?.notification?.('error');
+      }
+    } catch (e: any) {
+      setPromoInfo(null);
+      setPromoError(e?.message || t('Promokod yaroqsiz'));
+      haptic?.notification?.('error');
+    } finally {
+      setPromoApplying(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoInfo(null);
+    setPromoInput('');
+    setPromoError('');
+    haptic?.impact?.('light');
+  };
 
   const handleSubmitReceipt = async () => {
     if (!receiptImage) {
@@ -117,7 +160,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         receipt_image: receiptImage,
         student_name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Talaba',
         username: user?.username || 'user',
-        telegram_id: user?.id || 0
+        telegram_id: user?.id || 0,
+        promo_code: promoInfo?.code || undefined
       });
 
       haptic?.notification?.('success');
@@ -228,6 +272,53 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </span>
               </div>
 
+              {/* Promokod bloki */}
+              <div className="glass-chip rounded-[18px] p-3 space-y-2">
+                {hasPromo ? (
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-emerald-600">
+                      <TicketPercent className="w-4 h-4" />
+                      {promoInfo.code} · −{promoInfo.percent}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemovePromo}
+                      className="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                    >
+                      {t('Olib tashlash ✕')}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-ink-secondary uppercase tracking-wider">
+                      <TicketPercent className="w-3.5 h-3.5 text-cyan" />
+                      {t('Promokodim bor')}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={promoInput}
+                        onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleApplyPromo(); } }}
+                        placeholder={t('Masalan: YANGI10')}
+                        className="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-ink uppercase tracking-wide outline-none focus:border-cyan/60"
+                      />
+                      <button
+                        type="button"
+                        disabled={promoApplying || !promoInput.trim()}
+                        onClick={handleApplyPromo}
+                        className="px-3.5 py-2 rounded-xl bg-cyan/10 border border-cyan/25 text-cyan text-[11px] font-extrabold disabled:opacity-40 active:scale-95 transition-all flex-shrink-0"
+                      >
+                        {promoApplying ? '…' : t('Qo‘llash')}
+                      </button>
+                    </div>
+                    {promoError ? (
+                      <p className="text-[10px] font-semibold text-rose-500 leading-snug">{promoError}</p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+
               {/* Bank Card Info Card */}
               <div className="glass rounded-[22px] p-4 space-y-3.5 border border-slate-200/90 shadow-sm">
                 <div className="flex items-center justify-between">
@@ -253,11 +344,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <span>{t('Karta egasi:')}</span>
                     <span className="font-extrabold text-slate-900">{cardInfo.card_holder}</span>
                   </div>
-                  {finalPrice < course.price ? (
+                  {basePrice < course.price ? (
                     <div className="flex items-center justify-between text-slate-600">
                       <span>{t('Chegirma:')}</span>
                       <span className="font-extrabold text-rose-500">
                         −{course.discount_percent}% ({t('birinchi')} {course.discount_limit} {t('kishi')})
+                      </span>
+                    </div>
+                  ) : null}
+                  {hasPromo ? (
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>{t('Promokod')}:</span>
+                      <span className="font-extrabold text-emerald-600">
+                        {promoInfo.code} · −{promoInfo.percent}%
                       </span>
                     </div>
                   ) : null}

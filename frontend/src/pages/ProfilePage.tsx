@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Award,
@@ -8,6 +8,8 @@ import {
   ExternalLink,
   ArrowUpRight,
   BookOpen,
+  Copy,
+  Check,
   Trophy,
   GraduationCap,
   Send,
@@ -19,6 +21,7 @@ import { Certificate, NotificationItem } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { api } from '../services/api';
 import { relativeTime } from '../utils/format';
 
 interface ProfilePageProps {
@@ -40,11 +43,20 @@ const item = {
   show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 26 } },
 };
 
-// Do'stlarni taklif qilish — haqiqiy Telegram share havolasi (hech qanday
-// uydirma chegirma yo'q; platformaning canonical manzili ulashiladi)
-const INVITE_URL = 'https://telegram-courses-miniapp2.pages.dev';
-const INVITE_TEXT = "Kreativ AI — bilim qiymatga aylanadi. Kurslarimizni ko'rib chiq!";
-const INVITE_SHARE = `https://t.me/share/url?url=${encodeURIComponent(INVITE_URL)}&text=${encodeURIComponent(INVITE_TEXT)}`;
+// Do'stlarni taklif qilish — har foydalanuvchining shaxsiy referal havolasi.
+// Havola botga /start ref_KOD payload'i bilan boradi; do'sti kurs sotib olganda
+// referrerga bir martalik foizli mukofot promokodi beriladi.
+const FALLBACK_INVITE_URL = 'https://telegram-courses-miniapp2.pages.dev';
+const INVITE_TEXT = "Kreativ AI — bilim qiymatga aylanadi. Kurslarni ko'rib chiq!";
+
+interface ReferralInfo {
+  code: string;
+  link: string;
+  invited_count: number;
+  reward_codes: { code: string; percent: number; used: boolean }[];
+  reward_percent: number;
+  invitee_percent: number;
+}
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   certificates,
@@ -59,6 +71,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const { haptic, user: tgUser } = useTelegram();
   const { t } = useSettings();
   const [showCertModal, setShowCertModal] = useState(false);
+  // Referal ma'lumotlari
+  const [referral, setReferral] = useState<ReferralInfo | null>(null);
+  const [refCopied, setRefCopied] = useState(false);
+
+  useEffect(() => {
+    api.getReferralInfo().then(setReferral).catch(() => {});
+  }, []);
+
+  const inviteLink = referral?.link || FALLBACK_INVITE_URL;
+  const inviteShare = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(INVITE_TEXT)}`;
+
+  const handleCopyReferral = () => {
+    haptic?.impact?.('light');
+    navigator.clipboard?.writeText(inviteLink).catch(() => {});
+    setRefCopied(true);
+    setTimeout(() => setRefCopied(false), 2000);
+  };
 
   const isSuperadmin = user?.role === 'superadmin' || tgUser?.id === 8544023815 || tgUser?.id === 8112688757;
   const displayName = tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim() : (user?.name || 'Talaba');
@@ -183,27 +212,63 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       </motion.div>
 
-      {/* Do'stlarni taklif qilish — haqiqiy Telegram share */}
-      <motion.div variants={item}>
-        <a
-          href={INVITE_SHARE}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => haptic.impact('medium')}
-          className="relative overflow-hidden rounded-[22px] p-4 flex items-center justify-between text-white pressable block"
-          style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', boxShadow: '0 10px 30px -12px rgba(124,58,237,0.55)' }}
-        >
+      {/* Do'stlarni taklif qilish — shaxsiy referal havola + mukofot */}
+      <motion.div variants={item} className="relative overflow-hidden rounded-[22px] p-4 space-y-3 text-white"
+        style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', boxShadow: '0 10px 30px -12px rgba(124,58,237,0.55)' }}>
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
               <Users className="w-[18px] h-[18px]" strokeWidth={2.2} />
             </div>
             <div className="min-w-0">
               <b className="text-xs font-extrabold block leading-tight">{t("Do'stlarni taklif qilish")}</b>
-              <span className="text-[10px] text-white/80 block truncate">{t('Bilimni yaqinlaringiz bilan ulashing')}</span>
+              <span className="text-[10px] text-white/80 block">
+                {referral
+                  ? t('Do\'stingiz kurs olganda') + ` −${referral.reward_percent}% ${t('mukofot kodi')}`
+                  : t('Bilimni yaqinlaringiz bilan ulashing')}
+              </span>
             </div>
           </div>
-          <ArrowUpRight className="w-4 h-4 flex-shrink-0 text-white/90" />
-        </a>
+          <a
+            href={inviteShare}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => haptic.impact('medium')}
+            className="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors flex-shrink-0"
+            aria-label={t('Ulashish')}
+          >
+            <ArrowUpRight className="w-4 h-4 text-white/90" />
+          </a>
+        </div>
+
+        {referral ? (
+          <>
+            <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl p-2">
+              <span className="flex-1 min-w-0 text-[10px] font-mono text-white/90 truncate">{inviteLink}</span>
+              <button
+                type="button"
+                onClick={handleCopyReferral}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white text-violet-600 text-[10px] font-extrabold active:scale-95 transition-transform flex-shrink-0"
+              >
+                {refCopied ? <Check className="w-3 h-3 stroke-[3]" /> : <Copy className="w-3 h-3" />}
+                {refCopied ? t('Nusxalandi!') : t('Nusxalash')}
+              </button>
+            </div>
+            <div className="flex items-center gap-3 text-[10px] font-bold text-white/85">
+              <span>👥 {referral.invited_count} {t('taklif qilingan')}</span>
+              <span>🎁 {t('mukofot')} −{referral.reward_percent}%</span>
+            </div>
+            {referral.reward_codes.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {referral.reward_codes.filter(c => !c.used).slice(0, 3).map(c => (
+                  <span key={c.code} className="text-[10px] font-extrabold font-mono px-2 py-1 rounded-lg bg-white/15 border border-white/20">
+                    {c.code} · −{c.percent}%
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : null}
       </motion.div>
 
       {/* Ustozlar */}
