@@ -67,6 +67,10 @@ class CourseCard(BaseModel):
     price: int
     old_price: Optional[int] = None
     discount_percent: Optional[int] = None
+    discount_limit: Optional[int] = None
+    discount_active: bool = False
+    discount_spots_left: Optional[int] = None
+    final_price: Optional[int] = None
     duration: str
     lesson_count: int
     level: str

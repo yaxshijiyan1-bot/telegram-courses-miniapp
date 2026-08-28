@@ -145,6 +145,10 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   };
 
   const totalLessons = course.modules?.reduce((acc, m) => acc + m.lessons.length, 0) ?? course.lesson_count;
+  // "Birinchi N kishi" chegirmasi faol bo'lsa, to'lanadigan narx backend hisoblagan final_price bo'ladi
+  const hasLiveDiscount = !course.is_enrolled && !!course.discount_active
+    && course.final_price != null && course.final_price < course.price;
+  const payPrice = hasLiveDiscount ? (course.final_price as number) : course.price;
 
   const durationParts = (course.duration || '').split(' ');
   const durationVal = durationParts[0] || '—';
@@ -284,7 +288,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               <Sparkles className="w-[11px] h-[11px]" />
               {course.category || t('Kurs')}
             </span>
-            {course.discount_percent ? (
+            {(course.discount_active || (course.discount_percent && !course.discount_limit)) ? (
               <span
                 className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full text-gold"
                 style={{ background: 'rgba(255,255,255,0.95)' }}
@@ -306,6 +310,19 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Birinchi N kishi uchun chegirma banneri */}
+      {hasLiveDiscount ? (
+        <div className="flex items-center gap-2.5 bg-gold/10 border border-gold/30 rounded-2xl animate-fade-in" style={{ margin: '12px 20px 0', padding: '10px 14px' }}>
+          <Zap className="w-4 h-4 text-gold flex-shrink-0 fill-gold/20" />
+          <p className="text-[11.5px] font-bold text-ink leading-snug">
+            −{course.discount_percent}% {t('chegirma')} — {t('birinchi')} {course.discount_limit} {t('kishi uchun')}.{' '}
+            {course.discount_spots_left != null ? (
+              <span className="text-rose-500">{course.discount_spots_left} {t('ta joy qoldi')}!</span>
+            ) : null}
+          </p>
+        </div>
+      ) : null}
 
       {/* Statistika qatori */}
       <div className="flex gap-2" style={{ padding: '16px 20px 8px' }}>
@@ -705,9 +722,9 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           )}
           <div className="flex items-center gap-2.5">
             <div style={{ paddingLeft: 8 }}>
-              {course.old_price && course.old_price > course.price && !course.is_enrolled ? (
+              {!course.is_enrolled && (hasLiveDiscount || (course.old_price && course.old_price > course.price)) ? (
                 <div className="text-[9.5px] text-slate-400 font-bold tracking-[0.06em] uppercase line-through">
-                  {formatNumber(course.old_price)} {t("so'm")}
+                  {formatNumber(hasLiveDiscount ? course.price : (course.old_price as number))} {t("so'm")}
                 </div>
               ) : null}
               <div className="text-[17px] font-extrabold text-ink tracking-[-0.02em] leading-none">
@@ -715,7 +732,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                   <span className="text-emerald-600">{t('Sizda')}</span>
                 ) : (
                   <>
-                    {formatNumber(course.price)}{' '}
+                    {formatNumber(payPrice)}{' '}
                     <span className="text-[10.5px] font-bold text-ink-muted">{t("so'm")}</span>
                   </>
                 )}

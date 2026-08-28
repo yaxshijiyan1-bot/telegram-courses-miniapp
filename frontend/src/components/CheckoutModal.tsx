@@ -93,13 +93,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
+  // "Birinchi N kishi" chegirmasi faol bo'lsa — to'lanadigan yakuniy narx
+  const finalPrice = course.discount_active && course.final_price != null && course.final_price < course.price
+    ? course.final_price
+    : course.price;
+
   const handleSubmitReceipt = async () => {
     if (!receiptImage) {
       setErrorMsg(t("Iltimos, avval to‘lov cheki skrinshotini yuklang!"));
       haptic?.notification?.('error');
       return;
     }
-
     setIsProcessing(true);
     setErrorMsg('');
     haptic?.impact?.('heavy');
@@ -108,7 +112,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       await api.submitReceipt({
         course_id: course.id,
         course_title: course.title,
-        amount: course.price,
+        amount: finalPrice,
         payment_method: 'karta',
         receipt_image: receiptImage,
         student_name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Talaba',
@@ -214,8 +218,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <h4 className="text-xs font-bold text-ink truncate">{course.title}</h4>
                   </div>
                 </div>
-                <span className="text-sm font-extrabold text-cyan flex-shrink-0 tabular-nums">
-                  {formatPrice(course.price)}
+                <span className="flex items-center gap-1.5 flex-shrink-0 tabular-nums">
+                  {finalPrice < course.price ? (
+                    <s className="text-[10px] text-slate-400 font-semibold">{formatPrice(course.price)}</s>
+                  ) : null}
+                  <span className={`text-sm font-extrabold ${finalPrice < course.price ? 'text-rose-500' : 'text-cyan'}`}>
+                    {formatPrice(finalPrice)}
+                  </span>
                 </span>
               </div>
 
@@ -244,9 +253,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <span>{t('Karta egasi:')}</span>
                     <span className="font-extrabold text-slate-900">{cardInfo.card_holder}</span>
                   </div>
+                  {finalPrice < course.price ? (
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>{t('Chegirma:')}</span>
+                      <span className="font-extrabold text-rose-500">
+                        −{course.discount_percent}% ({t('birinchi')} {course.discount_limit} {t('kishi')})
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between text-slate-600">
                     <span>{t('To‘lov summasi:')}</span>
-                    <span className="font-extrabold text-base text-cyan tabular-nums">{formatPrice(course.price)}</span>
+                    <span className="font-extrabold text-base text-cyan tabular-nums">{formatPrice(finalPrice)}</span>
                   </div>
                 </div>
               </div>

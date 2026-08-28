@@ -32,11 +32,13 @@ import {
   AlertTriangle,
   ArrowLeft,
   Link2,
-  EyeOff
+  EyeOff,
+  Layers,
+  Percent
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 import { api, toMediaUrl } from '../services/api';
-import { AdminStats, PendingReceipt, AdminStudent, Course, CourseTestimonial, CourseCustomInfo, Banner, BannerActionType } from '../types';
+import { AdminStats, PendingReceipt, AdminStudent, Course, CourseTestimonial, CourseCustomInfo, CourseTextModule, Banner, BannerActionType } from '../types';
 import { InlineLoader } from 'generative-loaders';
 import { formatPrice } from '../utils/format';
 
@@ -134,6 +136,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [showOutcomes, setShowOutcomes] = useState(true);
   const [courseLearningOutcomes, setCourseLearningOutcomes] = useState<string[]>([]);
   const [newOutcomeText, setNewOutcomeText] = useState('');
+
+  // Kurs dasturi (faqat matnli modullar) va "birinchi N kishi" chegirmasi
+  const [courseModules, setCourseModules] = useState<CourseTextModule[]>([]);
+  const [newModuleTitle, setNewModuleTitle] = useState('');
+  const [moduleLessonDrafts, setModuleLessonDrafts] = useState<string[]>([]);
+  const [courseDiscountPercent, setCourseDiscountPercent] = useState('');
+  const [courseDiscountLimit, setCourseDiscountLimit] = useState('');
 
 
   // Delete Confirmation State
@@ -314,6 +323,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setShowInstructor(c.show_instructor !== false);
     setShowOutcomes(c.show_outcomes !== false);
     setCourseLearningOutcomes(Array.isArray(c.learning_outcomes) ? c.learning_outcomes : []);
+    const textModules: CourseTextModule[] = (Array.isArray(c.modules) ? c.modules : []).map((m: any) => ({
+      title: m?.title || '',
+      lessons: (Array.isArray(m?.lessons) ? m.lessons : []).map((l: any) => ({ title: l?.title || '' }))
+    })).filter((m: CourseTextModule) => m.title.trim());
+    setCourseModules(textModules);
+    setModuleLessonDrafts(textModules.map(() => ''));
+    setNewModuleTitle('');
+    setCourseDiscountPercent(c.discount_percent ? String(c.discount_percent) : '');
+    setCourseDiscountLimit(c.discount_limit ? String(c.discount_limit) : '');
     setActiveTab('courses');
     haptic?.selection?.();
   };
@@ -344,6 +362,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setNewInfoTitle('');
     setNewInfoContent('');
     setNewOutcomeText('');
+    setCourseModules([]);
+    setModuleLessonDrafts([]);
+    setNewModuleTitle('');
+    setCourseDiscountPercent('');
+    setCourseDiscountLimit('');
   };
 
   // Nimalarni o'rganasiz bandi qo'shish
@@ -357,6 +380,51 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleRemoveOutcome = (index: number) => {
     setCourseLearningOutcomes(courseLearningOutcomes.filter((_, i) => i !== index));
     haptic?.selection?.();
+  };
+
+  // Kurs dasturi: modul va dars qo'shish/tahrirlash/o'chirish (faqat matn)
+  const handleAddModule = () => {
+    const title = newModuleTitle.trim();
+    if (!title) return;
+    setCourseModules([...courseModules, { title, lessons: [] }]);
+    setModuleLessonDrafts([...moduleLessonDrafts, '']);
+    setNewModuleTitle('');
+    haptic?.selection?.();
+  };
+
+  const handleRemoveModule = (index: number) => {
+    setCourseModules(courseModules.filter((_, i) => i !== index));
+    setModuleLessonDrafts(moduleLessonDrafts.filter((_, i) => i !== index));
+    haptic?.selection?.();
+  };
+
+  const handleModuleTitleChange = (index: number, value: string) => {
+    setCourseModules(courseModules.map((m, i) => i === index ? { ...m, title: value } : m));
+  };
+
+  const handleAddLesson = (moduleIndex: number) => {
+    const title = (moduleLessonDrafts[moduleIndex] || '').trim();
+    if (!title) return;
+    setCourseModules(courseModules.map((m, i) =>
+      i === moduleIndex ? { ...m, lessons: [...m.lessons, { title }] } : m
+    ));
+    setModuleLessonDrafts(moduleLessonDrafts.map((d, i) => i === moduleIndex ? '' : d));
+    haptic?.selection?.();
+  };
+
+  const handleRemoveLesson = (moduleIndex: number, lessonIndex: number) => {
+    setCourseModules(courseModules.map((m, i) =>
+      i === moduleIndex ? { ...m, lessons: m.lessons.filter((_, li) => li !== lessonIndex) } : m
+    ));
+    haptic?.selection?.();
+  };
+
+  const handleLessonTitleChange = (moduleIndex: number, lessonIndex: number, value: string) => {
+    setCourseModules(courseModules.map((m, i) =>
+      i === moduleIndex
+        ? { ...m, lessons: m.lessons.map((l, li) => li === lessonIndex ? { title: value } : l) }
+        : m
+    ));
   };
 
   // Galereya rasmi qo'shish
@@ -424,10 +492,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setIsActionLoading('course_form');
     const priceNum = parseInt(coursePrice) || 0;
     const oldPriceNum = courseOldPrice ? parseInt(courseOldPrice) : null;
-    // Chegirma foizini narx va eski narxdan avtomatik hisoblaymiz
-    const discountPercent = oldPriceNum && priceNum > 0 && oldPriceNum > priceNum
-      ? Math.round((1 - priceNum / oldPriceNum) * 100)
-      : null;
+    // Chegirma foizini admin o'zi kiritadi; limit birinchi N ta xaridor uchun amal qiladi
+    const percentNum = courseDiscountPercent ? Math.max(0, Math.min(100, parseInt(courseDiscountPercent) || 0)) : 0;
+    const limitNum = courseDiscountLimit ? Math.max(0, parseInt(courseDiscountLimit) || 0) : 0;
+    const discountPercent = percentNum > 0 ? percentNum : null;
+    const discountLimit = percentNum > 0 && limitNum > 0 ? limitNum : null;
+    const textModules = courseModules
+      .map(m => ({
+        title: m.title.trim(),
+        lessons: m.lessons.map(l => ({ title: l.title.trim() })).filter(l => l.title)
+      }))
+      .filter(m => m.title);
     const instructorPreset = INSTRUCTOR_PRESETS.find(p => p.key === courseInstructorId);
     const instructorId = instructorPreset ? instructorPreset.id : null;
     try {
@@ -438,6 +513,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           price: priceNum,
           old_price: oldPriceNum ?? null,
           discount_percent: discountPercent,
+          discount_limit: discountLimit,
+          modules: textModules as any,
           category: courseCategory,
           duration: courseDuration,
           lesson_count: parseInt(courseLessonsCount) || 12,
@@ -471,6 +548,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           price: priceNum,
           old_price: oldPriceNum ?? null,
           discount_percent: discountPercent,
+          discount_limit: discountLimit,
+          modules: textModules as any,
           category: courseCategory,
           duration: courseDuration,
           lesson_count: parseInt(courseLessonsCount) || 12,
@@ -1174,6 +1253,39 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Chegirma: foiz va birinchi N kishi limiti */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                        <Percent className="w-3 h-3 text-rose-500" /> Chegirma foizi
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={courseDiscountPercent}
+                        onChange={(e) => setCourseDiscountPercent(e.target.value)}
+                        placeholder="0"
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Birinchi N kishi</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={courseDiscountLimit}
+                        onChange={(e) => setCourseDiscountLimit(e.target.value)}
+                        placeholder="masalan: 5"
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] leading-snug text-slate-500 -mt-2">
+                    Chegirma faqat ko'rsatilgan birinchi N ta xaridor uchun amal qiladi (ular limitni to'ldirgach avtomatik tugaydi). Limit bo'sh qoldirilsa chegirma faqat belgi sifatida ko'rsatiladi.
+                  </p>
+
                   {/* Duration & Lessons Count & Level */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
@@ -1207,6 +1319,97 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         placeholder="Boshlang'ich"
                         className="glass-input w-full text-xs"
                       />
+                    </div>
+                  </div>
+
+                  {/* Kurs dasturi: faqat matnli modullar */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-violet-600" />
+                      <span>Kurs Dasturi — Modullar ({courseModules.length})</span>
+                    </label>
+                    <p className="text-[10px] leading-snug text-slate-500">
+                      Faqat matn: modul nomi va darslar ro'yxati. Bo'sh qoldirilsa "Dastur" bo'limi sahifada ko'rsatilmaydi.
+                    </p>
+
+                    {courseModules.map((mod, mi) => (
+                      <div key={mi} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-extrabold text-violet-600 w-5 text-center flex-shrink-0">{mi + 1}.</span>
+                          <input
+                            type="text"
+                            value={mod.title}
+                            onChange={(e) => handleModuleTitleChange(mi, e.target.value)}
+                            placeholder="Modul nomi"
+                            className="flex-1 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-violet-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveModule(mi)}
+                            className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-1.5 pl-6">
+                          {mod.lessons.map((l, li) => (
+                            <div key={li} className="flex items-center gap-1.5">
+                              <span className="w-1 h-1 rounded-full bg-slate-400 flex-shrink-0" />
+                              <input
+                                type="text"
+                                value={l.title}
+                                onChange={(e) => handleLessonTitleChange(mi, li, e.target.value)}
+                                placeholder="Dars nomi"
+                                className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] text-slate-700 outline-none focus:border-violet-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLesson(mi, li)}
+                                className="p-1 text-slate-300 hover:text-rose-500 transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={moduleLessonDrafts[mi] || ''}
+                              onChange={(e) => setModuleLessonDrafts(moduleLessonDrafts.map((d, i) => i === mi ? e.target.value : d))}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddLesson(mi); } }}
+                              placeholder="Yangi dars nomi (Enter)"
+                              className="flex-1 bg-white border border-dashed border-slate-300 rounded-lg px-2 py-1 text-[11px] text-slate-600 outline-none focus:border-violet-400"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddLesson(mi)}
+                              className="p-1.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newModuleTitle}
+                        onChange={(e) => setNewModuleTitle(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddModule(); } }}
+                        placeholder="Yangi modul nomi (Enter)"
+                        className="glass-input flex-1 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddModule}
+                        className="flex items-center gap-1 px-3 py-2 rounded-xl bg-violet-600 text-white text-[11px] font-bold hover:bg-violet-700 active:scale-95 transition-all flex-shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Modul
+                      </button>
                     </div>
                   </div>
 

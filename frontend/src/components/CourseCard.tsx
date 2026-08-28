@@ -73,10 +73,15 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border bg-white/95 ${catStyle(course.category)}`}>
             {course.category || t('Kurs')}
           </span>
-          {course.discount_percent ? (
+          {(course.discount_active || (course.discount_percent && !course.discount_limit)) ? (
             <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-gold/25 bg-white/95 text-gold">
               <Zap className="w-[11px] h-[11px] fill-gold/20" />
               −{course.discount_percent}% {t('chegirma')}
+            </span>
+          ) : null}
+          {course.discount_active && course.discount_spots_left != null ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-rose-500/25 bg-white/95 text-rose-500">
+              🔥 {course.discount_spots_left} {t('ta joy')}
             </span>
           ) : null}
         </div>
@@ -125,12 +130,23 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <span className="text-[12px] font-extrabold text-emerald-600">{t('Faol')}</span>
           ) : (
             <div className="flex items-center gap-1.5">
-              {course.old_price ? (
-                <s className="text-[9.5px] text-slate-400 font-semibold">{formatPrice(course.old_price)}</s>
-              ) : null}
-              <b className="text-[14px] font-extrabold text-ink tracking-[-0.01em]">
-                {formatPrice(course.price)}
-              </b>
+              {course.discount_active && course.final_price != null && course.final_price < course.price ? (
+                <>
+                  <s className="text-[9.5px] text-slate-400 font-semibold">{formatPrice(course.price)}</s>
+                  <b className="text-[14px] font-extrabold text-rose-500 tracking-[-0.01em]">
+                    {formatPrice(course.final_price)}
+                  </b>
+                </>
+              ) : (
+                <>
+                  {course.old_price ? (
+                    <s className="text-[9.5px] text-slate-400 font-semibold">{formatPrice(course.old_price)}</s>
+                  ) : null}
+                  <b className="text-[14px] font-extrabold text-ink tracking-[-0.01em]">
+                    {formatPrice(course.price)}
+                  </b>
+                </>
+              )}
             </div>
           )}
         </div>

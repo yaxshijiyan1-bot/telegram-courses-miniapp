@@ -47,6 +47,12 @@ export interface CourseCustomInfo {
   content: string;
 }
 
+/** Dastur bo'limi uchun admin kiritadigan faqat matnli modul */
+export interface CourseTextModule {
+  title: string;
+  lessons: { title: string }[];
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -59,6 +65,14 @@ export interface Course {
   price: number;
   old_price?: number;
   discount_percent?: number;
+  /** Chegirma nechta birinchi xaridor uchun amal qilishi (0/bo'sh = limitsiz) */
+  discount_limit?: number | null;
+  /** Chegirma hozir faolmi (birinchi N kishi ichida) */
+  discount_active?: boolean;
+  /** Chegirmali joylar qancha qolgani */
+  discount_spots_left?: number | null;
+  /** Yakuniy to'lanadigan narx (chegirma hisobga olingan) */
+  final_price?: number | null;
   duration: string;
   lesson_count: number;
   level: string;

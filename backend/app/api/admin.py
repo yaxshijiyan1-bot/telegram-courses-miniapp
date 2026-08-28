@@ -45,6 +45,7 @@ class CourseUpsertRequest(BaseModel):
     price: Optional[int] = Field(default=None, ge=0, le=10_000_000_000)
     old_price: Optional[int] = Field(default=None, ge=0, le=10_000_000_000)
     discount_percent: Optional[int] = Field(default=None, ge=0, le=100)
+    discount_limit: Optional[int] = Field(default=None, ge=0, le=1_000_000)
     duration: Optional[str] = Field(default=None, max_length=100)
     lesson_count: Optional[int] = Field(default=None, ge=0, le=10000)
     level: Optional[str] = Field(default=None, max_length=100)
@@ -64,6 +65,31 @@ class CourseUpsertRequest(BaseModel):
     show_instructor: Optional[bool] = Field(default=None)
     show_outcomes: Optional[bool] = Field(default=None)
     learning_outcomes: Optional[List[str]] = Field(default=None)
+    # Dastur bo'limi — faqat matnli modullar: [{title, lessons: [{title}]}]
+    modules: Optional[List[Dict[str, Any]]] = Field(default=None)
+
+    @field_validator("modules")
+    @classmethod
+    def clean_modules(cls, value: Optional[List[Dict[str, Any]]]) -> Optional[List[Dict[str, Any]]]:
+        """Ortiqcha maydonlarni tashlab, faqat matnli (sarlavha) struktura qoldiriladi."""
+        if value is None:
+            return None
+        cleaned = []
+        for m in value:
+            if not isinstance(m, dict):
+                continue
+            title = str(m.get("title") or "").strip()[:300]
+            if not title:
+                continue
+            lessons = []
+            for l in (m.get("lessons") or []):
+                if not isinstance(l, dict):
+                    continue
+                ltitle = str(l.get("title") or "").strip()[:300]
+                if ltitle:
+                    lessons.append({"title": ltitle})
+            cleaned.append({"title": title, "lessons": lessons})
+        return cleaned
 
     @field_validator("slug")
     @classmethod
@@ -183,7 +209,11 @@ async def get_students_list(admin: dict = Depends(get_current_admin)):
                 continue
             course_titles.append(course["title"])
             courses.append({"id": course["id"], "title": course["title"]})
-            lessons = len([l for m in build_course_modules(course) for l in m["lessons"]])
+            stored_mods = course.get("modules") or []
+            if stored_mods:
+                lessons = sum(len(m.get("lessons") or []) for m in stored_mods)
+            else:
+                lessons = len([l for m in build_course_modules(course) for l in m["lessons"]])
             completed_total += await store.count_completed(u["id"], course["id"])
             lessons_total += lessons or course.get("lesson_count", 0)
         overall = min(100, int(completed_total * 100 / max(lessons_total, 1))) if enrollments else 0
@@ -414,6 +444,8 @@ async def create_course(
         raise HTTPException(status_code=400, detail="Kurs nomi (title) va slug majburiy")
     payload["id"] = str(uuid.uuid4())
     payload.setdefault("published", True)
+    if payload.get("modules"):
+        payload["lesson_count"] = sum(len(m["lessons"]) for m in payload["modules"])
     row = await store.upsert_course(payload)
     return {"success": True, "message": f"'{row.get('title')}' kursi yaratildi!", "course": row}
 
@@ -434,6 +466,10 @@ async def update_course(
     updates = course_data.model_dump(exclude_unset=True)
     if not updates:
         raise HTTPException(status_code=400, detail="Tahrirlash uchun kamida bitta maydon yuboring")
+
+    # Modullar tahrirlanganda darslar soni avtomatik yangilanadi
+    if updates.get("modules"):
+        updates["lesson_count"] = sum(len(m["lessons"]) for m in updates["modules"])
 
     merged = {**target, **updates}
     row = await store.upsert_course(merged)

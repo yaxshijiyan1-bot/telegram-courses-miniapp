@@ -9,6 +9,7 @@ from typing import Optional
 from app.models.schemas import CreateOrderRequest, CreateOrderResponse
 from app.core.security import get_current_user
 from app.core.config import settings
+from app.services.pricing import course_pricing
 from app.storage import get_store
 
 logger = logging.getLogger(__name__)
@@ -92,11 +93,14 @@ async def create_order(
 
     order_id = f"ord_{uuid.uuid4().hex[:12]}"
 
+    pricing = await course_pricing(store, course)
+    amount = pricing["final_price"]
+
     await store.create_purchase({
         "user_id": current_user.get("sub"),
         "course_id": course["id"],
         "course_title": course["title"],
-        "amount": course.get("price", 0),
+        "amount": amount,
         "status": "pending",
         "payment_method": req.payment_method or "karta",
         "transaction_id": order_id,
@@ -109,7 +113,7 @@ async def create_order(
         "order_id": order_id,
         "course_id": course["id"],
         "course_title": course["title"],
-        "amount": course.get("price", 0),
+        "amount": amount,
         "payment_method": req.payment_method or "karta",
         "payment_url": f"{settings.WEBAPP_URL}#checkout",
         "status": "pending"
@@ -142,11 +146,14 @@ async def submit_receipt(
     telegram_id = current_user.get("telegram_id", 0)
 
     # Bazaga faqat yengil matnli ma'lumot saqlanadi (og'ir rasm saqlanmaydi)
+    pricing = await course_pricing(store, course)
+    amount = pricing["final_price"]
+
     await store.create_purchase({
         "user_id": user_id,
         "course_id": course["id"],
         "course_title": course["title"],
-        "amount": course.get("price", 0),
+        "amount": amount,
         "status": "pending_approval",
         "payment_method": req.payment_method or "karta",
         "transaction_id": order_id,
@@ -161,13 +168,19 @@ async def submit_receipt(
     notified = 0
     if settings.BOT_TOKEN:
         tg_api = f"https://api.telegram.org/bot{settings.BOT_TOKEN}"
-        amount = course.get("price", 0)
         caption = (
             f"🔔 <b>YANGI TO'LOV CHEKI KELDI!</b>\n\n"
             f"👤 <b>Talaba:</b> {student_name} (@{username})\n"
             f"🆔 <b>Telegram ID:</b> <code>{telegram_id}</code>\n"
             f"📚 <b>Kurs:</b> {course['title']}\n"
             f"💰 <b>Summa:</b> {amount:,} so'm\n"
+        )
+        if pricing["discount_active"] and course.get("discount_percent"):
+            caption += (
+                f"🎁 <b>Chegirma:</b> −{course['discount_percent']}% "
+                f"(birinchi {course.get('discount_limit')} kishi)\n"
+            )
+        caption += (
             f"💳 <b>To'lov usuli:</b> Karta orqali o'tkazma\n"
             f"🔢 <b>Buyurtma ID:</b> <code>{order_id}</code>\n"
         )

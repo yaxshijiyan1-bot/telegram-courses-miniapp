@@ -249,6 +249,48 @@ DEMO_NOTIFICATIONS = [
     }
 ]
 
+def normalize_stored_modules(course_id: str, stored: list) -> list:
+    """
+    Admin kiritgan faqat matnli modullarni ([{title, lessons:[{title}]}])
+    to'liq modul/dars strukturasiga keltiradi. ID lar deterministik —
+    tartib raqamiga bog'langan.
+    """
+    modules = []
+    order = 0
+    for m in stored or []:
+        title = str((m or {}).get("title") or "").strip()
+        if not title:
+            continue
+        order += 1
+        module_id = f"m-{course_id}-{order}"
+        lessons = []
+        l_order = 0
+        for l in (m or {}).get("lessons") or []:
+            ltitle = str((l or {}).get("title") or "").strip()
+            if not ltitle:
+                continue
+            l_order += 1
+            lessons.append({
+                "id": f"l-{course_id}-{order}-{l_order}",
+                "module_id": module_id,
+                "course_id": course_id,
+                "title": ltitle,
+                "duration": "",
+                "order": l_order,
+                "is_preview": False,
+                "description": None,
+                "resources": []
+            })
+        modules.append({
+            "id": module_id,
+            "course_id": course_id,
+            "title": title,
+            "order": order,
+            "lessons": lessons
+        })
+    return modules
+
+
 def build_course_modules(course: dict) -> list:
     """
     Berilgan kurs uchun modullar va darslar strukturasini quradi.

@@ -3,9 +3,25 @@ from typing import List, Optional
 from app.models.schemas import CourseCard, CourseDetailResponse, ModuleWithLessons
 from app.core.security import get_current_user_optional
 from app.storage import get_store
-from seed_data import build_course_modules
+from app.services.pricing import course_pricing
+from seed_data import build_course_modules, normalize_stored_modules
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
+
+# Faqat demo kurs uchun eski generatsiya saqlanadi; qolgan kurslar
+# admin kiritgan modullarni ko'rsatadi (bo'lmasa Dastur bo'limi yashirinadi).
+DEMO_COURSE_ID = "c1111111-1111-1111-1111-111111111111"
+
+
+def resolve_course_modules(course: dict) -> list:
+    """Admin saqlagan matnli modullarni afzal ko'radi, aks holda bo'sh qaytaradi."""
+    stored = course.get("modules") or []
+    if stored:
+        return normalize_stored_modules(course["id"], stored)
+    if course["id"] == DEMO_COURSE_ID:
+        return build_course_modules(course)
+    return []
+
 
 @router.get("", response_model=List[CourseCard])
 async def get_courses(
@@ -36,7 +52,11 @@ async def get_courses(
     elif sort == "rating":
         courses = sorted(courses, key=lambda x: float(x.get("rating") or 5.0), reverse=True)
 
-    return courses
+    result = []
+    for c in courses:
+        pricing = await course_pricing(store, c)
+        result.append({**c, **pricing})
+    return result
 
 @router.get("/categories")
 async def get_categories():
@@ -65,7 +85,7 @@ async def get_course_detail(
     if not course:
         raise HTTPException(status_code=404, detail="Kurs topilmadi")
 
-    modules = build_course_modules(course)
+    modules = resolve_course_modules(course)
 
     is_enrolled = False
     progress_percent = 0
@@ -79,8 +99,11 @@ async def get_course_detail(
             completed = await store.count_completed(user_id, course["id"])
             progress_percent = min(100, int(completed * 100 / max(total, 1)))
 
+    pricing = await course_pricing(store, course)
+
     return {
         **course,
+        **pricing,
         "modules": modules,
         "is_enrolled": is_enrolled,
         "progress_percent": progress_percent

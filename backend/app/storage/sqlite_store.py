@@ -149,6 +149,8 @@ class SqliteStore(Store):
                 ("show_instructor", "INTEGER DEFAULT 1"),
                 ("show_outcomes", "INTEGER DEFAULT 1"),
                 ("instructor_id", "TEXT"),
+                ("modules", "TEXT"),
+                ("discount_limit", "INTEGER"),
             ):
                 try:
                     c.execute(f"ALTER TABLE courses ADD COLUMN {col} {ddl};")
@@ -226,7 +228,7 @@ class SqliteStore(Store):
         d["published"] = bool(d.get("published"))
         d["show_instructor"] = bool(d.get("show_instructor", 1)) if d.get("show_instructor") is not None else True
         d["show_outcomes"] = bool(d.get("show_outcomes", 1)) if d.get("show_outcomes") is not None else True
-        for json_field in ("gallery_urls", "testimonials", "custom_info", "learning_outcomes"):
+        for json_field in ("gallery_urls", "testimonials", "custom_info", "learning_outcomes", "modules"):
             val = d.get(json_field)
             if isinstance(val, str):
                 try:
@@ -272,6 +274,7 @@ class SqliteStore(Store):
         testimonials_json = json.dumps(row.get("testimonials") or [])
         custom_info_json = json.dumps(row.get("custom_info") or [])
         outcomes_json = json.dumps(row.get("learning_outcomes") or [])
+        modules_json = json.dumps(row.get("modules") or [])
 
         with self.lock, self._conn() as c:
             c.execute(
@@ -279,8 +282,8 @@ class SqliteStore(Store):
                    preview_video_url,price,old_price,discount_percent,duration,lesson_count,level,
                    instructor_name,instructor_title,instructor_avatar,instructor_bio,access_duration,
                    copyright_notice,rating,student_count,telegram_channel_id,gallery_urls,testimonials,custom_info,
-                   learning_outcomes,show_instructor,show_outcomes,instructor_id,published,created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   learning_outcomes,show_instructor,show_outcomes,instructor_id,modules,discount_limit,published,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(id) DO UPDATE SET title=excluded.title, slug=excluded.slug,
                    category=excluded.category, description=excluded.description,
                    short_description=excluded.short_description, cover_url=excluded.cover_url,
@@ -299,6 +302,8 @@ class SqliteStore(Store):
                    show_instructor=excluded.show_instructor,
                    show_outcomes=excluded.show_outcomes,
                    instructor_id=excluded.instructor_id,
+                   modules=excluded.modules,
+                   discount_limit=excluded.discount_limit,
                    published=excluded.published""",
                 (row.get("id"), row.get("title"), row.get("slug"), row.get("category"),
                  row.get("description"), row.get("short_description"), row.get("cover_url"),
@@ -309,7 +314,8 @@ class SqliteStore(Store):
                  row.get("copyright_notice"), row.get("rating", 5.0), row.get("student_count", 0),
                  row.get("telegram_channel_id"), gallery_json, testimonials_json, custom_info_json,
                  outcomes_json, row.get("show_instructor", 1), row.get("show_outcomes", 1),
-                 row.get("instructor_id"), row.get("published", 1), row.get("created_at", _now()))
+                 row.get("instructor_id"), modules_json, row.get("discount_limit"),
+                 row.get("published", 1), row.get("created_at", _now()))
             )
         row["published"] = bool(row.get("published"))
         row["show_instructor"] = bool(row.get("show_instructor"))
@@ -318,6 +324,7 @@ class SqliteStore(Store):
         row["testimonials"] = json.loads(testimonials_json)
         row["custom_info"] = json.loads(custom_info_json)
         row["learning_outcomes"] = json.loads(outcomes_json)
+        row["modules"] = json.loads(modules_json)
         return row
 
 
@@ -406,6 +413,16 @@ class SqliteStore(Store):
                     "SELECT * FROM purchases ORDER BY created_at DESC LIMIT ?", (limit,)
                 ).fetchall()
             return [dict(r) for r in rows]
+
+    async def count_active_purchases(self, course_id: str) -> int:
+        """Kurs bo'yicha rad etilmagan xaridlar soni (chegirma limiti hisobi uchun)"""
+        with self.lock, self._conn() as c:
+            row = c.execute(
+                "SELECT COUNT(*) AS n FROM purchases WHERE course_id=? "
+                "AND status IN ('pending_approval','approved','completed')",
+                (course_id,)
+            ).fetchone()
+            return int(row["n"]) if row else 0
 
     # ---------------- ENROLLMENTS ----------------
     async def get_enrollment(self, user_id: str, course_id: str) -> Optional[Dict[str, Any]]:

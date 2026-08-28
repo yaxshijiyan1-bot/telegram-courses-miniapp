@@ -40,6 +40,8 @@ def _unpack_course(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
             res["show_instructor"] = meta.get("show_instructor", True)
             res["show_outcomes"] = meta.get("show_outcomes", True)
             res["instructor_id"] = meta.get("instructor_id")
+            res["modules"] = meta.get("modules") or []
+            res["discount_limit"] = meta.get("discount_limit")
         except Exception as e:
             logger.warning(f"Metadata parse error: {e}")
         # Tavsifdan tegni tozalab faqat haqiqiy matnni ko'rsatamiz
@@ -53,6 +55,8 @@ def _unpack_course(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         res.setdefault("show_instructor", True)
         res.setdefault("show_outcomes", True)
         res.setdefault("instructor_id", None)
+        res.setdefault("modules", [])
+        res.setdefault("discount_limit", None)
         
     return res
 
@@ -68,7 +72,9 @@ def _pack_course_for_supabase(course: Dict[str, Any]) -> Dict[str, Any]:
         "learning_outcomes": course.get("learning_outcomes") or [],
         "show_instructor": course.get("show_instructor", True),
         "show_outcomes": course.get("show_outcomes", True),
-        "instructor_id": course.get("instructor_id")
+        "instructor_id": course.get("instructor_id"),
+        "modules": course.get("modules") or [],
+        "discount_limit": course.get("discount_limit")
     }
     
     import re
@@ -272,6 +278,16 @@ class SupabaseStore(Store):
             params["status"] = f"eq.{status}"
         rows = await self._req("GET", "purchases", params)
         return rows or []
+
+    async def count_active_purchases(self, course_id: str) -> int:
+        """Kurs bo'yicha rad etilmagan xaridlar soni (chegirma limiti hisobi uchun)"""
+        rows = await self._req("GET", "purchases", {
+            "course_id": f"eq.{course_id}",
+            "status": 'in.("pending_approval","approved","completed")',
+            "select": "id",
+            "limit": 1000
+        })
+        return len(rows) if rows else 0
 
     # ---------------- ENROLLMENTS ----------------
     async def get_enrollment(self, user_id: str, course_id: str) -> Optional[Dict[str, Any]]:
