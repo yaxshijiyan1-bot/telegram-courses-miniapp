@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { CheckCircle2, Play, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { Course } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { useSettings } from '../context/SettingsContext';
@@ -106,7 +106,7 @@ export const PurchaseSuccessPage: React.FC<PurchaseSuccessPageProps> = ({
           }}
           className="w-full py-4.5 bg-slate-100 text-slate-600 font-extrabold rounded-2xl flex items-center justify-center space-x-2 text-[15px] active:scale-[0.98] transition-transform"
         >
-          <span>Asosiy sahifaga qaytish</span>
+          <span>{t('Asosiy sahifaga qaytish')}</span>
           <ArrowRight className="w-5 h-5 opacity-50" />
         </button>
       </div>

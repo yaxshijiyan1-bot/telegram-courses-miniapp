@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Sparkles, Trophy, GraduationCap } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
+import { useSettings } from '../context/SettingsContext';
 
 interface SplashPageProps {
   onStart: () => void;
@@ -11,6 +12,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
   const { haptic } = useTelegram();
+  const { t } = useSettings();
 
   const handleStart = () => {
     haptic?.impact?.('medium');
@@ -84,8 +86,8 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
                 <Sparkles className="w-3 h-3" strokeWidth={2.2} />
               </span>
               <span className="text-left">
-                <span className="block text-[9px] text-slate-500 font-semibold leading-none">AI-yordamchi</span>
-                <span className="block text-[11px] text-slate-900 font-extrabold tracking-[-0.01em] mt-0.5">Real amaliyot</span>
+                <span className="block text-[9px] text-slate-500 font-semibold leading-none">{t('AI-yordamchi')}</span>
+                <span className="block text-[11px] text-slate-900 font-extrabold tracking-[-0.01em] mt-0.5">{t('Real amaliyot')}</span>
               </span>
             </div>
           </motion.div>
@@ -106,7 +108,7 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
               </span>
               <span className="text-left">
                 <span className="block text-[9px] text-slate-500 font-semibold leading-none">9 000+</span>
-                <span className="block text-[11px] text-slate-900 font-extrabold tracking-[-0.01em] mt-0.5">obunachi</span>
+                <span className="block text-[11px] text-slate-900 font-extrabold tracking-[-0.01em] mt-0.5">{t('obunachi')}</span>
               </span>
             </div>
           </motion.div>
@@ -129,13 +131,12 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
           className="text-center max-w-[300px]"
         >
           <h1 className="text-[34px] font-extrabold text-slate-900 tracking-[-0.03em] leading-[1.05]">
-            Yangi kasb.
+            {t('Foydali bilimlar.')}
             <br />
-            <em className="serif-accent text-cyan text-[38px]">Bir mini-ilovada.</em>
+            <em className="serif-accent text-cyan text-[35px]">{t('Bitta mini-ilovada.')}</em>
           </h1>
           <p className="text-[13.5px] text-slate-600 leading-[1.55] font-medium mt-3.5 tracking-[-0.005em]">
-            AI, dizayn va SMM bo'yicha amaliy kurslar — Telegram
-            ichida, o'zbek tilida.
+            {t("AI, dizayn va SMM bo'yicha amaliy kurslar — Telegram ichida, o'zbek tilida.")}
           </p>
         </motion.div>
 
@@ -160,9 +161,9 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
             />
           </span>
           <span className="text-[11.5px] text-slate-600 font-semibold leading-[1.3]">
-            <span className="text-slate-900 font-extrabold">2 amaliyotchi ustoz</span>
+            <span className="text-slate-900 font-extrabold">{t('2 amaliyotchi ustoz')}</span>
             <br />
-            sizga yo'lni ko'rsatadi
+            {t("sizga yo'lni ko'rsatadi")}
           </span>
         </motion.div>
       </div>
@@ -181,11 +182,11 @@ export const SplashPage: React.FC<SplashPageProps> = ({ onStart }) => {
           className="w-full py-[17px] px-[22px] bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl text-[15.5px] flex items-center justify-center space-x-2 shadow-cyanGlow"
         >
           <GraduationCap className="w-[18px] h-[18px]" strokeWidth={2.2} />
-          <span>Boshlash</span>
+          <span>{t('Boshlash')}</span>
           <ArrowRight className="w-4 h-4 stroke-[2.4]" />
         </motion.button>
         <p className="text-center mt-3 mb-[10px] text-[10.5px] text-slate-400 font-semibold tracking-[0.02em]">
-          <em className="serif-accent text-slate-500 text-xs mr-1">bilim qiymatga aylanadi</em>
+          <em className="serif-accent text-slate-500 text-xs mr-1">{t('bilim qiymatga aylanadi')}</em>
           · Kreativ AI 2026
         </p>
       </motion.div>
