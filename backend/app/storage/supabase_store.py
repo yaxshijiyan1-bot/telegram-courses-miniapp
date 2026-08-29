@@ -279,6 +279,14 @@ class SupabaseStore(Store):
         rows = await self._req("GET", "purchases", params)
         return rows or []
 
+    async def list_purchases_by_user(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        rows = await self._req("GET", "purchases", {
+            "user_id": f"eq.{user_id}",
+            "order": "created_at.desc",
+            "limit": limit,
+        })
+        return rows or []
+
     async def count_active_purchases(self, course_id: str) -> int:
         """Kurs bo'yicha rad etilmagan xaridlar soni (chegirma limiti hisobi uchun)"""
         rows = await self._req("GET", "purchases", {

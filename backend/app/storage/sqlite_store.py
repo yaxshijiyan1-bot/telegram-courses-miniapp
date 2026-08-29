@@ -414,6 +414,14 @@ class SqliteStore(Store):
                 ).fetchall()
             return [dict(r) for r in rows]
 
+    async def list_purchases_by_user(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        with self.lock, self._conn() as c:
+            rows = c.execute(
+                "SELECT * FROM purchases WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
+                (user_id, limit)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
     async def count_active_purchases(self, course_id: str) -> int:
         """Kurs bo'yicha rad etilmagan xaridlar soni (chegirma limiti hisobi uchun)"""
         with self.lock, self._conn() as c:

@@ -160,6 +160,18 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
     except Exception:
         logger.exception("Referal mukofoti oqimida xato")
 
+    # Referal SOVG'A milestone'lari — do'stlar soni yetganda bepul kurs
+    referral_gifts = []
+    if user_id:
+        referrer_of_buyer = None
+        try:
+            from app.services.promos import get_referrer_of, grant_milestone_gifts
+            referrer_of_buyer = await get_referrer_of(store, user_id)
+            if referrer_of_buyer:
+                referral_gifts = await grant_milestone_gifts(store, referrer_of_buyer)
+        except Exception:
+            logger.exception("Referal sovg'a milestone oqimida xato")
+
     enrollment_granted = False
     try:
         if user_id and course_id:
@@ -227,6 +239,24 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
             )
         except (TypeError, ValueError):
             logger.warning("Referrer bot xabari yuborilmadi (noto'g'ri telegram_id)")
+
+    # Sovg'a milestone (masalan 10 do'st → bepul kurs) yetganda bot xabari
+    if referral_gifts and referrer_of_buyer:
+        try:
+            referrer_user = await store.get_user(str(referrer_of_buyer)) or {}
+            tg_id = referrer_user.get("telegram_id")
+            if tg_id:
+                gift_lines = "\n".join(
+                    "🎁 <b>" + html.escape(g.get("milestone_title") or "Sovg\'a") + "</b> — «" + html.escape(g.get("title") or "") + "» kursi profilingizga bepul ochildi"
+                    for g in referral_gifts if g.get("type") == "free_course"
+                )
+                await _notify_student(
+                    int(tg_id),
+                    "🏆 <b>Referal sovg'angiz tayyor!</b>\n\n" + gift_lines +
+                    "\n\nMini App orqali «Darslarim» bo'limida ko'rishingiz mumkin 👇",
+                )
+        except (TypeError, ValueError):
+            logger.warning("Sovg'a bot xabari yuborilmadi")
     return True, "To'lov tasdiqlandi va talabaga kurs ochildi"
 
 

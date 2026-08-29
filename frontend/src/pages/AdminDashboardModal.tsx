@@ -35,7 +35,8 @@ import {
   EyeOff,
   Layers,
   Percent,
-  TicketPercent
+  TicketPercent,
+  Gift
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 import { api, toMediaUrl } from '../services/api';
@@ -103,6 +104,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [promoMaxUses, setPromoMaxUses] = useState('50');
   const [promoDays, setPromoDays] = useState('0');
   const [promoNote, setPromoNote] = useState('');
+
+  // Referal sozlamalari (foizlar + sovg'a milestone'lari)
+  const [refRewardPercent, setRefRewardPercent] = useState('15');
+  const [refInviteePercent, setRefInviteePercent] = useState('10');
+  const [refMilestones, setRefMilestones] = useState<any[]>([]);
+  const [giftCourses, setGiftCourses] = useState<{ id: string; title: string }[]>([]);
+  const [newMsCount, setNewMsCount] = useState('');
+  const [newMsTitle, setNewMsTitle] = useState('');
+  const [newMsCourse, setNewMsCourse] = useState('');
 
   // AI Course Generator States
   const [aiTopic, setAiTopic] = useState('');
@@ -222,6 +232,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setCourses(c);
       setBanners(bn);
       setPromoCodes(pc);
+      api.getReferralSettings().then((rs: any) => {
+        setRefRewardPercent(String(rs.reward_percent ?? 15));
+        setRefInviteePercent(String(rs.invitee_percent ?? 10));
+        setRefMilestones(Array.isArray(rs.milestones) ? rs.milestones : []);
+        setGiftCourses(Array.isArray(rs.gift_courses) ? rs.gift_courses : []);
+      }).catch(() => {});
     } catch (e: any) {
       showError(e?.message || 'Ma\'lumotlarni yuklashda xatolik');
     } finally {
@@ -312,6 +328,60 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     } finally {
       setIsActionLoading(null);
     }
+  };
+
+  // Referal sozlamalari: foizlar + sovg'a milestone'lari
+  const handleSaveReferralSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    haptic?.impact?.('medium');
+    setIsActionLoading('ref_settings');
+    try {
+      const res = await api.updateReferralSettings({
+        reward_percent: parseInt(refRewardPercent) || 15,
+        invitee_percent: parseInt(refInviteePercent) || 10,
+        milestones: refMilestones
+      });
+      showNotification(res.message || 'Referal sozlamalari saqlandi!');
+      await loadData(true);
+    } catch (e: any) {
+      showError(e?.message || 'Referal sozlamalarini saqlashda xatolik');
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const handleAddMilestone = () => {
+    const count = parseInt(newMsCount);
+    if (!count || count <= 0) {
+      showError('Do\'stlar sonini kiriting (masalan: 10)');
+      return;
+    }
+    if (!newMsCourse) {
+      showError('Sovg\'a sifatida beriladigan kursni tanlang');
+      return;
+    }
+    if (refMilestones.some(m => m.invited_count === count)) {
+      showError('Bu sondagi bosqich allaqachon mavjud');
+      return;
+    }
+    const course = giftCourses.find(c => c.id === newMsCourse);
+    setRefMilestones([...refMilestones, {
+      id: `ms_${Date.now()}`,
+      invited_count: count,
+      title: newMsTitle.trim() || `${count} do'st — bepul kurs`,
+      gift_type: 'free_course',
+      gift_course_id: newMsCourse,
+      gift_course_title: course?.title || '',
+    }].sort((a, b) => a.invited_count - b.invited_count));
+    setNewMsCount('');
+    setNewMsTitle('');
+    setNewMsCourse('');
+    haptic?.selection?.();
+  };
+
+  const handleRemoveMilestone = (id: string) => {
+    setRefMilestones(refMilestones.filter(m => m.id !== id));
+    haptic?.selection?.();
   };
 
   // AI Bilan Kurs Yaratish Funksiyasi (OpenRouter Qwen)
@@ -2331,6 +2401,142 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       </>
                     )}
                   </button>
+                </form>
+
+                {/* ===== Referal Sovg'alari boshqaruvi ===== */}
+                <form onSubmit={handleSaveReferralSettings} className="bg-white border border-slate-200/90 p-4 rounded-3xl space-y-4 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-7 h-7 rounded-xl bg-amber-600/10 text-amber-600 flex items-center justify-center">
+                      <Gift className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Referal Sovg'alari</h4>
+                      <span className="text-[10px] text-slate-500">"N do'st xarid qilsa — bepul kurs" shartlari va foizlar</span>
+                    </div>
+                  </div>
+
+                  {/* Foizlar */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Do'st sotib olganda mukofot (%)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={90}
+                        value={refRewardPercent}
+                        onChange={(e) => setRefRewardPercent(e.target.value)}
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Yangi kelgan bonusi (%)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={90}
+                        value={refInviteePercent}
+                        onChange={(e) => setRefInviteePercent(e.target.value)}
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mavjud milestone'lar */}
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-slate-600 block">Sovg'a bosqichlari</span>
+                    {refMilestones.length === 0 ? (
+                      <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-3 text-center text-[11px] text-slate-500">
+                        Hozircha sovg'a yo'q — quyida qo'shing. Masalan: "10 do'st → bepul kurs".
+                      </div>
+                    ) : (
+                      refMilestones.map((m) => (
+                        <div key={m.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                            <b className="text-[13px] font-extrabold tabular-nums">{m.invited_count}</b>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <b className="text-[12px] font-bold text-slate-900 block truncate">{m.title}</b>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              🎁 Bepul kurs: {m.gift_course_title || '—'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMilestone(m.id)}
+                            className="p-2 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors flex-shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Yangi milestone qo'shish */}
+                  <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-600 block">Do'stlar soni</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={newMsCount}
+                          onChange={(e) => setNewMsCount(e.target.value)}
+                          placeholder="10"
+                          className="glass-input w-full font-mono text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-600 block">Sovg'a kursi</label>
+                        <select
+                          value={newMsCourse}
+                          onChange={(e) => setNewMsCourse(e.target.value)}
+                          className="glass-input w-full text-xs"
+                        >
+                          <option value="">Kursni tanlang</option>
+                          {giftCourses.map((c) => (
+                            <option key={c.id} value={c.id}>{c.title}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Bosqich nomi (ixtiyoriy)</label>
+                      <input
+                        type="text"
+                        value={newMsTitle}
+                        onChange={(e) => setNewMsTitle(e.target.value)}
+                        placeholder="10 do'st — bepul kurs"
+                        className="glass-input w-full text-xs"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddMilestone}
+                      className="w-full py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-[11px] font-extrabold flex items-center justify-center space-x-1 active:scale-[0.98] transition-transform"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Bosqich Qo'shish</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isActionLoading === 'ref_settings'}
+                    className="btn-primary w-full py-3 text-xs font-extrabold flex items-center justify-center space-x-2"
+                  >
+                    {isActionLoading === 'ref_settings' ? (
+                      <InlineLoader variant="orbit" size={14} color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Referal Sozlamalarini Saqlash</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[10px] leading-snug text-slate-500">
+                    Eslatma: bosqichga do'stlar soni faqat ularning xaridi <b>tasdiqlanganda</b> qo'shiladi (rad etilgan cheklar hisoblanmaydi). Sovg'a kursi referrerga avtomatik bepul ochiladi va bot xabar yuboradi.
+                  </p>
                 </form>
 
                 {/* Mavjud promolar ro'yxati */}

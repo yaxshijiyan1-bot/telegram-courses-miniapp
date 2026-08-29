@@ -1,4 +1,4 @@
-import { Course, EnrolledCourse, ContinueLearningData, Certificate, NotificationItem, User, Lesson, AdminStats, PendingReceipt, AdminStudent, PaymentInfo, Banner } from '../types';
+import { Course, EnrolledCourse, ContinueLearningData, Certificate, NotificationItem, User, Lesson, AdminStats, PendingReceipt, AdminStudent, PaymentInfo, Banner, ReferralMilestone } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://kurslar-backend-api.onrender.com/api';
 const IS_DEV = import.meta.env.DEV;
@@ -432,7 +432,7 @@ class ApiService {
     return data;
   }
 
-  async getReferralInfo(): Promise<{ code: string; link: string; invited_count: number; reward_codes: { code: string; percent: number; used: boolean }[]; reward_percent: number; invitee_percent: number; bot_username: string }> {
+  async getReferralInfo(): Promise<{ code: string; link: string; invited_count: number; buyers_count: number; reward_codes: { code: string; percent: number; used: boolean }[]; reward_percent: number; invitee_percent: number; bot_username: string; milestones?: ReferralMilestone[] }> {
     const res = await fetch(`${API_BASE_URL}/student/referral`, { headers: this.getHeaders() });
     if (!res.ok) throw new Error('Referal ma\'lumotini olishda xatolik');
     return await res.json();
@@ -462,6 +462,15 @@ class ApiService {
 
   async deletePromoCode(code: string): Promise<{ success: boolean; message: string }> {
     return this.adminFetch(`/admin/promo-codes/${encodeURIComponent(code)}`, { method: 'DELETE' });
+  }
+
+  // Admin: referal sozlamalari va sovg'alar
+  async getReferralSettings(): Promise<{ reward_percent: number; invitee_percent: number; milestones: ReferralMilestone[]; gift_courses: { id: string; title: string }[] }> {
+    return this.adminFetch('/admin/referral-settings');
+  }
+
+  async updateReferralSettings(payload: { reward_percent: number; invitee_percent: number; milestones: ReferralMilestone[] }): Promise<{ success: boolean; message: string }> {
+    return this.adminFetch('/admin/referral-settings', { method: 'PUT', body: JSON.stringify(payload) });
   }
 
   async getCertificates(): Promise<Certificate[]> {

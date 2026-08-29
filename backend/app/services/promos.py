@@ -30,8 +30,10 @@ KEY_PROMOS = "promo_codes"
 KEY_REF_CODES = "referral_codes"
 KEY_REF_LINKS = "referral_links"
 KEY_REF_REWARDED = "referral_rewarded"
+KEY_REF_GRANTED = "referral_milestones_granted"
+KEY_REF_SETTINGS = "referral_settings"
 
-# Mukofot foizlari env orqali sozlanadi
+# Mukofot foizlarining boshlang'ich qiymatlari (admin panelda o'zgartiriladi)
 REFERRAL_REWARD_PERCENT = max(1, min(90, int(os.getenv("REFERRAL_REWARD_PERCENT", "15"))))
 REFERRAL_INVITEE_PERCENT = max(1, min(90, int(os.getenv("REFERRAL_INVITEE_PERCENT", "10"))))
 
@@ -48,6 +50,48 @@ async def _get_json(store, key: str, default: Any) -> Any:
 
 async def _set_json(store, key: str, value: Any) -> None:
     await store.set_setting(key, json.dumps(value, ensure_ascii=False))
+
+
+# ------------------------------------------------------------ REFERAL SOZLAMALARI
+
+def _default_referral_settings() -> Dict[str, Any]:
+    return {
+        "reward_percent": REFERRAL_REWARD_PERCENT,
+        "invitee_percent": REFERRAL_INVITEE_PERCENT,
+        "milestones": [],
+    }
+
+
+async def get_referral_settings(store) -> Dict[str, Any]:
+    """Referal foizlari va sovg'a milestone'lari (admin boshqaradi)."""
+    merged = _default_referral_settings()
+    data = await _get_json(store, KEY_REF_SETTINGS, {})
+    if isinstance(data, dict):
+        for key in ("reward_percent", "invitee_percent"):
+            try:
+                if data.get(key) is not None:
+                    merged[key] = max(1, min(90, int(data[key])))
+            except (TypeError, ValueError):
+                pass
+        if isinstance(data.get("milestones"), list):
+            merged["milestones"] = [
+                m for m in data["milestones"] if isinstance(m, dict) and m.get("id")
+            ]
+    return merged
+
+
+async def set_referral_settings(
+    store, reward_percent: int, invitee_percent: int, milestones: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    merged = _default_referral_settings()
+    merged["reward_percent"] = max(1, min(90, int(reward_percent)))
+    merged["invitee_percent"] = max(1, min(90, int(invitee_percent)))
+    merged["milestones"] = sorted(
+        [m for m in milestones if isinstance(m, dict) and m.get("id")],
+        key=lambda m: int(m.get("invited_count") or 0),
+    )
+    await _set_json(store, KEY_REF_SETTINGS, merged)
+    return merged
 
 
 def _norm(code: Any) -> str:
@@ -255,10 +299,22 @@ async def link_referral(store, user_id: str, code: str) -> Tuple[bool, str, Opti
 
 
 async def referral_stats(store, user_id: str) -> Dict[str, Any]:
-    """Profil uchun: kod, link, takliflar soni va yaratilgan mukofot kodlari."""
+    """Profil uchun: kod, link, takliflar soni, sovg'a progressi va mukofot kodlari."""
     code = await get_or_create_referral_code(store, user_id)
+    cfg = await get_referral_settings(store)
     links = await _get_json(store, KEY_REF_LINKS, {})
     invited = [uid for uid, ref in links.items() if str(ref) == str(user_id)]
+
+    # Do'stlarning haqiqiy (rad etilmagan) xarlari — sovg'a shularga bog'liq
+    buyers = []
+    for uid in invited:
+        try:
+            purchases = await store.list_purchases_by_user(str(uid))
+        except Exception:
+            purchases = []
+        if any(p.get("status") in ("approved", "completed") for p in purchases):
+            buyers.append(str(uid))
+
     rewarded = await _get_json(store, KEY_REF_REWARDED, {})
     codes = await _get_json(store, KEY_PROMOS, [])
     reward_codes = [
@@ -266,13 +322,88 @@ async def referral_stats(store, user_id: str) -> Dict[str, Any]:
         for c in codes
         if c.get("auto") and str(c.get("note") or "").startswith("Referal mukofoti") and str(c.get("owner")) == str(user_id)
     ]
+
+    # Sovg'a milestone'lari: progress + olingan/olinganmagan holati
+    granted = await _get_json(store, KEY_REF_GRANTED, {})
+    granted_ids = granted.get(str(user_id)) or []
+    milestones = []
+    for m in cfg["milestones"]:
+        mid = str(m.get("id"))
+        milestones.append({
+            "id": mid,
+            "invited_count": int(m.get("invited_count") or 0),
+            "title": m.get("title") or "Sovg'a",
+            "gift_type": m.get("gift_type") or "free_course",
+            "gift_course_id": m.get("gift_course_id"),
+            "gift_course_title": m.get("gift_course_title"),
+            "claimed": mid in granted_ids,
+            "progress": min(len(buyers), int(m.get("invited_count") or 0)),
+        })
+
     return {
         "code": code,
         "invited_count": len(invited),
+        "buyers_count": len(buyers),
         "reward_codes": reward_codes,
-        "reward_percent": REFERRAL_REWARD_PERCENT,
-        "invitee_percent": REFERRAL_INVITEE_PERCENT,
+        "reward_percent": cfg["reward_percent"],
+        "invitee_percent": cfg["invitee_percent"],
+        "milestones": milestones,
     }
+
+
+async def grant_milestone_gifts(store, referrer_user_id: str) -> List[Dict[str, Any]]:
+    """Do'stlarining xaridi tasdiqlanganda y yetilgan milestone sovg'alarini beradi.
+
+    Sovg'a "bepul kurs" bo'lsa referrerga to'g'ridan-to'g'ri enrollment yoziladi
+    (bor bo'lsa qayta yozilmaydi). Har milestone faqat bir marta beriladi.
+    """
+    granted_out: List[Dict[str, Any]] = []
+    try:
+        stats = await referral_stats(store, referrer_user_id)
+        granted = await _get_json(store, KEY_REF_GRANTED, {})
+        done = granted.get(str(referrer_user_id)) or []
+
+        for m in stats["milestones"]:
+            if m["claimed"] or m["progress"] < m["invited_count"]:
+                continue
+
+            if m["gift_type"] == "free_course" and m.get("gift_course_id"):
+                course = await store.get_course(str(m["gift_course_id"]))
+                if not course:
+                    continue
+                existing = await store.get_enrollment(str(referrer_user_id), str(course["id"]))
+                if not existing:
+                    await store.create_enrollment(str(referrer_user_id), str(course["id"]))
+                done.append(str(m["id"]))
+                granted_out.append({
+                    "type": "free_course",
+                    "title": course["title"],
+                    "milestone_title": m["title"],
+                })
+                try:
+                    await store.create_notification(
+                        str(referrer_user_id),
+                        "Referal sovg'asi 🎁",
+                        f"Tabriklaymiz! {m['invited_count']} do'stingiz kurs sotib oldi — «{course['title']}» kursi sizga BEPUL ochildi.",
+                        "success",
+                    )
+                except Exception:
+                    logger.exception("Sovg'a bildirishnomasi yozilmadi")
+            else:
+                # Noma'lum sovg'a turi — faqat belgilab qo'yamiz (UI'da ko'rsatiladi)
+                done.append(str(m["id"]))
+                granted_out.append({
+                    "type": m["gift_type"],
+                    "title": m.get("title") or "Sovg'a",
+                    "milestone_title": m["title"],
+                })
+
+        if granted_out:
+            granted[str(referrer_user_id)] = done
+            await _set_json(store, KEY_REF_GRANTED, granted)
+    except Exception:
+        logger.exception("Milestone sovg'alarini berishda xato")
+    return granted_out
 
 
 async def reward_referrer(store, buyer_user_id: Optional[str]) -> Optional[Dict[str, Any]]:

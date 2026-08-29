@@ -53,9 +53,18 @@ interface ReferralInfo {
   code: string;
   link: string;
   invited_count: number;
+  buyers_count: number;
   reward_codes: { code: string; percent: number; used: boolean }[];
   reward_percent: number;
   invitee_percent: number;
+  milestones?: {
+    id: string;
+    invited_count: number;
+    title: string;
+    gift_course_title?: string | null;
+    claimed?: boolean;
+    progress?: number;
+  }[];
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -256,8 +265,40 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
             <div className="flex items-center gap-3 text-[10px] font-bold text-white/85">
               <span>👥 {referral.invited_count} {t('taklif qilingan')}</span>
+              <span>🛒 {referral.buyers_count} {t('xarid qildi')}</span>
               <span>🎁 {t('mukofot')} −{referral.reward_percent}%</span>
             </div>
+            {(referral.milestones ?? []).length > 0 ? (
+              <div className="space-y-1.5">
+                {referral.milestones!.map((ms) => {
+                  const prog = Math.min(ms.progress ?? 0, ms.invited_count);
+                  const pct = Math.round((prog / ms.invited_count) * 100);
+                  return (
+                    <div key={ms.id} className="bg-white/10 border border-white/15 rounded-xl p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-extrabold text-white truncate">
+                          {ms.claimed ? '✅ ' : '🎯 '}{ms.title}
+                        </span>
+                        <span className="text-[10px] font-extrabold text-white/90 tabular-nums flex-shrink-0">
+                          {ms.claimed ? t('Olingan') : `${prog}/${ms.invited_count}`}
+                        </span>
+                      </div>
+                      {!ms.claimed ? (
+                        <div className="h-1.5 rounded-full bg-white/20 overflow-hidden mt-1.5">
+                          <div
+                            className="h-full rounded-full bg-white transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      ) : null}
+                      {ms.gift_course_title ? (
+                        <p className="text-[9px] text-white/75 mt-1">🎁 {ms.gift_course_title}</p>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
             {referral.reward_codes.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {referral.reward_codes.filter(c => !c.used).slice(0, 3).map(c => (

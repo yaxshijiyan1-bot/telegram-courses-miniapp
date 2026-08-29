@@ -196,6 +196,18 @@ export interface AdminStudent {
 
 export type BannerActionType = 'link' | 'course' | 'none';
 
+/** Referal sovg'a bosqichi: "N do'st xarid qilsa → bepul kurs" */
+export interface ReferralMilestone {
+  id: string;
+  invited_count: number;
+  title: string;
+  gift_type: string;
+  gift_course_id?: string | null;
+  gift_course_title?: string | null;
+  claimed?: boolean;
+  progress?: number;
+}
+
 export interface Banner {
   id: string;
   title?: string;

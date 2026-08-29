@@ -763,3 +763,69 @@ async def admin_referral_info(user_id: str, admin: dict = Depends(get_current_ad
     """Admin panelda talaba profilida referal statistikasini ko'rish."""
     store = get_store()
     return await _ref_stats(store, user_id)
+
+# ---------------- REFERAL SOZLAMALARI & SOVG'ALAR (Admin) ----------------
+
+from pydantic import BaseModel as _RM
+from typing import List as _List, Optional as _Opt
+from app.services.promos import (
+    get_referral_settings as _ref_settings_get,
+    set_referral_settings as _ref_settings_set,
+)
+
+
+class _MilestonePayload(_RM):
+    id: str
+    invited_count: int
+    title: str
+    gift_type: str = "free_course"   # hozircha faqat bepul kurs qo'llanadi
+    gift_course_id: _Opt[str] = None
+
+
+class _ReferralSettingsRequest(_RM):
+    reward_percent: int
+    invitee_percent: int
+    milestones: _List[_MilestonePayload] = []
+
+
+@router.get("/referral-settings")
+async def admin_get_referral_settings(admin: dict = Depends(get_current_admin)):
+    """Referal foizlari va sovg'a milestone'lari (joriy holat)."""
+    store = get_store()
+    settings_data = await _ref_settings_get(store)
+    # Sovg'a sifatida tanlanadigan kurslar (published ro'yxati, select uchun)
+    courses = await store.list_courses(published_only=True)
+    settings_data["gift_courses"] = [
+        {"id": c["id"], "title": c.get("title") or "Kurs"} for c in courses
+    ]
+    return settings_data
+
+
+@router.put("/referral-settings")
+async def admin_save_referral_settings(req: _ReferralSettingsRequest, admin: dict = Depends(get_current_admin)):
+    """Referal foizlari va sovg'a milestone'larini saqlaydi (global sozlama)."""
+    store = get_store()
+    # Kurs ID lari haqiqiyligini tekshiramiz (xato ID bilan sovg'a berilmasin)
+    valid_ids = {c["id"] for c in await store.list_courses(published_only=True)}
+    milestones = []
+    seen_counts = set()
+    for m in req.milestones:
+        if m.invited_count <= 0 or m.invited_count in seen_counts:
+            raise HTTPException(status_code=400, detail="Har milestone do'stlar soni musbat va takrorlanmas bo'lishi kerak")
+        seen_counts.add(m.invited_count)
+        if m.gift_type == "free_course":
+            if not m.gift_course_id or m.gift_course_id not in valid_ids:
+                raise HTTPException(status_code=400, detail=f"«{m.title}» uchun sovg'a kursi tanlanmagan yoki topilmadi")
+            course = next(c for c in await store.list_courses(published_only=True) if c["id"] == m.gift_course_id)
+            milestones.append({
+                "id": m.id,
+                "invited_count": m.invited_count,
+                "title": m.title,
+                "gift_type": "free_course",
+                "gift_course_id": m.gift_course_id,
+                "gift_course_title": course.get("title"),
+            })
+        else:
+            raise HTTPException(status_code=400, detail="Noma'lum sovg'a turi")
+    saved = await _ref_settings_set(store, req.reward_percent, req.invitee_percent, milestones)
+    return {"success": True, "message": "Referal sozlamalari saqlandi", "settings": saved}
