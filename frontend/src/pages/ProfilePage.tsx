@@ -231,12 +231,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       </motion.div>
 
       {/* Hamyon — referal daromadlari balansi (kurs xaridida to'lov sifatida sarflanadi) */}
-      {wallet && wallet.balance > 0 ? (
+      {wallet ? (
         <motion.div variants={item} className="glass rounded-[22px] p-4 space-y-3 relative overflow-hidden">
           <div className="absolute -right-10 -top-14 w-36 h-36 blob blob-cyan pointer-events-none" />
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${wallet.balance > 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-slate-500/10 border-slate-400/20 text-ink-muted'}`}>
                 <Wallet className="w-[18px] h-[18px]" strokeWidth={2.2} />
               </div>
               <div>
@@ -244,10 +244,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <span className="text-[10px] text-ink-muted">{t('Kurs xaridlarida to‘lov sifatida ishlaydi')}</span>
               </div>
             </div>
-            <b className="text-[15px] font-extrabold text-emerald-500 tabular-nums">
+            <b className={`text-[15px] font-extrabold tabular-nums ${wallet.balance > 0 ? 'text-emerald-500' : 'text-ink-muted'}`}>
               {wallet.balance.toLocaleString('ru-RU')} {t("so'm")}
             </b>
           </div>
+          {wallet.balance === 0 ? (
+            <p className="text-[10px] text-ink-muted leading-snug">
+              💡 {t("Do'stlaringizni taklif qiling — ularning har bir xarididan cashback so'm sifatida shu hamyonga tushadi.")}
+            </p>
+          ) : null}
           {wallet.history.length > 0 ? (
             <div className="space-y-1 pt-2 border-t border-white/[0.06]">
               {wallet.history.slice(0, 3).map((h) => (
