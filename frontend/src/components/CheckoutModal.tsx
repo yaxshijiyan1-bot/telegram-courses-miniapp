@@ -81,7 +81,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoInfo(null);
       setPromoError('');
       setUseWallet(false);
-      api.getWallet().then(w => setWalletBalance(w.balance || 0)).catch(() => setWalletBalance(0));
+      api.getWallet().then(w => {
+        setWalletBalance(w.balance || 0);
+        // Balans bo'lsa avtomatik yoqamiz — foydalanuvchi istasa o'chiradi
+        setUseWallet((w.balance || 0) > 0);
+      }).catch(() => setWalletBalance(0));
     }
   }, [isOpen]);
 
@@ -404,6 +408,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <span>{t('To‘lov summasi:')}</span>
                     <span className="font-extrabold text-base text-cyan tabular-nums">{formatPrice(finalPrice)}</span>
                   </div>
+                  {walletSpend > 0 && finalPrice > 0 ? (
+                    <p className="text-[10px] font-semibold text-emerald-700 leading-snug pt-1">
+                      💳 {t('Qolgan')} <b>{formatPrice(finalPrice)}</b> {t("so'mni karta orqali to'lang.")}
+                    </p>
+                  ) : null}
                   {walletSpend > 0 && finalPrice === 0 ? (
                     <p className="text-[10px] font-semibold text-emerald-600 leading-snug pt-1">
                       ✅ {t("To'lov hamyon bilan to'liq qoplandi! Chek o'rniga shu holatni tasdiqlash uchun har qanday skrinshot yuboring (masalan, shu oyna).")}

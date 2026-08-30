@@ -220,6 +220,11 @@ async def submit_receipt(
             )
         if promo_entry:
             caption += f"🎟 <b>Promokod:</b> {promo_entry['code']} (−{int(promo_entry['percent'])}%)\n"
+        if wallet_spend > 0:
+            caption += (
+                f"💰 <b>Hamyondan:</b> −{wallet_spend:,} so'm\n"
+                f"🏦 <b>Kartadan to'lanadi:</b> {amount:,} so'm\n"
+            ).replace(",", " ")
         caption += (
             f"💳 <b>To'lov usuli:</b> Karta orqali o'tkazma\n"
             f"🔢 <b>Buyurtma ID:</b> <code>{order_id}</code>\n"
