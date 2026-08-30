@@ -2187,6 +2187,26 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             )}
                           </div>
 
+                          {/* Referal & Hamyon — doimiy saqlanadigan real ma'lumotlar */}
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-100">
+                            <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold ${st.wallet_balance > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400'}`}>
+                              💰 {(st.wallet_balance || 0).toLocaleString('ru-RU')} so'm
+                            </span>
+                            <span className="inline-flex items-center gap-1 bg-sky-50 text-sky-600 border border-sky-100 rounded-lg px-2 py-1 text-[10px] font-bold">
+                              👥 {st.invited_count || 0} taklif
+                            </span>
+                            <span className="inline-flex items-center gap-1 bg-violet-50 text-violet-600 border border-violet-100 rounded-lg px-2 py-1 text-[10px] font-bold">
+                              🛒 {st.buyers_count || 0} xarid
+                            </span>
+                            {(st.pending_gifts || []).length > 0 ? (
+                              st.pending_gifts.map((g: any, gi: number) => (
+                                <span key={gi} className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-lg px-2 py-1 text-[10px] font-bold">
+                                  🎯 {g.progress}/{g.invited_count} — {g.title}
+                                </span>
+                              ))
+                            ) : null}
+                          </div>
+
                           {/* Amallar: Grant / Bloklash / O'chirish */}
                           <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
                             <button

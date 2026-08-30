@@ -192,6 +192,14 @@ export interface AdminStudent {
   status?: string;
   is_blocked?: boolean;
   created_at: string;
+  /** Hamyon balansi (so'm) — referal cashback yig'iladi */
+  wallet_balance?: number;
+  /** Taklif qilingan do'stlar soni */
+  invited_count?: number;
+  /** Ular ichida xarid qilganlar soni */
+  buyers_count?: number;
+  /** Hali olinmagan sovg'a bosqichlari (progress bilan) */
+  pending_gifts?: { title: string; invited_count: number; progress: number }[];
 }
 
 export type BannerActionType = 'link' | 'course' | 'none';

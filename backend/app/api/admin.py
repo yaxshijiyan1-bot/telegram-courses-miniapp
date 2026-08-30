@@ -191,10 +191,14 @@ async def reject_receipt(order_id: str, admin: dict = Depends(get_current_admin)
 
 @router.get("/students")
 async def get_students_list(admin: dict = Depends(get_current_admin)):
-    """Barcha ro'yxatdan o'tgan talabalar CRM ro'yxati — real ma'lumotlar"""
+    """Barcha ro'yxatdan o'tgan talabalar CRM ro'yxati — real ma'lumotlar,
+    har biriga hamyon balansi va referal statistikasi ham qo'shiladi."""
     store = get_store()
     users = await store.list_users(limit=200)
     blocked_ids = await store.get_blocked_ids()
+
+    from app.services import wallet as wallet_service
+    from app.services.promos import referral_stats, get_referrer_of
 
     result = []
     for u in users:
@@ -218,6 +222,24 @@ async def get_students_list(admin: dict = Depends(get_current_admin)):
             lessons_total += lessons or course.get("lesson_count", 0)
         overall = min(100, int(completed_total * 100 / max(lessons_total, 1))) if enrollments else 0
         tg_id = int(u.get("telegram_id") or 0)
+
+        # Hamyon va referal statistikasi (xatolik bo'lsa bo'sh qiymatlar)
+        try:
+            w = await wallet_service.get_wallet(store, u["id"])
+            wallet_balance = int(w["balance"] or 0)
+        except Exception:
+            wallet_balance = 0
+        try:
+            ref = await referral_stats(store, u["id"])
+            invited_count = int(ref["invited_count"] or 0)
+            buyers_count = int(ref["buyers_count"] or 0)
+            milestones = ref["milestones"] or []
+            pending_gifts = [m for m in milestones if not m.get("claimed")]
+        except Exception:
+            invited_count = 0
+            buyers_count = 0
+            pending_gifts = []
+
         result.append({
             "id": u["id"],
             "name": u.get("name", "Talaba"),
@@ -231,6 +253,17 @@ async def get_students_list(admin: dict = Depends(get_current_admin)):
             "joined_date": str(u.get("created_at", ""))[:10],
             "status": "Faol" if enrollments else "Yangi",
             "is_blocked": tg_id in blocked_ids,
+            "wallet_balance": wallet_balance,
+            "invited_count": invited_count,
+            "buyers_count": buyers_count,
+            "pending_gifts": [
+                {
+                    "title": m.get("title") or "Sovg'a",
+                    "invited_count": m.get("invited_count"),
+                    "progress": m.get("progress"),
+                }
+                for m in pending_gifts
+            ],
         })
     return result
 

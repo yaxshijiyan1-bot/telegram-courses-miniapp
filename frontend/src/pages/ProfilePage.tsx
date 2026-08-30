@@ -326,12 +326,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         </span>
                       </div>
                       {!ms.claimed ? (
-                        <div className="h-1.5 rounded-full bg-white/20 overflow-hidden mt-1.5">
-                          <div
-                            className="h-full rounded-full bg-white transition-all"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
+                        <>
+                          <div className="h-1.5 rounded-full bg-white/20 overflow-hidden mt-1.5">
+                            <div
+                              className="h-full rounded-full bg-white transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <p className="text-[9px] text-white/75 mt-1 font-semibold">
+                            {t('Yana')} {ms.invited_count - prog} {t("do'st xarid qilsa — sovg'a sizniki!")}
+                          </p>
+                        </>
                       ) : null}
                       {ms.gift_course_title ? (
                         <p className="text-[9px] text-white/75 mt-1">🎁 {ms.gift_course_title}</p>
