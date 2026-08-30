@@ -406,6 +406,7 @@ class ApiService {
     telegram_id: number;
     promo_code?: string;
     use_wallet?: boolean;
+    wallet_amount?: number;
   }): Promise<{ success: boolean; message: string }> {
     const res = await fetch(`${API_BASE_URL}/checkout/submit-receipt`, {
       method: 'POST',
@@ -471,6 +472,25 @@ class ApiService {
 
   async deletePromoCode(code: string): Promise<{ success: boolean; message: string }> {
     return this.adminFetch(`/admin/promo-codes/${encodeURIComponent(code)}`, { method: 'DELETE' });
+  }
+
+  // Admin: hisoblar (hamyon balanslari + referal daraxti)
+  async getAdminWallets(): Promise<{
+    total_balance: number;
+    users_with_balance: number;
+    accounts: {
+      id: string;
+      name: string;
+      username?: string;
+      telegram_id?: number;
+      wallet_balance: number;
+      invited_count: number;
+      invited: { id: string; name: string; username?: string; bought: boolean }[];
+      referred_by?: { id: string; name: string; username?: string } | null;
+      last_wallet_actions: { delta: number; type: string; note: string; created_at: string }[];
+    }[];
+  }> {
+    return this.adminFetch('/admin/wallets');
   }
 
   // Admin: referal sozlamalari va sovg'alar

@@ -863,3 +863,94 @@ async def admin_save_referral_settings(req: _ReferralSettingsRequest, admin: dic
             raise HTTPException(status_code=400, detail="Noma'lum sovg'a turi")
     saved = await _ref_settings_set(store, req.reward_percent, req.invitee_percent, milestones, req.cashback_percent)
     return {"success": True, "message": "Referal sozlamalari saqlandi", "settings": saved}
+
+# ---------------- HISOBLAR (Admin) ----------------
+
+from app.services.promos import referral_stats as _ref_stats_admin
+from app.services import wallet as _wallet_admin
+
+
+@router.get("/wallets")
+async def admin_wallets_overview(admin: dict = Depends(get_current_admin)):
+    """Barcha foydalanuvchilar hisobi: hamyon balansi, referal daraxti (kim
+    kimi taklif qilgani) va oxirgi harakatlar — admin panelda 'Hisoblar' uchun."""
+    store = get_store()
+    users = await store.list_users(limit=300)
+
+    # Bir marta o'qib, tez xaritalar
+    wallets_raw = await _wallet_admin._get_json(store, "wallets", {})
+    links_raw = await _wallet_admin._get_json(store, "referral_links", {})
+
+    # user_id -> (ism, username)
+    by_id = {str(u["id"]): u for u in users}
+    invited_by = {}  # referrer_id -> [invitee_id]
+    my_referrer = {}  # user_id -> referrer_id
+    for invitee_id, referrer_id in links_raw.items():
+        my_referrer[str(invitee_id)] = str(referrer_id)
+        invited_by.setdefault(str(referrer_id), []).append(str(invitee_id))
+
+    rows = []
+    total_balance = 0
+    for u in users:
+        uid = str(u["id"])
+        w = wallets_raw.get(uid)
+        balance = 0
+        history = []
+        if isinstance(w, dict):
+            try:
+                balance = int(w.get("balance") or 0)
+            except (TypeError, ValueError):
+                balance = 0
+            history = list(w.get("history") or [])[-3:]
+        total_balance += balance
+
+        invited_list = []
+        for inv_id in invited_by.get(uid, []):
+            inv_user = by_id.get(inv_id)
+            if inv_user:
+                # Taklif qilingan odamning xaridlari (rad etilmagan)
+                try:
+                    purchases = await store.list_purchases_by_user(inv_id, limit=50)
+                except Exception:
+                    purchases = []
+                bought = any(p.get("status") in ("approved", "completed") for p in purchases)
+                invited_list.append({
+                    "id": inv_id,
+                    "name": inv_user.get("name") or "Talaba",
+                    "username": inv_user.get("username") or "",
+                    "telegram_id": inv_user.get("telegram_id"),
+                    "bought": bought,
+                })
+
+        ref_user = by_id.get(my_referrer.get(uid, ""))
+        rows.append({
+            "id": uid,
+            "name": u.get("name") or "Talaba",
+            "username": u.get("username") or "",
+            "telegram_id": u.get("telegram_id"),
+            "wallet_balance": balance,
+            "invited_count": len(invited_list),
+            "invited": invited_list,
+            "referred_by": (
+                {"id": my_referrer[uid], "name": ref_user.get("name") or "Talaba",
+                 "username": ref_user.get("username") or ""}
+                if ref_user else None
+            ),
+            "last_wallet_actions": [
+                {
+                    "delta": e.get("delta"),
+                    "type": e.get("type"),
+                    "note": e.get("note") or "",
+                    "created_at": str(e.get("created_at") or "")[:16].replace("T", " "),
+                }
+                for e in reversed(history)
+            ],
+        })
+
+    # Eng katta balanslar birinchi
+    rows.sort(key=lambda r: (-r["wallet_balance"], -(r["invited_count"] or 0)))
+    return {
+        "total_balance": total_balance,
+        "users_with_balance": sum(1 for r in rows if r["wallet_balance"] > 0),
+        "accounts": rows,
+    }

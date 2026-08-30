@@ -7,6 +7,7 @@ request himoyasi va admin buyruqlari to'liq ajratilgan handlerlarga ega.
 from __future__ import annotations
 
 import asyncio
+import datetime as _dt
 import html
 import json
 import logging
@@ -964,10 +965,152 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
         await _send_payment_info(client, int(chat_id))
     elif command in {"/stats", "/admin"}:
         await _send_stats(client, int(chat_id), int(user["telegram_id"]))
+    elif command in {"/hisobot", "/report"}:
+        if int(user["telegram_id"]) in settings.ADMIN_IDS:
+            await _send_daily_report(client, int(chat_id))
+        else:
+            await send_tg_message(client, int(chat_id), "❌ Bu buyruq faqat superadminlar uchun.")
+    elif command == "/backup":
+        if int(user["telegram_id"]) in settings.ADMIN_IDS:
+            await send_tg_message(client, int(chat_id), "📦 Zaxira tayyorlanmoqda...")
+            await _send_backup(client, int(chat_id))
+        else:
+            await send_tg_message(client, int(chat_id), "❌ Bu buyruq faqat superadminlar uchun.")
     elif command in {"/help", "/contact"}:
         await _send_help(client, int(chat_id))
     else:
         await _handle_unknown_text(client, int(chat_id))
+
+
+async def _send_daily_report(client: httpx.AsyncClient, chat_id: int) -> None:
+    """Kunlik hisobot: bugungi tasdiqlangan xaridlar, tushum, kun dawomidagi
+    rad etilgan cheklar, yangi talabalar va referal cashback kirimlari."""
+    store = get_store()
+    try:
+        purchases = await store.list_purchases(limit=200)
+    except Exception:
+        purchases = []
+    today = _dt.date.today().isoformat()
+    todays = [p for p in purchases if str(p.get("created_at") or "").startswith(today)]
+    approved = [p for p in todays if p.get("status") == "approved"]
+    rejected = [p for p in todays if p.get("status") == "rejected"]
+    pending = [p for p in todays if p.get("status") == "pending_approval"]
+    revenue = sum(int(p.get("amount") or 0) for p in approved)
+
+    from app.services import wallet as wallet_service
+    wallets_raw = await wallet_service._get_json(store, "wallets", {})
+    todays_cashback = 0
+    for w in wallets_raw.values():
+        for e in (w.get("history") or []):
+            if e.get("type") == "earn_referral" and str(e.get("created_at") or "").startswith(today):
+                try:
+                    todays_cashback += int(e.get("delta") or 0)
+                except (TypeError, ValueError):
+                    pass
+
+    try:
+        total_users = await store.count_users()
+    except Exception:
+        total_users = 0
+
+    lines = [
+        f"<b>📅 Kunlik hisobot — {today}</b>",
+        "",
+        f"💰 <b>Bugungi tushum:</b> {_uzs(revenue)}",
+        f"✅ Tasdiqlangan xaridlar: <b>{len(approved)} ta</b>",
+        f"⏳ Kutilayotgan cheklar: <b>{len(pending)} ta</b>",
+        f"❌ Rad etilgan: <b>{len(rejected)} ta</b>",
+        f"🤝 Bugungi referal cashback: <b>{_uzs(todays_cashback)}</b>",
+        f"👥 Jami foydalanuvchilar: <b>{total_users}</b>",
+    ]
+    if approved:
+        lines.append("")
+        lines.append("<b>Xaridlar:</b>")
+        for p in approved[:10]:
+            lines.append(
+                f"• {_escape(p.get('student_name') or 'Talaba')} — "
+                f"{_escape(p.get('course_title') or 'Kurs')} ({_uzs(p.get('amount'))})"
+            )
+        if len(approved) > 10:
+            lines.append(f"<i>...va yana {len(approved) - 10} ta</i>")
+    await send_tg_message(
+        client, chat_id, "\n".join(lines),
+        {"inline_keyboard": [[{"text": "⚙️ Admin Panel", "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}}]]},
+    )
+
+
+async def _send_backup(client: httpx.AsyncClient, chat_id: int) -> None:
+    """To'liq zaxira: barcha jadvallar va sozlamalar bitta JSON fayl sifatida
+    admin chatga yuboriladi (Document)."""
+    store = get_store()
+    backup: Dict[str, Any] = {
+        "_meta": {
+            "created_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+            "storage": getattr(store, "backend_name", "?"),
+            "version": "2.0.0",
+        }
+    }
+    try:
+        backup["users"] = await store.list_users(limit=1000)
+    except Exception:
+        backup["users"] = []
+    try:
+        backup["courses"] = await store.list_courses(published_only=False)
+    except Exception:
+        backup["courses"] = []
+    try:
+        backup["purchases"] = await store.list_purchases(limit=1000)
+    except Exception:
+        backup["purchases"] = []
+    try:
+        backup["banners"] = await store.list_banners()
+    except Exception:
+        backup["banners"] = []
+    from app.services import wallet as wallet_service
+    for key in ("wallets", "promo_codes", "referral_codes", "referral_links",
+                "referral_rewarded", "referral_milestones_granted", "referral_settings"):
+        try:
+            raw = await store.get_setting(key)
+            backup[key] = json.loads(raw) if raw else {}
+        except Exception:
+            backup[key] = {}
+
+    # /api/... URL larni R2 public URL ga almashtiramiz (tiklash uchun to'liqroq)
+    payload = json.dumps(backup, ensure_ascii=False, default=str).encode("utf-8")
+    files = {"document": (f"backup_{_dt.date.today().isoformat()}.json", payload, "application/json")}
+    try:
+        response = await client.post(
+            f"{API_URL}/sendDocument",
+            data={"chat_id": str(chat_id), "caption": "📦 To'liq platforma zaxirasi (JSON)"},
+            files=files,
+        )
+        if response.status_code != 200:
+            logger.warning("Backup yuborilmadi: %s", response.text[:200])
+    except httpx.HTTPError as exc:
+        logger.error("Backup yuborishda xato: %s", exc)
+
+
+async def _daily_reports_loop(client: httpx.AsyncClient) -> None:
+    """Har kuni soat 21:00 da barcha superadminlarga kunlik hisobot (uchishda)."""
+    sent_for: str = ""
+    while True:
+        try:
+            now = _dt.datetime.now()
+            target = now.replace(hour=21, minute=0, second=0, microsecond=0)
+            if now >= target:
+                target += _dt.timedelta(days=1)
+            await asyncio.sleep(min(max((target - now).total_seconds(), 30), 26 * 3600))
+            # 'bugun' hisobini uyg'ongandan keyin olamiz — hisobot aniq bo'ladi
+            today = _dt.date.today().isoformat()
+            if sent_for != today:
+                sent_for = today
+                for admin_id in settings.ADMIN_IDS:
+                    await _send_daily_report(client, int(admin_id))
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            logger.exception("Kunlik hisobot tsiklida xato")
+            await asyncio.sleep(600)
 
 
 async def start_telegram_bot_polling() -> None:
@@ -980,6 +1123,8 @@ async def start_telegram_bot_polling() -> None:
     offset = 0
     allowed_updates = ["message", "callback_query", "chat_join_request", "my_chat_member"]
     async with httpx.AsyncClient(timeout=35.0) as client:
+        # Kunlik 21:00 hisoboti — alohida fon vazifasi (pollingni bloklamaydi)
+        reports_task = asyncio.create_task(_daily_reports_loop(client))
         await _telegram_call(
             client,
             "setMyCommands",
@@ -989,6 +1134,8 @@ async def start_telegram_bot_polling() -> None:
                 {"command": "tolov", "description": "To'lov rekvizitlari"},
                 {"command": "help", "description": "Yordam markazi"},
                 {"command": "admin", "description": "Superadmin statistikasi"},
+                {"command": "hisobot", "description": "Kunlik hisobot (admin)"},
+                {"command": "backup", "description": "To'liq zaxira olish (admin)"},
             ]},
         )
         await _telegram_call(
@@ -1020,6 +1167,11 @@ async def start_telegram_bot_polling() -> None:
                         logger.exception("Telegram update ishlovida kutilmagan xato")
             except asyncio.CancelledError:
                 logger.info("Telegram polling to'xtatildi.")
+                reports_task.cancel()
+                try:
+                    await reports_task
+                except (asyncio.CancelledError, Exception):
+                    pass
                 break
             except (httpx.HTTPError, ValueError) as exc:
                 logger.error("Telegram polling xatosi: %s", exc)

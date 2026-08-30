@@ -55,6 +55,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Hamyon holati
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(false);
+  const [walletInput, setWalletInput] = useState('');
   const { haptic, user } = useTelegram();
   const { t } = useSettings();
 
@@ -81,10 +82,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoInfo(null);
       setPromoError('');
       setUseWallet(false);
+      setWalletInput('');
       api.getWallet().then(w => {
-        setWalletBalance(w.balance || 0);
-        // Balans bo'lsa avtomatik yoqamiz — foydalanuvchi istasa o'chiradi
-        setUseWallet((w.balance || 0) > 0);
+        const b = w.balance || 0;
+        setWalletBalance(b);
+        // Balans bo'lsa avtomatik yoqamiz va butun balansni belgilaymiz —
+        // foydalanuvchi istagan summagacha kamlitishi mumkin
+        setUseWallet(b > 0);
+        setWalletInput(b > 0 ? String(b) : '');
       }).catch(() => setWalletBalance(0));
     }
   }, [isOpen]);
@@ -118,9 +123,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     : course.price;
   const promoPrice = promoInfo ? promoInfo.final_price : basePrice;
   const hasPromo = !!promoInfo;
-  // Hamyon: balans va joriy to'lanadigan summadan kichigini yechamiz
-  const walletSpend = useWallet ? Math.min(walletBalance, promoPrice) : 0;
+  // Hamyon: foydalanuvchi belgilagan summa (balans va to'lanadigan summa bilan cheklangan)
+  const walletMax = Math.min(walletBalance, promoPrice);
+  const walletSpend = useWallet ? Math.max(0, Math.min(parseInt(walletInput) || 0, walletMax)) : 0;
   const finalPrice = promoPrice - walletSpend;
+
+  // Promokod qo'llanganda wallet summasi yangi chegaraga sig'ishi kerak
+  React.useEffect(() => {
+    const cur = parseInt(walletInput) || 0;
+    if (cur > walletMax) setWalletInput(String(walletMax));
+    if (cur < walletMax && cur === walletBalance) setWalletInput(String(walletMax));
+  }, [promoPrice, walletBalance]);
 
   const handleApplyPromo = async () => {
     const code = promoInput.trim();
@@ -175,7 +188,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         username: user?.username || 'user',
         telegram_id: user?.id || 0,
         promo_code: promoInfo?.code || undefined,
-        use_wallet: walletSpend > 0
+        wallet_amount: walletSpend > 0 ? walletSpend : undefined,
+        use_wallet: walletSpend > 0 ? undefined : false
       });
 
       haptic?.notification?.('success');
@@ -333,26 +347,51 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 )}
               </div>
 
-              {/* Hamyon bloki — balans bo'lsa ko'rinadi */}
+              {/* Hamyon bloki — balans bo'lsa ko'rinadi; summani o'zi belgilaydi */}
               {walletBalance > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => { haptic?.selection?.(); setUseWallet(v => !v); }}
-                  className={`w-full flex items-center justify-between rounded-[18px] p-3 border transition-all active:scale-[0.98] ${
-                    useWallet
-                      ? 'border-emerald-400/60 bg-emerald-50'
-                      : 'border-slate-200 bg-white hover:border-emerald-300'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-ink">
-                    <Wallet className={`w-4 h-4 ${useWallet ? 'text-emerald-500' : 'text-slate-400'}`} />
-                    {t('Hamyondan to‘lash')}
-                    <span className="text-ink-muted font-bold">· {formatPrice(walletBalance)}</span>
-                  </span>
-                  <span className={`w-9 h-5 rounded-full p-0.5 transition-colors ${useWallet ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                    <span className={`block w-4 h-4 rounded-full bg-white transition-transform ${useWallet ? 'translate-x-4' : ''}`} />
-                  </span>
-                </button>
+                <div className={`rounded-[18px] p-3 border space-y-2.5 transition-all ${
+                  useWallet ? 'border-emerald-400/60 bg-emerald-50' : 'border-slate-200 bg-white'
+                }`}>
+                  <button
+                    type="button"
+                    onClick={() => { haptic?.selection?.(); setUseWallet(v => !v); }}
+                    className="w-full flex items-center justify-between active:scale-[0.98] transition-transform"
+                  >
+                    <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-ink">
+                      <Wallet className={`w-4 h-4 ${useWallet ? 'text-emerald-500' : 'text-slate-400'}`} />
+                      {t('Hamyondan to‘lash')}
+                      <span className="text-ink-muted font-bold">· {formatPrice(walletBalance)}</span>
+                    </span>
+                    <span className={`w-9 h-5 rounded-full p-0.5 transition-colors ${useWallet ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                      <span className={`block w-4 h-4 rounded-full bg-white transition-transform ${useWallet ? 'translate-x-4' : ''}`} />
+                    </span>
+                  </button>
+
+                  {useWallet ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        max={walletMax}
+                        value={walletInput}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value) || 0;
+                          setWalletInput(String(Math.max(0, Math.min(v, walletMax))));
+                        }}
+                        placeholder="0"
+                        className="flex-1 min-w-0 bg-white border border-emerald-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-700 tabular-nums outline-none focus:border-emerald-400"
+                      />
+                      <span className="text-[10px] font-bold text-slate-500 flex-shrink-0">{t("so'm")}</span>
+                      <button
+                        type="button"
+                        onClick={() => { haptic?.selection?.(); setWalletInput(String(walletMax)); }}
+                        className="px-2.5 py-2 rounded-xl bg-emerald-100 text-emerald-700 text-[10px] font-extrabold active:scale-95 transition-transform flex-shrink-0"
+                      >
+                        {t('Hammasi')}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
 
               {/* Bank Card Info Card */}

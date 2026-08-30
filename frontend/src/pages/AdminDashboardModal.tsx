@@ -36,7 +36,8 @@ import {
   Layers,
   Percent,
   TicketPercent,
-  Gift
+  Gift,
+  Scale
 } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
 import { api, toMediaUrl } from '../services/api';
@@ -50,13 +51,14 @@ interface AdminDashboardModalProps {
   adminName: string;
 }
 
-type AdminTab = 'receipts' | 'courses' | 'banners' | 'stats' | 'students' | 'broadcast' | 'settings' | 'promos';
+type AdminTab = 'receipts' | 'courses' | 'banners' | 'promos' | 'accounts' | 'stats' | 'students' | 'broadcast' | 'settings';
 
 const TABS: { id: AdminTab; label: string; icon: typeof Clock }[] = [
   { id: 'receipts', label: 'Cheklar', icon: ReceiptText },
   { id: 'courses', label: 'Kurslar', icon: BookOpen },
   { id: 'banners', label: 'Bannerlar', icon: ImageIcon },
   { id: 'promos', label: 'Promolar', icon: TicketPercent },
+  { id: 'accounts', label: 'Hisoblar', icon: Scale },
   { id: 'stats', label: 'Statistika', icon: TrendingUp },
   { id: 'students', label: 'Talabalar', icon: Users },
   { id: 'broadcast', label: 'Broadcast', icon: Megaphone },
@@ -114,6 +116,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [newMsCount, setNewMsCount] = useState('');
   const [newMsTitle, setNewMsTitle] = useState('');
   const [newMsCourse, setNewMsCourse] = useState('');
+
+  // Hisoblar (hamyon + referal daraxti)
+  const [walletAccounts, setWalletAccounts] = useState<any[]>([]);
+  const [walletsTotal, setWalletsTotal] = useState(0);
+  const [walletsUsersCount, setWalletsUsersCount] = useState(0);
+  const [accountsSearch, setAccountsSearch] = useState('');
 
   // AI Course Generator States
   const [aiTopic, setAiTopic] = useState('');
@@ -239,6 +247,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         setRefCashbackPercent(String(rs.cashback_percent ?? 0));
         setRefMilestones(Array.isArray(rs.milestones) ? rs.milestones : []);
         setGiftCourses(Array.isArray(rs.gift_courses) ? rs.gift_courses : []);
+      }).catch(() => {});
+      api.getAdminWallets().then((wa: any) => {
+        setWalletAccounts(Array.isArray(wa?.accounts) ? wa.accounts : []);
+        setWalletsTotal(wa?.total_balance || 0);
+        setWalletsUsersCount(wa?.users_with_balance || 0);
       }).catch(() => {});
     } catch (e: any) {
       showError(e?.message || 'Ma\'lumotlarni yuklashda xatolik');
@@ -2247,6 +2260,96 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       );
                     })
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: HISOBLAR (hamyon + referal daraxti) */}
+            {activeTab === 'accounts' && (
+              <div className="space-y-3">
+                {/* Umumiy xulosa */}
+                <div className="p-3.5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] font-bold text-emerald-700/70 block">Hamyonlarda jami</span>
+                    <b className="text-lg font-extrabold text-emerald-600 tabular-nums">
+                      {walletsTotal.toLocaleString('ru-RU')} so'm
+                    </b>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-emerald-700/70 block">Balansi bor userlar</span>
+                    <b className="text-lg font-extrabold text-emerald-600 tabular-nums">{walletsUsersCount}</b>
+                  </div>
+                </div>
+
+                {/* Qidiruv */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    value={accountsSearch}
+                    onChange={(e) => setAccountsSearch(e.target.value)}
+                    placeholder="Ism yoki @username bo'yicha qidirish..."
+                    className="glass-input w-full pl-9 text-xs"
+                  />
+                </div>
+
+                {/* Ro'yxat */}
+                <div className="space-y-2">
+                  {walletAccounts
+                    .filter((a: any) => {
+                      const q = accountsSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return (a.name || '').toLowerCase().includes(q) || (a.username || '').toLowerCase().includes(q);
+                    })
+                    .map((a: any) => (
+                    <div key={a.id} className="p-3 bg-white border border-slate-200/90 rounded-2xl space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0">
+                          <b className="text-xs font-bold text-slate-900 block truncate">{a.name}</b>
+                          <span className="text-[10px] text-slate-500">@{a.username || 'yo\'q'} • ID: {a.telegram_id}</span>
+                        </div>
+                        <b className={`text-[14px] font-extrabold tabular-nums flex-shrink-0 ${a.wallet_balance > 0 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                          {(a.wallet_balance || 0).toLocaleString('ru-RU')} so'm
+                        </b>
+                      </div>
+
+                      {/* Referal daraxt */}
+                      <div className="pt-1.5 border-t border-slate-100 space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-slate-500">👥 Taklif qilgan do'stlari:</span>
+                          {a.invited_count > 0 ? (
+                            <>
+                              <span className="text-[10px] font-extrabold text-violet-600">{a.invited_count} ta</span>
+                              {a.invited.slice(0, 4).map((inv: any) => (
+                                <span key={inv.id} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${inv.bought ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                  {inv.name}{inv.bought ? ' ✓' : ''}
+                                </span>
+                              ))}
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">yo'q</span>
+                          )}
+                        </div>
+                        {a.referred_by ? (
+                          <p className="text-[10px] text-slate-500">
+                            🔗 Taklif qilgan: <b className="text-slate-700">{a.referred_by.name}</b> @{a.referred_by.username || 'yo\'q'}
+                          </p>
+                        ) : null}
+                        {(a.last_wallet_actions || []).length > 0 ? (
+                          <div className="space-y-0.5 pt-1">
+                            {a.last_wallet_actions.map((h: any, hi: number) => (
+                              <div key={hi} className="flex items-center justify-between gap-2">
+                                <span className="text-[9px] text-slate-400 truncate">{h.note || h.type}</span>
+                                <span className={`text-[9px] font-bold tabular-nums flex-shrink-0 ${h.delta > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {h.delta > 0 ? '+' : ''}{(h.delta || 0).toLocaleString('ru-RU')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
