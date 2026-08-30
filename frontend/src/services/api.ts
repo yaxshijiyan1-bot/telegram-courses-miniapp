@@ -405,6 +405,7 @@ class ApiService {
     username: string;
     telegram_id: number;
     promo_code?: string;
+    use_wallet?: boolean;
   }): Promise<{ success: boolean; message: string }> {
     const res = await fetch(`${API_BASE_URL}/checkout/submit-receipt`, {
       method: 'POST',
@@ -432,7 +433,15 @@ class ApiService {
     return data;
   }
 
-  async getReferralInfo(): Promise<{ code: string; link: string; invited_count: number; buyers_count: number; reward_codes: { code: string; percent: number; used: boolean }[]; reward_percent: number; invitee_percent: number; bot_username: string; milestones?: ReferralMilestone[] }> {
+  // ===== HAMYON =====
+
+  async getWallet(): Promise<{ balance: number; history: { id: string; amount: number; type: string; note: string; created_at: string }[] }> {
+    const res = await fetch(`${API_BASE_URL}/student/wallet`, { headers: this.getHeaders() });
+    if (!res.ok) throw new Error('Hamyon ma\'lumotini olishda xatolik');
+    return await res.json();
+  }
+
+  async getReferralInfo(): Promise<{ code: string; link: string; invited_count: number; buyers_count: number; reward_codes: { code: string; percent: number; used: boolean }[]; reward_percent: number; invitee_percent: number; cashback_percent?: number; bot_username: string; milestones?: ReferralMilestone[] }> {
     const res = await fetch(`${API_BASE_URL}/student/referral`, { headers: this.getHeaders() });
     if (!res.ok) throw new Error('Referal ma\'lumotini olishda xatolik');
     return await res.json();
@@ -465,11 +474,11 @@ class ApiService {
   }
 
   // Admin: referal sozlamalari va sovg'alar
-  async getReferralSettings(): Promise<{ reward_percent: number; invitee_percent: number; milestones: ReferralMilestone[]; gift_courses: { id: string; title: string }[] }> {
+  async getReferralSettings(): Promise<{ reward_percent: number; invitee_percent: number; cashback_percent?: number; milestones: ReferralMilestone[]; gift_courses: { id: string; title: string }[] }> {
     return this.adminFetch('/admin/referral-settings');
   }
 
-  async updateReferralSettings(payload: { reward_percent: number; invitee_percent: number; milestones: ReferralMilestone[] }): Promise<{ success: boolean; message: string }> {
+  async updateReferralSettings(payload: { reward_percent: number; invitee_percent: number; cashback_percent?: number; milestones: ReferralMilestone[] }): Promise<{ success: boolean; message: string }> {
     return this.adminFetch('/admin/referral-settings', { method: 'PUT', body: JSON.stringify(payload) });
   }
 

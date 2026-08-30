@@ -785,6 +785,7 @@ class _MilestonePayload(_RM):
 class _ReferralSettingsRequest(_RM):
     reward_percent: int
     invitee_percent: int
+    cashback_percent: int = 0
     milestones: _List[_MilestonePayload] = []
 
 
@@ -827,5 +828,5 @@ async def admin_save_referral_settings(req: _ReferralSettingsRequest, admin: dic
             })
         else:
             raise HTTPException(status_code=400, detail="Noma'lum sovg'a turi")
-    saved = await _ref_settings_set(store, req.reward_percent, req.invitee_percent, milestones)
+    saved = await _ref_settings_set(store, req.reward_percent, req.invitee_percent, milestones, req.cashback_percent)
     return {"success": True, "message": "Referal sozlamalari saqlandi", "settings": saved}

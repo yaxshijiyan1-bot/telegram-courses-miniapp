@@ -22,6 +22,7 @@ class SubmitReceiptRequest(BaseModel):
     receipt_image: str  # Base64 (data:image...) yoki URL
     comment: Optional[str] = None
     promo_code: Optional[str] = None
+    use_wallet: Optional[bool] = False  # hamyondagi balansdan foydalanish
 
 # Oddiy rate-limit: bir IP dan 1 daqiqada 6 tagacha chek
 _submit_times: dict = {}
@@ -162,7 +163,28 @@ async def submit_receipt(
         amount = apply_percent(amount, promo_entry["percent"])
         promo_note = f"promo:{promo_entry['code']}"
 
+    # Hamyon: balansdagi summa xaridga qo'llanadi. Yechirish HOZIR (submit
+    # paytida) bajariladi — chek rad etilsa reject oqimida avtomatik qaytadi.
+    wallet_spend = 0
+    if req.use_wallet and user_id:
+        from app.services import wallet as wallet_service
+        try:
+            wallet = await wallet_service.get_wallet(store, user_id)
+            spendable = min(wallet["balance"], amount)
+            if spendable > 0:
+                ok, _new_balance = await wallet_service.try_debit(
+                    store, user_id, spendable, "spend",
+                    f"Kurs xaridi: {course['title']}", order_id
+                )
+                if ok:
+                    wallet_spend = spendable
+                    amount = amount - spendable
+        except Exception:
+            logger.exception("Hamyon yechishda xato (user=%s)", user_id)
+
     comment_parts = [p for p in [req.comment, promo_note] if p]
+    if wallet_spend > 0:
+        comment_parts.append(f"wallet:{wallet_spend}")
     comment_text = " | ".join(comment_parts) if comment_parts else None
 
     await store.create_purchase({

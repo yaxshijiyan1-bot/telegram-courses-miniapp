@@ -48,14 +48,17 @@ def _api_url(method: str) -> str:
 
 
 async def _notify_student(
-    telegram_id: Optional[int], text: str, invite_link: Optional[str] = None
+    telegram_id: Optional[int], text: str, invite_link: Optional[str] = None,
+    reply_markup: Optional[dict] = None
 ) -> None:
     """Talabaga himoyalangan Telegram xabarini yuboradi; yuborish xatosi oqimni buzmaydi."""
     if not telegram_id or not settings.BOT_TOKEN:
         return
 
     buttons = []
-    if invite_link:
+    if reply_markup:
+        buttons = reply_markup.get("inline_keyboard") or []
+    elif invite_link:
         buttons.append([{"text": "📢 Yopiq dars kanaliga kirish", "url": invite_link}])
     buttons.append(
         [{"text": "🚀 Mini Appda darslarni ko'rish", "web_app": {"url": settings.WEBAPP_URL}}]
@@ -153,10 +156,10 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
         except Exception:
             logger.exception("Promokod sarflashda xato (%s)", promo_code)
 
-    # Referal mukofoti — xarid tasdiqlanganda referrerga bir martalik kod
+    # Referal mukofoti — xarid tasdiqlanganda referrerga hamyon kirim yoki kod
     referral_bonus = None
     try:
-        referral_bonus = await reward_referrer(store, user_id)
+        referral_bonus = await reward_referrer(store, user_id, purchase.get("amount"))
     except Exception:
         logger.exception("Referal mukofoti oqimida xato")
 
@@ -226,17 +229,32 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
         invite_link=invite_link,
     )
 
-    # Referrerga bot orqali xabar (mukofot kodi reward_referrer ichida yaratilgan)
+    # Referrerga bot orqali xabar (hamyon kirim yoki promokod)
     if referral_bonus and referral_bonus.get("referrer_telegram_id"):
         try:
             buyer_name = html.escape(str(purchase.get("student_name") or "Do'stingiz"))
-            await _notify_student(
-                int(referral_bonus["referrer_telegram_id"]),
-                "🎁 <b>Referal mukofoti!</b>\n\n"
-                f"<b>{buyer_name}</b> sizning havolangiz orqali kurs sotib oldi.\n"
-                f"Sizga bir martalik <b>−{int(referral_bonus['percent'])}%</b> promokod berildi:\n"
-                f"<code>{referral_bonus['code']}</code>",
-            )
+            if referral_bonus.get("kind") == "cash":
+                body = (
+                    "💰 <b>Hamyoningizga kirim!</b>\n\n"
+                    f"<b>{buyer_name}</b> sizning havolangiz orqali kurs sotib oldi.\n"
+                    f"Hamyoningizga <b>+{int(referral_bonus['amount']):,} so'm</b> qo'shildi.\n\n"
+                    "Bu summani keyingi kurs xaridlarida to'lov sifatida ishlatishingiz mumkin."
+                ).replace(",", " ")
+            elif referral_bonus.get("kind") == "promo":
+                body = (
+                    "🎁 <b>Referal mukofoti!</b>\n\n"
+                    f"<b>{buyer_name}</b> sizning havolangiz orqali kurs sotib oldi.\n"
+                    f"Sizga bir martalik <b>−{int(referral_bonus['percent'])}%</b> promokod berildi:\n"
+                    f"<code>{referral_bonus['code']}</code>"
+                )
+            else:
+                body = ""
+            if body:
+                await _notify_student(
+                    int(referral_bonus["referrer_telegram_id"]),
+                    body,
+                    {"inline_keyboard": [[{"text": "🚀 Mini Appni ochish", "web_app": {"url": settings.WEBAPP_URL}}]]},
+                )
         except (TypeError, ValueError):
             logger.warning("Referrer bot xabari yuborilmadi (noto'g'ri telegram_id)")
 
@@ -278,6 +296,35 @@ async def reject_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, s
     )
     if not claimed:
         return False, "Chek holati o'zgargan; ro'yxatni yangilang"
+
+    # Chek rad etilsa — submit paytida hamyondan yechirilgan summa qaytariladi.
+    # Yechirilganlik belgisi: comment oxiridagi "wallet:<summa>" izohida.
+    comment = str(purchase.get("comment") or "")
+    if "wallet:" in comment:
+        try:
+            spent = int(comment.split("wallet:", 1)[1].split()[0].strip() or 0)
+        except (IndexError, ValueError):
+            spent = 0
+        if spent > 0 and purchase.get("user_id"):
+            from app.services import wallet as wallet_service
+            try:
+                refunded = await wallet_service.credit(
+                    store, str(purchase["user_id"]), spent, "refund",
+                    "Chek rad etildi — hamyon summasi qaytarildi",
+                    f"refund_{purchase.get('transaction_id') or purchase['id']}",
+                )
+                if refunded is not None:
+                    try:
+                        await store.create_notification(
+                            purchase["user_id"],
+                            "Hamyon summasi qaytarildi 💰",
+                            f"{spent:,} so'm hamyoningizga qaytarildi.".replace(",", " "),
+                            "info",
+                        )
+                    except Exception:
+                        pass
+            except Exception:
+                logger.exception("Hamyon qaytarishda xato (purchase=%s)", purchase.get("id"))
 
     if purchase.get("user_id"):
         await store.create_notification(

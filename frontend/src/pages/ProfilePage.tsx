@@ -16,6 +16,7 @@ import {
   X,
   Settings2,
   Users,
+  Wallet,
 } from 'lucide-react';
 import { Certificate, NotificationItem } from '../types';
 import { useTelegram } from '../context/TelegramContext';
@@ -48,6 +49,11 @@ const item = {
 // referrerga bir martalik foizli mukofot promokodi beriladi.
 const FALLBACK_INVITE_URL = 'https://telegram-courses-miniapp2.pages.dev';
 const INVITE_TEXT = "Kreativ AI — bilim qiymatga aylanadi. Kurslarni ko'rib chiq!";
+
+interface WalletInfo {
+  balance: number;
+  history: { id: string; amount: number; type: string; note: string; created_at: string }[];
+}
 
 interface ReferralInfo {
   code: string;
@@ -83,9 +89,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   // Referal ma'lumotlari
   const [referral, setReferral] = useState<ReferralInfo | null>(null);
   const [refCopied, setRefCopied] = useState(false);
+  // Hamyon
+  const [wallet, setWallet] = useState<WalletInfo | null>(null);
 
   useEffect(() => {
     api.getReferralInfo().then(setReferral).catch(() => {});
+    api.getWallet().then(setWallet).catch(() => {});
   }, []);
 
   const inviteLink = referral?.link || FALLBACK_INVITE_URL;
@@ -220,6 +229,39 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </a>
         </div>
       </motion.div>
+
+      {/* Hamyon — referal daromadlari balansi (kurs xaridida to'lov sifatida sarflanadi) */}
+      {wallet && wallet.balance > 0 ? (
+        <motion.div variants={item} className="glass rounded-[22px] p-4 space-y-3 relative overflow-hidden">
+          <div className="absolute -right-10 -top-14 w-36 h-36 blob blob-cyan pointer-events-none" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                <Wallet className="w-[18px] h-[18px]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <b className="text-[12px] font-extrabold text-ink block leading-tight">{t('Mening hamyonim')}</b>
+                <span className="text-[10px] text-ink-muted">{t('Kurs xaridlarida to‘lov sifatida ishlaydi')}</span>
+              </div>
+            </div>
+            <b className="text-[15px] font-extrabold text-emerald-500 tabular-nums">
+              {wallet.balance.toLocaleString('ru-RU')} {t("so'm")}
+            </b>
+          </div>
+          {wallet.history.length > 0 ? (
+            <div className="space-y-1 pt-2 border-t border-white/[0.06]">
+              {wallet.history.slice(0, 3).map((h) => (
+                <div key={h.id} className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-ink-muted truncate">{h.note || t('Harakat')}</span>
+                  <span className={`text-[10px] font-extrabold tabular-nums flex-shrink-0 ${h.amount > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {h.amount > 0 ? '+' : ''}{h.amount.toLocaleString('ru-RU')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </motion.div>
+      ) : null}
 
       {/* Do'stlarni taklif qilish — shaxsiy referal havola + mukofot */}
       <motion.div variants={item} className="relative overflow-hidden rounded-[22px] p-4 space-y-3 text-white"

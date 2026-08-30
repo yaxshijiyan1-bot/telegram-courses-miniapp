@@ -58,6 +58,7 @@ def _default_referral_settings() -> Dict[str, Any]:
     return {
         "reward_percent": REFERRAL_REWARD_PERCENT,
         "invitee_percent": REFERRAL_INVITEE_PERCENT,
+        "cashback_percent": 0,
         "milestones": [],
     }
 
@@ -67,10 +68,10 @@ async def get_referral_settings(store) -> Dict[str, Any]:
     merged = _default_referral_settings()
     data = await _get_json(store, KEY_REF_SETTINGS, {})
     if isinstance(data, dict):
-        for key in ("reward_percent", "invitee_percent"):
+        for key in ("reward_percent", "invitee_percent", "cashback_percent"):
             try:
                 if data.get(key) is not None:
-                    merged[key] = max(1, min(90, int(data[key])))
+                    merged[key] = max(0, min(90, int(data[key])))
             except (TypeError, ValueError):
                 pass
         if isinstance(data.get("milestones"), list):
@@ -81,11 +82,13 @@ async def get_referral_settings(store) -> Dict[str, Any]:
 
 
 async def set_referral_settings(
-    store, reward_percent: int, invitee_percent: int, milestones: List[Dict[str, Any]]
+    store, reward_percent: int, invitee_percent: int, milestones: List[Dict[str, Any]],
+    cashback_percent: int = 0
 ) -> Dict[str, Any]:
     merged = _default_referral_settings()
     merged["reward_percent"] = max(1, min(90, int(reward_percent)))
     merged["invitee_percent"] = max(1, min(90, int(invitee_percent)))
+    merged["cashback_percent"] = max(0, min(90, int(cashback_percent)))
     merged["milestones"] = sorted(
         [m for m in milestones if isinstance(m, dict) and m.get("id")],
         key=lambda m: int(m.get("invited_count") or 0),
@@ -406,10 +409,13 @@ async def grant_milestone_gifts(store, referrer_user_id: str) -> List[Dict[str, 
     return granted_out
 
 
-async def reward_referrer(store, buyer_user_id: Optional[str]) -> Optional[Dict[str, Any]]:
-    """Xarid tasdiqlanganda referrerga bir martalik foizli mukofot kodini yaratadi.
+async def reward_referrer(store, buyer_user_id: Optional[str], purchase_amount: Any = 0) -> Optional[Dict[str, Any]]:
+    """Xarid tasdiqlanganda referrerga mukofot beradi.
 
-    Qaytaradi: {referrer_telegram_id, referrer_name, code, percent} yoki None.
+    Admin cashback_percent > 0 qo'ysa — do'st xaridi summasining shu foizi
+    referrerning HAMYONIGA so'm sifatida tushadi (keyingi xaridlarda sarflash uchun).
+    Aks holda eski xatti-harakat: bir martalik promokod.
+    Qaytaradi: {referrer_telegram_id, referrer_name, kind, code?, percent?, amount?} yoki None.
     """
     if not buyer_user_id:
         return None
@@ -423,42 +429,65 @@ async def reward_referrer(store, buyer_user_id: Optional[str]) -> Optional[Dict[
         if str(buyer_user_id) in done:
             return None
 
-        code_obj, _ = await create_code(
-            store,
-            _gen_code("GIFT"),
-            REFERRAL_REWARD_PERCENT,
-            max_uses=1,
-            note=f"Referal mukofoti ({buyer_user_id[:8]})",
-            auto=True,
-        )
-        # Mukofot kodi faqat egasiga ishlashi uchun owner belgilaymiz (statistika uchun)
-        codes = await _get_json(store, KEY_PROMOS, [])
-        for c in codes:
-            if c.get("code") == code_obj["code"]:
-                c["owner"] = str(referrer_id)
-        await _set_json(store, KEY_PROMOS, codes)
+        cfg = await get_referral_settings(store)
+        cashback_pct = int(cfg.get("cashback_percent") or 0)
+        result: Dict[str, Any] = {"referrer_user_id": referrer_id}
+
+        if cashback_pct > 0:
+            from app.services import wallet as wallet_service
+            try:
+                amount = int(purchase_amount or 0)
+            except (TypeError, ValueError):
+                amount = 0
+            cash = round(amount * cashback_pct / 100)
+            if cash > 0:
+                tx = f"refcb_{buyer_user_id[:12]}_{uuid.uuid4().hex[:6]}"
+                # Takroriy kirim himoyasi (idempotent)
+                if not await wallet_service.has_tx(store, referrer_id, tx):
+                    credited = await wallet_service.credit(
+                        store, referrer_id, cash, "earn_referral",
+                        f"Do'stingiz xaridi uchun +{cash:,} so'm (−{cashback_pct}%)".replace(",", " "),
+                        tx,
+                    )
+                    if credited is not None:
+                        result.update({"kind": "cash", "amount": cash, "percent": cashback_pct})
+                        try:
+                            await store.create_notification(
+                                str(referrer_id),
+                                "Hamyoningizga daromad 💰",
+                                f"Do'stingiz kurs sotib oldi — {cash:,} so'm hamyoningizga qo'shildi.".replace(",", " "),
+                                "success",
+                            )
+                        except Exception:
+                            logger.exception("Hamyon bildirishnomasi yozilmadi")
+            if "kind" not in result:
+                # Cash 0 bo'lsa ham referal hisoblangan deb belgilaymiz
+                result = {"referrer_user_id": referrer_id, "kind": "none"}
+        else:
+            code_obj, _ = await create_code(
+                store,
+                _gen_code("GIFT"),
+                cfg.get("reward_percent", REFERRAL_REWARD_PERCENT),
+                max_uses=1,
+                note=f"Referal mukofoti ({buyer_user_id[:8]})",
+                auto=True,
+            )
+            # Mukofot kodi faqat egasiga ishlashi uchun owner belgilaymiz (statistika uchun)
+            codes = await _get_json(store, KEY_PROMOS, [])
+            for c in codes:
+                if c.get("code") == code_obj["code"]:
+                    c["owner"] = str(referrer_id)
+            await _set_json(store, KEY_PROMOS, codes)
+            result.update({"kind": "promo", "code": code_obj["code"], "percent": cfg.get("reward_percent", REFERRAL_REWARD_PERCENT)})
 
         done.append(str(buyer_user_id))
         rewarded[str(referrer_id)] = done
         await _set_json(store, KEY_REF_REWARDED, rewarded)
 
         referrer = await store.get_user(str(referrer_id)) or {}
-        try:
-            await store.create_notification(
-                str(referrer_id),
-                "Referal mukofoti 🎁",
-                f"Do'stingiz kurs sotib oldi! Sizga bir martalik −{REFERRAL_REWARD_PERCENT}% promokod: {code_obj['code']}",
-                "success",
-            )
-        except Exception:
-            logger.exception("Referrer bildirishnomasi yozilmadi")
-
-        return {
-            "referrer_telegram_id": referrer.get("telegram_id"),
-            "referrer_name": referrer.get("name") or "Do'stingiz",
-            "code": code_obj["code"],
-            "percent": REFERRAL_REWARD_PERCENT,
-        }
+        result["referrer_telegram_id"] = referrer.get("telegram_id")
+        result["referrer_name"] = referrer.get("name") or "Do'stingiz"
+        return result
     except Exception:
         logger.exception("Referal mukofoti berishda xato")
         return None

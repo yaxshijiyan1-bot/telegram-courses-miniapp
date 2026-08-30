@@ -108,6 +108,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   // Referal sozlamalari (foizlar + sovg'a milestone'lari)
   const [refRewardPercent, setRefRewardPercent] = useState('15');
   const [refInviteePercent, setRefInviteePercent] = useState('10');
+  const [refCashbackPercent, setRefCashbackPercent] = useState('0');
   const [refMilestones, setRefMilestones] = useState<any[]>([]);
   const [giftCourses, setGiftCourses] = useState<{ id: string; title: string }[]>([]);
   const [newMsCount, setNewMsCount] = useState('');
@@ -235,6 +236,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       api.getReferralSettings().then((rs: any) => {
         setRefRewardPercent(String(rs.reward_percent ?? 15));
         setRefInviteePercent(String(rs.invitee_percent ?? 10));
+        setRefCashbackPercent(String(rs.cashback_percent ?? 0));
         setRefMilestones(Array.isArray(rs.milestones) ? rs.milestones : []);
         setGiftCourses(Array.isArray(rs.gift_courses) ? rs.gift_courses : []);
       }).catch(() => {});
@@ -339,6 +341,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const res = await api.updateReferralSettings({
         reward_percent: parseInt(refRewardPercent) || 15,
         invitee_percent: parseInt(refInviteePercent) || 10,
+        cashback_percent: parseInt(refCashbackPercent) || 0,
         milestones: refMilestones
       });
       showNotification(res.message || 'Referal sozlamalari saqlandi!');
@@ -2416,7 +2419,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
 
                   {/* Foizlar */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-slate-600 block">Do'st sotib olganda mukofot (%)</label>
                       <input
@@ -2439,7 +2442,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         className="glass-input w-full font-mono text-xs"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 block">Hamyonga cashback (%)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={90}
+                        value={refCashbackPercent}
+                        onChange={(e) => setRefCashbackPercent(e.target.value)}
+                        className="glass-input w-full font-mono text-xs"
+                      />
+                    </div>
                   </div>
+                  <p className="text-[10px] leading-snug text-slate-500 -mt-2">
+                    <b>Cashback</b> — do'st xaridining shu foizi referrerning <b>hamyoniga so'm</b> sifatida tushadi
+                    (keyingi kurs xaridlarida to'lov sifatida sarflanadi). 0 bo'lsa — eski tizim: bir martalik promokod beriladi.
+                  </p>
 
                   {/* Mavjud milestone'lar */}
                   <div className="space-y-2">

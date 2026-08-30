@@ -386,3 +386,29 @@ async def apply_referral_code(req: _ApplyReferralRequest, current_user: dict = D
         "bonus_code": bonus["code"] if bonus else None,
         "bonus_percent": bonus["percent"] if bonus else None,
     }
+
+# ---------------- HAMYON ----------------
+
+from app.services import wallet as _wallet_service
+
+
+@router.get("/wallet")
+async def get_my_wallet(current_user: dict = Depends(get_current_user)):
+    """Foydalanuvchi hamyoni: balans (so'mda) va oxirgi harakatlar.
+
+    Balans faqat kurs xaridlarida to'lov sifatida sarflanadi; pul o'tkazib
+    bo'lmaydi (ichki qiymat).
+    """
+    store = get_store()
+    user_id = current_user.get("sub")
+    w = await _wallet_service.get_wallet(store, user_id)
+    history = []
+    for e in reversed(w["history"][-15:]):  # eng yangi birinchi
+        history.append({
+            "id": e.get("id"),
+            "amount": e.get("delta"),
+            "type": e.get("type"),
+            "note": e.get("note") or "",
+            "created_at": _fmt_date(e.get("created_at")),
+        })
+    return {"balance": w["balance"], "history": history}

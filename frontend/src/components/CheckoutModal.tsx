@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Sparkles,
   TicketPercent,
+  Wallet,
 } from 'lucide-react';
 import { Course } from '../types';
 import { api, toMediaUrl } from '../services/api';
@@ -51,6 +52,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [promoApplying, setPromoApplying] = useState(false);
   const [promoInfo, setPromoInfo] = useState<{ code: string; percent: number; final_price: number } | null>(null);
   const [promoError, setPromoError] = useState('');
+  // Hamyon holati
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [useWallet, setUseWallet] = useState(false);
   const { haptic, user } = useTelegram();
   const { t } = useSettings();
 
@@ -76,6 +80,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setPromoInput('');
       setPromoInfo(null);
       setPromoError('');
+      setUseWallet(false);
+      api.getWallet().then(w => setWalletBalance(w.balance || 0)).catch(() => setWalletBalance(0));
     }
   }, [isOpen]);
 
@@ -106,8 +112,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const basePrice = course.discount_active && course.final_price != null && course.final_price < course.price
     ? course.final_price
     : course.price;
-  const finalPrice = promoInfo ? promoInfo.final_price : basePrice;
+  const promoPrice = promoInfo ? promoInfo.final_price : basePrice;
   const hasPromo = !!promoInfo;
+  // Hamyon: balans va joriy to'lanadigan summadan kichigini yechamiz
+  const walletSpend = useWallet ? Math.min(walletBalance, promoPrice) : 0;
+  const finalPrice = promoPrice - walletSpend;
 
   const handleApplyPromo = async () => {
     const code = promoInput.trim();
@@ -161,7 +170,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         student_name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Talaba',
         username: user?.username || 'user',
         telegram_id: user?.id || 0,
-        promo_code: promoInfo?.code || undefined
+        promo_code: promoInfo?.code || undefined,
+        use_wallet: walletSpend > 0
       });
 
       haptic?.notification?.('success');
@@ -319,6 +329,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 )}
               </div>
 
+              {/* Hamyon bloki — balans bo'lsa ko'rinadi */}
+              {walletBalance > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => { haptic?.selection?.(); setUseWallet(v => !v); }}
+                  className={`w-full flex items-center justify-between rounded-[18px] p-3 border transition-all active:scale-[0.98] ${
+                    useWallet
+                      ? 'border-emerald-400/60 bg-emerald-50'
+                      : 'border-slate-200 bg-white hover:border-emerald-300'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-ink">
+                    <Wallet className={`w-4 h-4 ${useWallet ? 'text-emerald-500' : 'text-slate-400'}`} />
+                    {t('Hamyondan to‘lash')}
+                    <span className="text-ink-muted font-bold">· {formatPrice(walletBalance)}</span>
+                  </span>
+                  <span className={`w-9 h-5 rounded-full p-0.5 transition-colors ${useWallet ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                    <span className={`block w-4 h-4 rounded-full bg-white transition-transform ${useWallet ? 'translate-x-4' : ''}`} />
+                  </span>
+                </button>
+              ) : null}
+
               {/* Bank Card Info Card */}
               <div className="glass rounded-[22px] p-4 space-y-3.5 border border-slate-200/90 shadow-sm">
                 <div className="flex items-center justify-between">
@@ -360,10 +392,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       </span>
                     </div>
                   ) : null}
+                  {walletSpend > 0 ? (
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>{t('Hamyon:')}</span>
+                      <span className="font-extrabold text-emerald-600">
+                        −{formatPrice(walletSpend)}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between text-slate-600">
                     <span>{t('To‘lov summasi:')}</span>
                     <span className="font-extrabold text-base text-cyan tabular-nums">{formatPrice(finalPrice)}</span>
                   </div>
+                  {walletSpend > 0 && finalPrice === 0 ? (
+                    <p className="text-[10px] font-semibold text-emerald-600 leading-snug pt-1">
+                      ✅ {t("To'lov hamyon bilan to'liq qoplandi! Chek o'rniga shu holatni tasdiqlash uchun har qanday skrinshot yuboring (masalan, shu oyna).")}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
