@@ -400,14 +400,14 @@ class ApiService {
     course_title: string;
     amount: number;
     payment_method: string;
-    receipt_image: string;
+    receipt_image?: string;
     student_name: string;
     username: string;
     telegram_id: number;
     promo_code?: string;
     use_wallet?: boolean;
     wallet_amount?: number;
-  }): Promise<{ success: boolean; message: string }> {
+  }): Promise<{ success: boolean; message: string; auto_enrolled?: boolean }> {
     const res = await fetch(`${API_BASE_URL}/checkout/submit-receipt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...this.getHeaders() },

@@ -146,9 +146,10 @@ async def approve_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, 
     # rad etilsa kod foydalanilmagan bo'lib qoladi.
     promo_code = ""
     comment = str(purchase.get("comment") or "")
-    marker = "promo:"
-    if marker in comment:
-        promo_code = comment.split(marker, 1)[1].split()[0].strip()
+    import re
+    m_promo = re.search(r"promo:([A-Za-z0-9_\-]+)", comment)
+    if m_promo:
+        promo_code = m_promo.group(1).strip()
     if promo_code:
         try:
             from app.services.promos import consume_code
@@ -298,33 +299,43 @@ async def reject_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, s
         return False, "Chek holati o'zgargan; ro'yxatni yangilang"
 
     # Chek rad etilsa — submit paytida hamyondan yechirilgan summa qaytariladi.
-    # Yechirilganlik belgisi: comment oxiridagi "wallet:<summa>" izohida.
+    # Yechirilganlik haqiqatan hamyon tranzaksiya tarixida mavjud bo'lsa va hali qaytarilmagan bo'lsa qaytaramiz.
     comment = str(purchase.get("comment") or "")
-    if "wallet:" in comment:
+    order_tx = purchase.get("transaction_id") or purchase.get("id") or ""
+    refund_tx = f"refund_{order_tx}"
+
+    if purchase.get("user_id"):
+        from app.services import wallet as wallet_service
         try:
-            spent = int(comment.split("wallet:", 1)[1].split()[0].strip() or 0)
-        except (IndexError, ValueError):
-            spent = 0
-        if spent > 0 and purchase.get("user_id"):
-            from app.services import wallet as wallet_service
-            try:
-                refunded = await wallet_service.credit(
-                    store, str(purchase["user_id"]), spent, "refund",
-                    "Chek rad etildi — hamyon summasi qaytarildi",
-                    f"refund_{purchase.get('transaction_id') or purchase['id']}",
-                )
-                if refunded is not None:
-                    try:
-                        await store.create_notification(
-                            purchase["user_id"],
-                            "Hamyon summasi qaytarildi 💰",
-                            f"{spent:,} so'm hamyoningizga qaytarildi.".replace(",", " "),
-                            "info",
-                        )
-                    except Exception:
-                        pass
-            except Exception:
-                logger.exception("Hamyon qaytarishda xato (purchase=%s)", purchase.get("id"))
+            already_refunded = await wallet_service.has_tx(store, str(purchase["user_id"]), refund_tx)
+            if not already_refunded:
+                # 1. Hamyon tranzaksiya tarixidan buyurtma bo'yicha yechilgan aniq summani olamiz
+                spent = await wallet_service.get_tx_debit_amount(store, str(purchase["user_id"]), order_tx)
+                # 2. Agar tranzaksiya tarixida bo'lmasa, faqat tizim xavfsiz tegi SYSTEM[...] ichidan qaraymiz
+                if spent <= 0 and "SYSTEM[" in comment:
+                    import re
+                    m_wallet = re.search(r"SYSTEM\[.*?wallet:(\d+)", comment)
+                    if m_wallet:
+                        spent = int(m_wallet.group(1))
+
+                if spent > 0:
+                    refunded = await wallet_service.credit(
+                        store, str(purchase["user_id"]), spent, "refund",
+                        "Chek rad etildi — hamyon summasi qaytarildi",
+                        refund_tx,
+                    )
+                    if refunded is not None:
+                        try:
+                            await store.create_notification(
+                                purchase["user_id"],
+                                "Hamyon summasi qaytarildi 💰",
+                                f"{spent:,} so'm hamyoningizga qaytarildi.".replace(",", " "),
+                                "info",
+                            )
+                        except Exception:
+                            pass
+        except Exception:
+            logger.exception("Hamyon qaytarishda xato (purchase=%s)", purchase.get("id"))
 
     if purchase.get("user_id"):
         await store.create_notification(

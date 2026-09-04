@@ -162,7 +162,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               control={
                 <SegmentedControl
                   value={theme}
-                  onChange={(v) => { setTheme(v as Theme); haptic.selection(); }}
+                  onChange={(v) => { setTheme(v as Theme); haptic?.selection?.(); }}
                   options={[
                     { id: 'light', label: t('Kunduzgi'), icon: <Sun className="w-3 h-3" strokeWidth={2.4} /> },
                     { id: 'dark', label: t('Tungi'), icon: <Moon className="w-3 h-3" strokeWidth={2.4} /> },
@@ -176,7 +176,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               control={
                 <SegmentedControl
                   value={lang}
-                  onChange={(v) => { setLang(v as Lang); haptic.selection(); }}
+                  onChange={(v) => { setLang(v as Lang); haptic?.selection?.(); }}
                   options={[
                     { id: 'lat', label: t('Lotin') },
                     { id: 'cyr', label: t('Kirill') },
@@ -196,17 +196,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               tint="cyan"
               title={t('Yangi kurslar')}
               first
-              control={<Switch on={notif.new} onChange={(v) => { setNotif({ ...notif, new: v }); haptic.selection(); }} />}
+              control={<Switch on={notif.new} onChange={(v) => { setNotif({ ...notif, new: v }); haptic?.selection?.(); }} />}
             />
             <SettingRow
               icon={<CreditCard className="w-4 h-4" strokeWidth={2.2} />}
               title={t("To'lov holati")}
-              control={<Switch on={notif.pay} onChange={(v) => { setNotif({ ...notif, pay: v }); haptic.selection(); }} />}
+              control={<Switch on={notif.pay} onChange={(v) => { setNotif({ ...notif, pay: v }); haptic?.selection?.(); }} />}
             />
             <SettingRow
               icon={<Percent className="w-4 h-4" strokeWidth={2.2} />}
               title={t('Chegirmalar')}
-              control={<Switch on={notif.promo} onChange={(v) => { setNotif({ ...notif, promo: v }); haptic.selection(); }} />}
+              control={<Switch on={notif.promo} onChange={(v) => { setNotif({ ...notif, promo: v }); haptic?.selection?.(); }} />}
             />
           </div>
         </motion.div>

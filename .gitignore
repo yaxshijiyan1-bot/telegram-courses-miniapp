@@ -28,6 +28,8 @@ BOT_CODEBASE.*
 *.zip
 off.doc
 extracted_materials/
+legacy_archive/*
+!legacy_archive/README.md
 skills/
 skills_hub/
 

@@ -61,21 +61,21 @@ class CourseCard(BaseModel):
     id: str
     title: str
     slug: str
-    category: str
+    category: Optional[str] = "Boshqa"
     short_description: Optional[str] = None
-    cover_url: str
-    price: int
+    cover_url: Optional[str] = ""
+    price: int = 0
     old_price: Optional[int] = None
     discount_percent: Optional[int] = None
     discount_limit: Optional[int] = None
     discount_active: bool = False
     discount_spots_left: Optional[int] = None
     final_price: Optional[int] = None
-    duration: str
-    lesson_count: int
-    level: str
-    instructor_name: str
-    instructor_title: str
+    duration: Optional[str] = ""
+    lesson_count: int = 0
+    level: Optional[str] = "Barchaga"
+    instructor_name: Optional[str] = "Ustoz"
+    instructor_title: Optional[str] = "Mentor"
     instructor_avatar: Optional[str] = None
     instructor_id: Optional[str] = None
     rating: float = 5.0
@@ -88,7 +88,7 @@ class CourseCard(BaseModel):
     learning_outcomes: List[str] = []
 
 class CourseDetailResponse(CourseCard):
-    description: str
+    description: Optional[str] = ""
     preview_video_url: Optional[str] = None
     instructor_bio: Optional[str] = None
     modules: List[ModuleWithLessons] = []

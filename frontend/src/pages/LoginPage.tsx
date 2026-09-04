@@ -27,40 +27,40 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     e.preventDefault();
     if (!loginInput || !passwordInput) {
       setErrorMsg(t('Iltimos, login va parolni to‘ldiring'));
-      haptic.notification('warning');
+      haptic?.notification?.('warning');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMsg('');
-    haptic.impact('medium');
+    haptic?.impact?.('medium');
 
     const result = await login(loginInput, passwordInput);
     setIsSubmitting(false);
 
     if (result.success) {
-      haptic.notification('success');
+      haptic?.notification?.('success');
       onSuccess();
     } else {
       setErrorMsg(result.error || t('Login yoki parol noto‘g‘ri. Qayta urinib ko‘ring.'));
-      haptic.notification('error');
+      haptic?.notification?.('error');
     }
   };
 
   const handleTelegramAuth = async () => {
     setIsSubmitting(true);
     setErrorMsg('');
-    haptic.impact('medium');
+    haptic?.impact?.('medium');
 
     const result = await telegramLogin();
     setIsSubmitting(false);
 
     if (result.success) {
-      haptic.notification('success');
+      haptic?.notification?.('success');
       onSuccess();
     } else {
       setErrorMsg(result.error || t('Telegram orqali ulanishda xatolik yuz berdi'));
-      haptic.notification('error');
+      haptic?.notification?.('error');
     }
   };
 
@@ -179,7 +179,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <p className="text-xs text-ink-muted">{t('Hali kurs xarid qilmadingizmi?')}</p>
         <button
           onClick={() => {
-            haptic.impact('light');
+            haptic?.impact?.('light');
             onExploreCourses();
           }}
           className="text-xs text-cyan font-bold hover:underline"

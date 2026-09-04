@@ -51,15 +51,17 @@ def validate_telegram_init_data(init_data_raw: str, bot_token: str) -> Optional[
         if not auth_date or datetime.now(timezone.utc).timestamp() - auth_date > max_age_seconds:
             return None
 
-        # Agar bot token mavjud bo'lsa, qat'iy HMAC-SHA256 tekshiruvi
-        if bot_token:
-            data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed_data.items()))
-            secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
-            calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+        # Qat'iy HMAC-SHA256 tekshiruvi: bot_token bo'lishi shart
+        if not bot_token:
+            return None
 
-            # compare_digest timing-attack ga qarshi doimiy vaqtda solishtiradi
-            if not hmac.compare_digest(calculated_hash, hash_to_check):
-                return None
+        data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed_data.items()))
+        secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+        calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+
+        # compare_digest timing-attack ga qarshi doimiy vaqtda solishtiradi
+        if not hmac.compare_digest(calculated_hash, hash_to_check):
+            return None
 
         if "user" in parsed_data:
             return json.loads(parsed_data["user"])
@@ -126,8 +128,12 @@ async def get_current_admin(credentials: Optional[HTTPAuthorizationCredentials] 
     """Teng huquqli Adminlarni (Yaxshi Bola va Zuhra Olimova) tekshirish"""
     user = await get_current_user(credentials)
     tg_id = user.get("telegram_id")
+    try:
+        tg_id_int = int(tg_id)
+    except (TypeError, ValueError):
+        tg_id_int = None
     
-    if tg_id not in settings.ADMIN_IDS:
+    if tg_id_int not in settings.ADMIN_IDS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Ushbu amalni bajarish uchun faqat Administrator ruxsatiga egasiz."

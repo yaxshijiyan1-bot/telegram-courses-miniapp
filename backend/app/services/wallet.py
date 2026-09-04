@@ -63,8 +63,27 @@ async def get_wallet(store, user_id: Optional[str]) -> Dict[str, Any]:
 
 async def has_tx(store, user_id: Optional[str], tx: str) -> bool:
     """Bu tranzaksiya bo'yicha yozuv mavjudmi (takroriy kirim himoyasi)."""
-    w = await get_wallet(store, user_id)
-    return any(str(e.get("tx") or "") == str(tx or "") for e in w["history"])
+    if not user_id or not tx:
+        return False
+    wallets = await _get_json(store, KEY_WALLETS, {})
+    w = wallets.get(str(user_id))
+    if not isinstance(w, dict):
+        return False
+    return any(str(e.get("tx") or "") == str(tx) for e in (w.get("history") or []))
+
+
+async def get_tx_debit_amount(store, user_id: Optional[str], tx: str) -> int:
+    """Berilgan tx bo'yicha sarflangan (yechilgan) summani topadi."""
+    if not user_id or not tx:
+        return 0
+    wallets = await _get_json(store, KEY_WALLETS, {})
+    w = wallets.get(str(user_id))
+    if not isinstance(w, dict):
+        return 0
+    for e in (w.get("history") or []):
+        if str(e.get("tx") or "") == str(tx) and str(e.get("type") or "") == "spend":
+            return abs(int(e.get("delta") or 0))
+    return 0
 
 
 async def _mutate(
@@ -109,7 +128,10 @@ async def credit(
 ) -> Optional[int]:
     """Hamyonga kirim (referal daromadi, qaytarish, admin kirituvi)."""
     try:
-        return await _mutate(store, user_id, int(amount), type_, note, tx)
+        amt = int(amount)
+        if amt <= 0:
+            return None
+        return await _mutate(store, user_id, amt, type_, note, tx)
     except Exception:
         logger.exception("Hamyon kiritishda xato (user=%s)", user_id)
         return None

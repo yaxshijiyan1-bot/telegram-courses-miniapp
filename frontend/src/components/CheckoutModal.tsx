@@ -168,7 +168,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const handleSubmitReceipt = async () => {
-    if (!receiptImage) {
+    if (finalPrice > 0 && !receiptImage) {
       setErrorMsg(t("Iltimos, avval to‘lov cheki skrinshotini yuklang!"));
       haptic?.notification?.('error');
       return;
@@ -182,8 +182,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         course_id: course.id,
         course_title: course.title,
         amount: finalPrice,
-        payment_method: 'karta',
-        receipt_image: receiptImage,
+        payment_method: finalPrice === 0 && walletSpend > 0 ? 'hamyon' : 'karta',
+        receipt_image: receiptImage || undefined,
         student_name: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Talaba',
         username: user?.username || 'user',
         telegram_id: user?.id || 0,
@@ -198,7 +198,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setTimeout(() => {
         onSuccess(course);
         onClose();
-      }, 2600);
+      }, 2200);
 
     } catch (err: any) {
       setErrorMsg(err.message || t('Chekni yuborishda xatolik yuz berdi'));
@@ -272,9 +272,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="w-16 h-16 bg-cyan/15 text-cyan rounded-full flex items-center justify-center mx-auto border border-cyan/30 shadow-cyanGlowSm">
                 <CheckCircle2 className="w-8 h-8" strokeWidth={2.2} />
               </div>
-              <h4 className="text-base font-extrabold text-ink">{t('Chek adminga yuborildi!')}</h4>
+              <h4 className="text-base font-extrabold text-ink">
+                {finalPrice === 0 ? t('Kurs muvaffaqiyatli ochildi!') : t('Chek adminga yuborildi!')}
+              </h4>
               <p className="text-[11px] text-ink-secondary max-w-xs mx-auto leading-relaxed">
-                {t('To‘lov chekingiz adminlarimizga yuborildi. Tekshirilgach, darslar kabinetingizda ochiladi va bot orqali xabar boradi.')}
+                {finalPrice === 0
+                  ? t("To'lov to'liq qoplandi va kurs profilingizga biriktirildi. O'rganishni boshlashingiz mumkin! 🎉")
+                  : t('To‘lov chekingiz adminlarimizga yuborildi. Tekshirilgach, darslar kabinetingizda ochiladi va bot orqali xabar boradi.')}
               </p>
             </motion.div>
           ) : step === 1 ? (
@@ -454,30 +458,50 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   ) : null}
                   {walletSpend > 0 && finalPrice === 0 ? (
                     <p className="text-[10px] font-semibold text-emerald-600 leading-snug pt-1">
-                      ✅ {t("To'lov hamyon bilan to'liq qoplandi! Chek o'rniga shu holatni tasdiqlash uchun har qanday skrinshot yuboring (masalan, shu oyna).")}
+                      ✅ {t("Kurs narxi hamyon hisobingizdan 100% qoplandi! Chek yuklash shart emas, darslar darhol ochiladi.")}
                     </p>
                   ) : null}
                 </div>
               </div>
 
               {/* Simple 2-Step Instruction */}
-              <div className="glass-chip rounded-[18px] p-3 text-[11px] text-ink-secondary leading-relaxed space-y-1">
-                <p className="font-semibold text-ink">💡 {t('To‘lov qilish tartibi:')}</p>
-                <ol className="list-decimal list-inside space-y-0.5 text-ink-muted">
-                  <li>{t('Karta raqamidan nusxa oling va ilovangizdan pul o‘tkazing.')}</li>
-                  <li>{t('To‘lov chekining skrinshotini oling.')}</li>
-                  <li><b>{t('"Chek yuklash"')}</b> {t('tugmasini bosib, rasmni yuboring.')}</li>
-                </ol>
-              </div>
+              {finalPrice > 0 ? (
+                <div className="glass-chip rounded-[18px] p-3 text-[11px] text-ink-secondary leading-relaxed space-y-1">
+                  <p className="font-semibold text-ink">💡 {t('To‘lov qilish tartibi:')}</p>
+                  <ol className="list-decimal list-inside space-y-0.5 text-ink-muted">
+                    <li>{t('Karta raqamidan nusxa oling va ilovangizdan pul o‘tkazing.')}</li>
+                    <li>{t('To‘lov chekining skrinshotini oling.')}</li>
+                    <li><b>{t('"Chek yuklash"')}</b> {t('tugmasini bosib, rasmni yuboring.')}</li>
+                  </ol>
+                </div>
+              ) : null}
 
-              <button
-                type="button"
-                onClick={() => { haptic?.impact?.('light'); setStep(2); }}
-                className="w-full py-3.5 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl shadow-cyanGlow active:scale-[0.98] transition-transform flex items-center justify-center space-x-2 text-sm"
-              >
-                <span>{t('To‘lov qildim, chek yuklash')}</span>
-                <Sparkles className="w-4 h-4" />
-              </button>
+              {finalPrice === 0 ? (
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleSubmitReceipt}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold rounded-2xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center space-x-2 text-sm disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    <InlineLoader variant="orbit" size={16} color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <span>{t('Hamyondan to‘lash va kursni ochish')}</span>
+                      <Sparkles className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { haptic?.impact?.('light'); setStep(2); }}
+                  className="w-full py-3.5 bg-gradient-to-r from-cyan to-cyan-light text-white font-extrabold rounded-2xl shadow-cyanGlow active:scale-[0.98] transition-transform flex items-center justify-center space-x-2 text-sm"
+                >
+                  <span>{t('To‘lov qildim, chek yuklash')}</span>
+                  <Sparkles className="w-4 h-4" />
+                </button>
+              )}
             </motion.div>
           ) : (
             <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease }} className="space-y-4">

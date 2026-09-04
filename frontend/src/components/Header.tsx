@@ -31,7 +31,7 @@ export const Header: React.FC<HeaderProps> = ({
       <button
         type="button"
         onClick={() => {
-          haptic.selection();
+          haptic?.selection?.();
           onOpenProfile();
         }}
         className="flex items-center space-x-3 text-left pressable rounded-2xl pr-2"
@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={() => {
-            haptic.impact('light');
+            haptic?.impact?.('light');
             onOpenSearch();
           }}
           className="w-9 h-9 rounded-full glass-chip flex items-center justify-center text-ink-secondary hover:text-ink active:scale-90 transition-all"
@@ -67,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={() => {
-            haptic.impact('light');
+            haptic?.impact?.('light');
             onOpenNotifications();
           }}
           className="relative w-9 h-9 rounded-full glass-chip flex items-center justify-center text-ink-secondary hover:text-ink active:scale-90 transition-all"
@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={() => {
-            haptic.selection();
+            haptic?.selection?.();
             onOpenProfile();
           }}
           className="w-9 h-9 rounded-[14px] overflow-hidden bg-gradient-to-br from-cyan/40 to-violet/40 border border-slate-200 flex items-center justify-center text-white font-extrabold text-xs active:scale-90 transition-transform"

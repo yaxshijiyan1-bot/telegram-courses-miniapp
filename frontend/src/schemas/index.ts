@@ -40,7 +40,7 @@ export type CourseType = z.infer<typeof CourseSchema>;
 // Purchase order schema
 export const OrderSchema = z.object({
   course_id: z.string().min(1, 'Kurs tanlanishi shart'),
-  payment_method: z.enum(['payme', 'click', 'stars', 'crypto']),
+  payment_method: z.enum(['karta', 'hamyon', 'payme', 'click', 'stars', 'crypto']),
   promocode: z.string().optional().nullable(),
 });
 

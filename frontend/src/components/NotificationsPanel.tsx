@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { NotificationItem } from '../types';
+import { api } from '../services/api';
 import { useTelegram } from '../context/TelegramContext';
 import { useSettings } from '../context/SettingsContext';
 import { relativeTime } from '../utils/format';
@@ -39,9 +40,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
 
   React.useEffect(() => {
     if (isOpen && unread > 0) {
-      import('../services/api').then(({ api }) => {
-        api.markNotificationsRead();
-      });
+      api.markNotificationsRead();
       // Optimistic update locally
       notifications.forEach(n => n.is_read = true);
     }

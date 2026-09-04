@@ -19,7 +19,7 @@ router = APIRouter(prefix="/checkout", tags=["Checkout & Payments"])
 class SubmitReceiptRequest(BaseModel):
     course_id: str
     payment_method: str = "karta"
-    receipt_image: str  # Base64 (data:image...) yoki URL
+    receipt_image: Optional[str] = None  # Base64 yoki URL (agar to'lov summasi > 0 bo'lsa majburiy)
     comment: Optional[str] = None
     promo_code: Optional[str] = None
     use_wallet: Optional[bool] = False      # hamyondan foydalanish (butun balans)
@@ -188,10 +188,24 @@ async def submit_receipt(
         except Exception:
             logger.exception("Hamyon yechishda xato (user=%s)", user_id)
 
-    comment_parts = [p for p in [req.comment, promo_note] if p]
+    # Agar to'lov summasi > 0 bo'lsa, chek rasmi talab qilinadi
+    if amount > 0:
+        if not req.receipt_image or not str(req.receipt_image).strip():
+            raise HTTPException(status_code=400, detail="Qolgan summani to'lash uchun to'lov cheki skrinshotini yuklang")
+
+    # Foydalanuvchi izohini tozalash (tizim teglari 'wallet:' va 'promo:' soxtalashtirilmasligi uchun)
+    clean_user_comment = (req.comment or "").strip()
+    clean_user_comment = clean_user_comment.replace("wallet:", "wallet_").replace("promo:", "promo_")[:300]
+    system_tags = []
+    if promo_note:
+        system_tags.append(promo_note)
     if wallet_spend > 0:
-        comment_parts.append(f"wallet:{wallet_spend}")
-    comment_text = " | ".join(comment_parts) if comment_parts else None
+        system_tags.append(f"wallet:{wallet_spend}")
+    system_part = f"SYSTEM[{' '.join(system_tags)}]" if system_tags else ""
+    comment_text = f"{clean_user_comment} | {system_part}".strip(" |") if (clean_user_comment or system_part) else None
+
+    receipt_url = req.receipt_image if (req.receipt_image and req.receipt_image.startswith("http")) else None
+    payment_method = "hamyon" if (amount == 0 and wallet_spend > 0) else (req.payment_method or "karta")
 
     await store.create_purchase({
         "user_id": user_id,
@@ -199,14 +213,27 @@ async def submit_receipt(
         "course_title": course["title"],
         "amount": amount,
         "status": "pending_approval",
-        "payment_method": req.payment_method or "karta",
+        "payment_method": payment_method,
         "transaction_id": order_id,
         "telegram_id": telegram_id,
         "student_name": student_name,
         "username": username,
-        "receipt_image_url": req.receipt_image if req.receipt_image.startswith("http") else None,
+        "receipt_image_url": receipt_url,
         "comment": comment_text,
     })
+
+    # Agar qolgan summa 0 bo'lsa (to'liq hamyon yoki 100% chegirma):
+    # Admin kutib o'tirmasdan darhol avtomatik tasdiqlaymiz va kursni ochamiz!
+    if amount == 0:
+        from app.services.purchases import approve_purchase
+        await approve_purchase(order_id, "Tizim (Avtomatik: 100% to'lov)")
+        return {
+            "success": True,
+            "order_id": order_id,
+            "auto_enrolled": True,
+            "notified_admins": 0,
+            "message": "To'lov muvaffaqiyatli amalga oshirildi va kurs hisobingizga ochildi! 🎉"
+        }
 
     # Ikkala Superadminga to'g'ridan-to'g'ri Telegram Bot orqali to'lov cheki rasmi va tasdiqlash tugmalarini yuborish
     notified = 0

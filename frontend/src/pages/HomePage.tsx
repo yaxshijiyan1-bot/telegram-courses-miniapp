@@ -155,7 +155,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         if (touchX.current == null || banners.length < 2) return;
         const dx = e.changedTouches[0].clientX - touchX.current;
         if (Math.abs(dx) > 48) {
-          haptic.selection();
+          haptic?.selection?.();
           setSlideIdx((i) => (i + (dx < 0 ? 1 : banners.length - 1)) % banners.length);
         }
         touchX.current = null;
@@ -284,7 +284,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     key={b.id}
                     type="button"
                     aria-label={`Banner ${i + 1}`}
-                    onClick={() => { haptic.selection(); setSlideIdx(i); }}
+                    onClick={() => { haptic?.selection?.(); setSlideIdx(i); }}
                     className="h-1.5 rounded-full transition-all duration-300"
                     style={{
                       width: i === slideIdx % banners.length ? 18 : 6,
@@ -382,7 +382,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             right={
               <button
                 type="button"
-                onClick={() => { haptic.selection(); onNavigateToCatalog(); }}
+                onClick={() => { haptic?.selection?.(); onNavigateToCatalog(); }}
                 className="flex items-center gap-1 text-xs font-bold text-cyan pb-1"
               >
                 <span>{t('Barchasi')}</span>

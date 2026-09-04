@@ -275,11 +275,11 @@ def normalize_stored_modules(course_id: str, stored: list) -> list:
                 "module_id": module_id,
                 "course_id": course_id,
                 "title": ltitle,
-                "duration": "",
+                "duration": str((l or {}).get("duration") or ""),
                 "order": l_order,
-                "is_preview": False,
-                "description": None,
-                "resources": []
+                "is_preview": bool((l or {}).get("is_preview", False)),
+                "description": (l or {}).get("description"),
+                "resources": (l or {}).get("resources") or []
             })
         modules.append({
             "id": module_id,

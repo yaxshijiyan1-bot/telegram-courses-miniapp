@@ -7,7 +7,7 @@ from app.core.security import get_current_user
 from app.core.r2 import r2_client
 from app.services.purchases import issue_channel_access
 from app.storage import get_store
-from seed_data import build_course_modules
+from app.api.courses import resolve_course_modules
 
 router = APIRouter(prefix="/student", tags=["Student Learning"])
 
@@ -29,7 +29,7 @@ def _fmt_date(value) -> str:
         return str(value)
 
 def _all_lessons(course: dict) -> list:
-    return [l for m in build_course_modules(course) for l in m["lessons"]]
+    return [l for m in resolve_course_modules(course) for l in m.get("lessons", [])]
 
 @router.get("/dashboard")
 async def get_dashboard(current_user: dict = Depends(get_current_user)):
@@ -176,14 +176,14 @@ async def get_protected_lesson(
     if not course:
         raise HTTPException(status_code=404, detail="Kurs topilmadi")
 
-    modules = build_course_modules(course)
+    modules = resolve_course_modules(course)
     target_lesson = None
     target_module = None
     all_lessons = []
     for m in modules:
-        for l in m["lessons"]:
+        for l in m.get("lessons", []):
             all_lessons.append(l)
-            if l["id"] == lesson_id:
+            if l.get("id") == lesson_id:
                 target_lesson = l
                 target_module = m
 

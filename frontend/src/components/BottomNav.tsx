@@ -40,7 +40,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               key={tab.id}
               type="button"
               onClick={() => {
-                haptic.selection();
+                haptic?.selection?.();
                 onChangeTab(tab.id);
               }}
               className="flex-1 flex flex-col items-center justify-center py-0.5 active:scale-95 transition-transform"

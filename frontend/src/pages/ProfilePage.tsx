@@ -185,7 +185,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <button
               type="button"
               onClick={() => {
-                haptic.impact('medium');
+                haptic?.impact?.('medium');
                 onOpenAdmin();
               }}
               className="w-full p-3.5 flex items-center justify-between bg-cyan/[0.05] hover:bg-cyan/[0.09] transition-colors text-left"
@@ -202,7 +202,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <button
             type="button"
             onClick={() => {
-              haptic.impact('medium');
+              haptic?.impact?.('medium');
               onOpenSettings();
             }}
             className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.03] transition-colors text-left"
@@ -218,7 +218,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             href="https://t.me/yomonboIa"
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => haptic.impact('light')}
+            onClick={() => haptic?.impact?.('light')}
             className="w-full p-3.5 flex items-center justify-between hover:bg-white/[0.03] transition-colors text-left"
           >
             <div className="flex items-center space-x-3">
@@ -289,7 +289,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             href={inviteShare}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => haptic.impact('medium')}
+            onClick={() => haptic?.impact?.('medium')}
             className="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors flex-shrink-0"
             aria-label={t('Ulashish')}
           >
@@ -378,7 +378,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               href={mentor.url}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => haptic.impact('light')}
+              onClick={() => haptic?.impact?.('light')}
               className="glass !rounded-[20px] p-3 flex items-center justify-between pressable"
             >
               <div className="flex items-center space-x-2.5 min-w-0">

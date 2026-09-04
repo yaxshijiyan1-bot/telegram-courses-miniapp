@@ -30,6 +30,7 @@ const AdminDashboardModal = React.lazy(() =>
 import { TelegramGate } from './components/TelegramGate';
 import { useSecurityShield } from './hooks/useSecurityShield';
 import { ShieldAlert } from 'lucide-react';
+import { InlineLoader } from 'generative-loaders';
 
 // Sotib olingan kurslar ID'larining lokal keshi — ilova ochilishi bilanoq sotuv
 // ro'yxati to'g'ri filtrlanadi: kurslar avval ko'rinib, keyin yo'qolib qolmaydi.
@@ -555,13 +556,20 @@ export const AppContent: React.FC = () => {
         </div>
 
         <div className={activeTab === 'learning' ? undefined : 'hidden'}>
-          {isAuthenticated && dashboardData ? (
-            <MyCoursesPage
-              enrolledCourses={dashboardData.enrolled_courses}
-              courses={courses}
-              onSelectCourse={(c) => setSelectedCourse(c)}
-              onExploreCourses={() => setActiveTab('courses')}
-            />
+          {isAuthenticated ? (
+            dashboardData ? (
+              <MyCoursesPage
+                enrolledCourses={dashboardData.enrolled_courses}
+                courses={courses}
+                onSelectCourse={(c) => setSelectedCourse(c)}
+                onExploreCourses={() => setActiveTab('courses')}
+              />
+            ) : (
+              <div className="py-24 flex flex-col items-center justify-center space-y-3">
+                <InlineLoader variant="orbit" size={28} color="#06B6D4" />
+                <p className="text-xs font-bold text-ink-muted">Darslar yuklanmoqda...</p>
+              </div>
+            )
           ) : (
             <LoginPage
               onSuccess={() => setActiveTab('learning')}

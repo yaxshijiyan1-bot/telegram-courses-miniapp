@@ -1063,7 +1063,8 @@ async def _send_backup(client: httpx.AsyncClient, chat_id: int) -> None:
     except Exception:
         backup["purchases"] = []
     try:
-        backup["banners"] = await store.list_banners()
+        from app.api.banners import load_banners
+        backup["banners"] = await load_banners()
     except Exception:
         backup["banners"] = []
     from app.services import wallet as wallet_service

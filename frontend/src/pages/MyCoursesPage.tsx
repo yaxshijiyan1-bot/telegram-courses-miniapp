@@ -95,6 +95,22 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
         <div className="space-y-3">
           {enrolledCourses.map((enrolled) => {
             const full = courses.find((c) => c.id === enrolled.id);
+            const courseToOpen: Course = full || {
+              id: enrolled.id,
+              title: enrolled.title,
+              slug: enrolled.slug || enrolled.id,
+              description: '',
+              price: 0,
+              category: 'Darslarim',
+              cover_url: enrolled.cover_url || '/images/hero_books.jpg',
+              instructor_name: enrolled.instructor_name || "O'qituvchi",
+              instructor_title: 'Mentor',
+              rating: 5,
+              student_count: 0,
+              lesson_count: enrolled.total_lessons || 0,
+              duration: '',
+              level: 'Barchaga',
+            };
             const isDone = enrolled.status === 'completed';
             return (
               <motion.div
@@ -112,13 +128,13 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                   tabIndex={0}
                   onClick={() => {
                     haptic?.impact?.('medium');
-                    if (full) onSelectCourse(full);
+                    onSelectCourse(courseToOpen);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       haptic?.impact?.('medium');
-                      if (full) onSelectCourse(full);
+                      onSelectCourse(courseToOpen);
                     }
                   }}
                   className="flex items-center space-x-3.5 cursor-pointer active:opacity-70 transition-opacity relative"

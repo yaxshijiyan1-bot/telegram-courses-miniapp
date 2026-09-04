@@ -58,8 +58,8 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
   }, [isImageZoomed]);
 
   const handleMarkComplete = async () => {
-    haptic.impact('medium');
-    haptic.notification('success');
+    haptic?.impact?.('medium');
+    haptic?.notification?.('success');
     setIsCompleted(true);
     await api.markLessonComplete(course.id, lesson.id);
   };
@@ -73,7 +73,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
         <div className="p-4 flex items-center justify-between border-b border-slate-200 bg-[color:var(--surface-bar)]">
           <button
             onClick={() => {
-              haptic.selection();
+              haptic?.selection?.();
               onBack();
             }}
             className="w-9 h-9 rounded-full glass-chip flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-90 transition-transform"
@@ -96,7 +96,7 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
         {/* Dars Muqovasi / Infografika Rasmi (Videoplayer o'rnida) */}
         <div 
           onClick={() => {
-            haptic.selection();
+            haptic?.selection?.();
             setIsImageZoomed(true);
           }}
           className="w-full bg-slate-950 aspect-video relative overflow-hidden group cursor-pointer border-b border-slate-200"
