@@ -1,6 +1,7 @@
 import uuid
 import json
 import base64
+import html
 import logging
 from datetime import datetime, timezone
 import httpx
@@ -390,7 +391,11 @@ async def broadcast_message(
 
     store = get_store()
     tg_api = f"https://api.telegram.org/bot{settings.BOT_TOKEN}"
-    broadcast_text = f"📢 <b>Platforma Yangiligi</b>\n\n{req.text}\n\n<i>Yubordi: {admin.get('name')}</i>"
+    # Broadcast matni tekis matn sifatida yuboriladi (HTML emas): admin akkaunti
+    # oshib qolganda ham xabar ichida soxta havola/timforming chiqmaydi.
+    e_text = html.escape(req.text.strip())
+    e_admin_name = html.escape(str(admin.get("name") or "Admin"))
+    broadcast_text = f"📢 <b>Platforma Yangiligi</b>\n\n{e_text}\n\n<i>Yubordi: {e_admin_name}</i>"
 
     keyboard = None
     if req.button_text and req.button_url:

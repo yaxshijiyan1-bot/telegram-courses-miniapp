@@ -22,7 +22,7 @@ Telegram ekotizimi uchun maxsus ishlab chiqilgan, hashamatli **Emerald + Cream +
 * **Ma'lumotlar Bazasi:** Supabase (PostgreSQL, PostgREST) yoki o'rnatilgan SQLite fallback.
 * **Media:** Cloudflare R2 (presigned GET/PUT, server-side upload, zero egress).
 * **Bot:** FastAPI lifespan ichida 24/7 long-polling (callback tasdiqlash tugmalari bilan).
-* **Hosting:** Render.com (Backend) + Vercel (Frontend).
+* **Hosting:** Render.com (Backend) + Cloudflare Pages (Frontend, `wrangler.toml` bilan).
 
 ---
 

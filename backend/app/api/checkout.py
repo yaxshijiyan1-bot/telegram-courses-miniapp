@@ -1,5 +1,6 @@
 import uuid
 import base64
+import html
 import json
 import logging
 import httpx
@@ -239,11 +240,17 @@ async def submit_receipt(
     notified = 0
     if settings.BOT_TOKEN:
         tg_api = f"https://api.telegram.org/bot{settings.BOT_TOKEN}"
+        # Barcha foydalanuvchidan keladigan maydonlar avval HTML escape qilinadi —
+        # aks holda talaba ismi/izohidagi <b> tegi admin chekidagi status satrlarini
+        # buzishi yoki soxta "TASDIQLANDI" qatori qo'shishi mumkin.
+        e_student_name = html.escape(str(student_name))
+        e_username = html.escape(str(username))
+        e_course_title = html.escape(str(course["title"]))
         caption = (
             f"🔔 <b>YANGI TO'LOV CHEKI KELDI!</b>\n\n"
-            f"👤 <b>Talaba:</b> {student_name} (@{username})\n"
+            f"👤 <b>Talaba:</b> {e_student_name} (@{e_username})\n"
             f"🆔 <b>Telegram ID:</b> <code>{telegram_id}</code>\n"
-            f"📚 <b>Kurs:</b> {course['title']}\n"
+            f"📚 <b>Kurs:</b> {e_course_title}\n"
             f"💰 <b>Summa:</b> {amount:,} so'm\n"
         )
         if pricing["discount_active"] and course.get("discount_percent"):
@@ -252,7 +259,7 @@ async def submit_receipt(
                 f"(birinchi {course.get('discount_limit')} kishi)\n"
             )
         if promo_entry:
-            caption += f"🎟 <b>Promokod:</b> {promo_entry['code']} (−{int(promo_entry['percent'])}%)\n"
+            caption += f"🎟 <b>Promokod:</b> {html.escape(str(promo_entry['code']))} (−{int(promo_entry['percent'])}%)\n"
         if wallet_spend > 0:
             caption += (
                 f"💰 <b>Hamyondan:</b> −{wallet_spend:,} so'm\n"
@@ -263,7 +270,7 @@ async def submit_receipt(
             f"🔢 <b>Buyurtma ID:</b> <code>{order_id}</code>\n"
         )
         if req.comment:
-            caption += f"💬 <b>Izoh:</b> {req.comment}\n"
+            caption += f"💬 <b>Izoh:</b> {html.escape(str(req.comment))[:300]}\n"
         caption += f"\n<i>Chekni tekshirib, quyidagi tugmalar orqali tasdiqlang:</i>"
 
         keyboard = {

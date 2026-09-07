@@ -61,10 +61,12 @@ class Settings(BaseSettings):
     # Backendning tashqi (public) manzili — /api/media/... havolalari shu yerdan beriladi
     API_PUBLIC_URL: str = os.getenv("API_PUBLIC_URL", "https://kurslar-backend-api.onrender.com").rstrip("/")
 
-    # CORS — faqat ishonchli manbalar (Telegram Mini App o'zi frontend domenda ishlaydi)
+    # CORS — faqat ishonchli manbalar (Telegram Mini App o'zi frontend domenda ishlaydi).
+    # Vercel Hobby tijorat uchun ruxsat bermagani sababli frontend faqat Cloudflare
+    # Pages'da turadi — vercel.app dominlari qasddan olib tashlangan.
     CORS_ORIGINS_RAW: str = os.getenv(
         "CORS_ORIGINS",
-        "https://telegram-courses-miniapp2.pages.dev,https://kurslarimiz-platforma.vercel.app,https://kurslarimiz.vercel.app,http://localhost:3000,http://localhost:5173,https://*.pages.dev"
+        "https://telegram-courses-miniapp2.pages.dev,http://localhost:3000,http://localhost:5173,https://*.pages.dev"
     )
 
 

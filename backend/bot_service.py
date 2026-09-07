@@ -303,13 +303,27 @@ async def _start_checkout(client: httpx.AsyncClient, chat_id: int, user: Dict[st
             f"🔥 <b>−{int(course['discount_percent'])}% chegirma</b> — birinchi {int(course.get('discount_limit') or 0)} kishi uchun"
             + (f", {int(pricing['discount_spots_left'])} ta joy qoldi" if pricing.get("discount_spots_left") is not None else "")
         )
+    # Hamyon balansi: bot oqimida hamyondan yechish yo'q (bu faqat Mini App checkoutda),
+    # shuning uchun balans bor foydalanuvchiga aniq yo'l-yo'rig' ko'rsatamiz.
+    wallet_line = ""
+    try:
+        from app.services import wallet as wallet_service
+        wallet = await wallet_service.get_wallet(store, str(user.get("id") or ""))
+        if wallet.get("balance", 0) > 0:
+            wallet_line = (
+                f"\n💰 <b>Hamyon balansingiz: {_uzs(wallet['balance'])}</b>\n"
+                "Chekni shu chatga yuborsangiz butun summa kartadan hisoblanadi. Hamyondan "
+                f"aniq summa ajratib, qolganini kartadan to'lash uchun xaridni <b>Mini Appda</b> davom ettiring."
+            )
+    except Exception:
+        logger.exception("Hamyon balansini o'qishda xato (user=%s)", user.get("id"))
     _checkout_sessions[int(user["telegram_id"])] = course["id"]
     await send_tg_message(
         client,
         chat_id,
         "💳 <b>To'lovni amalga oshirish</b>\n\n"
         f"📚 Kurs: <b>{_escape(course['title'])}</b>\n"
-        f"{price_block}\n\n"
+        f"{price_block}{wallet_line}\n\n"
         f"🏦 Bank: <b>{_escape(card['bank_name'])}</b>\n"
         f"💳 Karta raqami (nusxalash uchun bosing):\n"
         f"<code>{_escape(card['card_number'])}</code>\n"
@@ -401,6 +415,15 @@ async def _handle_receipt_photo(client: httpx.AsyncClient, message: Dict[str, An
         await send_tg_message(client, telegram_id, "⚠️ Rasmni o'qib bo'lmadi. Iltimos, yana yuboring.")
         return True
 
+    # Foydalanuvchi captioni: uzunligini cheklab, tizim teglarini (SYSTEM[...],
+    # 'wallet:', 'promo:') soxtalashtirib bo'lmas qilamiz — rad etilganda hamyon
+    # qaytarish oqimi shu commentga qaram bo'lgani uchun uni tozalash muhim.
+    raw_caption = str(message.get("caption") or "").strip()[:300]
+    clean_caption = (
+        raw_caption.replace("SYSTEM[", "SYSTEM_[").replace("wallet:", "wallet_").replace("promo:", "promo_")
+        or None
+    )
+
     transaction_id = f"rcp_{uuid.uuid4().hex[:12]}"
     receipt_url = await _store_telegram_receipt(client, file_id, transaction_id)
     # Botdan kelgan chek ham mini-app bilan bir xil chegirmali narxda qayd etiladi
@@ -422,7 +445,7 @@ async def _handle_receipt_photo(client: httpx.AsyncClient, message: Dict[str, An
             "username": user.get("username"),
             # Telegram file_id boshqa chatga sendPhoto qilish uchun yetarli; chekning o'zi Telegramda qoladi.
             "receipt_image_url": receipt_url or f"tg-file:{file_id}",
-            "comment": (message.get("caption") or "")[:500] or None,
+            "comment": clean_caption,
         }
     )
     _checkout_sessions.pop(telegram_id, None)
@@ -465,19 +488,34 @@ async def _handle_admin_callback(client: httpx.AsyncClient, callback_query: Dict
 
     message = callback_query.get("message") or {}
     chat = message.get("chat") or {}
-    current_text = message.get("caption") or message.get("text") or ""
+    current_text = str(message.get("caption") or message.get("text") or "")
+    status_line = "✅ <b>TO'LOV TASDIQLANDI</b>" if approved else "❌ <b>TO'LOV RAD ETILDI</b>"
+    # Telegram eski captionni tekis matn (entities qo'llanmagan holda) qaytaradi.
+    # Uni parse_mode=HTML bilan qayta yuborishdan oldin escape qilish shart —
+    # talaba ismi/izohidagi & yoki < "can't parse entities" xatosini keltirib,
+    # chek kartasiga status qatori umuman qo'shilmay qolardi.
     updated = (
-        f"{current_text}\n\n━━━━━━━━━━━━━━━━━━━━\n"
-        f"{'✅ <b>TO\'LOV TASDIQLANDI</b>' if approved else '❌ <b>TO\'LOV RAD ETILDI</b>'}\n"
+        f"{_escape(current_text)}\n\n━━━━━━━━━━━━━━━━━━━━\n"
+        f"{status_line}\n"
         f"👤 <b>Admin:</b> {_escape(admin_name)}"
     )[:1024]
     method = "editMessageCaption" if message.get("caption") is not None else "editMessageText"
     field = "caption" if method == "editMessageCaption" else "text"
-    await _telegram_call(
+    edit_result = await _telegram_call(
         client,
         method,
         {"chat_id": chat.get("id"), "message_id": message.get("message_id"), field: updated, "parse_mode": "HTML"},
     )
+    if not edit_result.get("ok"):
+        # Tahrir o'tmasa (masalan, caption 1024 belgi chekkasida kesilganda ham
+        # xato qaytishi mumkin) — qarorni alohida xabar sifatida yozamiz.
+        await send_tg_message(
+            client,
+            int(chat.get("id") or 0) or int(admin_tg_id or 0),
+            f"{status_line}\n"
+            f"👤 <b>Admin:</b> {_escape(admin_name)}\n"
+            f"🔢 <b>Buyurtma:</b> <code>{_escape(order_id)}</code>",
+        )
     return True
 
 
@@ -832,12 +870,15 @@ def _group_should_answer(message: Dict[str, Any], text: str) -> bool:
     """Guruhda bot faqat haqiqiy murojaatlarga javob beradi (spam qilmaydi):
     @mention, bot xabariga javob, yoki sotuvga aloqador so'zli savol."""
     lowered = text.lower()
-    if f"@{settings.BOT_USERNAME.lower()}" in lowered:
+    bot_username = settings.BOT_USERNAME.strip().lower()
+    # BOT_USERNAME sozlanmagan (bo'sh) bo'lsa "@​" tekshiruvi o'chiriladi —
+    # aks holda f"@{''}" -> "@" har qanday @li xabarga match qilib, bot spam qilardi.
+    if bot_username and f"@{bot_username}" in lowered:
         return True
     reply_from = ((message.get("reply_to_message") or {}).get("from")) or {}
     if BOT_ID and reply_from.get("id") == BOT_ID:
         return True
-    if reply_from.get("username") and reply_from["username"].lower() == settings.BOT_USERNAME.lower():
+    if bot_username and reply_from.get("username") and reply_from["username"].strip().lower() == bot_username:
         return True
     if "?" in text and any(k in lowered for k in _GROUP_SALES_KEYWORDS):
         return True
@@ -864,8 +905,11 @@ async def _handle_group_message(client: httpx.AsyncClient, message: Dict[str, An
         elif command in {"/help", "/contact"}:
             await _send_help(client, chat_id)
         elif command in {"/stats", "/admin"}:
-            if tg_user.get("id") in settings.ADMIN_IDS:
-                await _send_stats(client, chat_id, int(tg_user["id"]))
+            tg_id = int(tg_user.get("id") or 0)
+            if tg_id in settings.ADMIN_IDS:
+                # Statistika (tushum, talabalar soni) maxfiy — guruhga yozilmaydi,
+                # faqat adminning o'ziga shaxsiy chatda yuboriladi.
+                await _send_stats(client, tg_id, tg_id)
         return
 
     if not text or not _group_should_answer(message, text):
@@ -983,7 +1027,7 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
 
 
 async def _send_daily_report(client: httpx.AsyncClient, chat_id: int) -> None:
-    """Kunlik hisobot: bugungi tasdiqlangan xaridlar, tushum, kun dawomidagi
+    """Kunlik hisobot: bugungi tasdiqlangan xaridlar, tushum, kun davomidagi
     rad etilgan cheklar, yangi talabalar va referal cashback kirimlari."""
     store = get_store()
     try:

@@ -17,6 +17,7 @@ import { Course, Lesson } from '../types';
 import { useTelegram } from '../context/TelegramContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, toMediaUrl } from '../services/api';
+import { Lightbox } from '../components/Lightbox';
 
 interface LessonPlayerPageProps {
   course: Course;
@@ -261,31 +262,16 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
         </button>
       </div>
 
-      {/* Lightbox — to'liq ekran, sahifa scrolli qulflangan, surat qimirlamaydi */}
+      {/* Lightbox — portal orqali document.body'da: sahifa ildizidagi
+          animate-fade-up transform'i fixed elementni o'ziga bog'lab qo'yardi
+          va rasm skrol bilan surilib kesilar edi. */}
       {isImageZoomed && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center animate-fade-in touch-none select-none"
-          onClick={() => setIsImageZoomed(false)}
-        >
-          <img
-            src={lessonImage}
-            alt={lesson.title}
-            draggable={false}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full h-full object-contain animate-zoom-in"
-          />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsImageZoomed(false);
-            }}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-            aria-label={t('Yopish')}
-          >
-            <X className="w-5 h-5" strokeWidth={2.4} />
-          </button>
-        </div>
+        <Lightbox
+          images={[lessonImage]}
+          activeIndex={0}
+          onClose={() => setIsImageZoomed(false)}
+          altFor={() => lesson.title}
+        />
       )}
     </div>
   );

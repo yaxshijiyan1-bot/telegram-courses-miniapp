@@ -39,7 +39,7 @@
 - **Animatsiya:** motion/react (Framer Motion)
 - **Ikonkalar:** lucide-react
 - **Backend:** FastAPI (Render free tier), Supabase DB, Cloudflare R2 (rasmlar)
-- **Joylashuv:** Cloudflare Pages + Vercel, GitHub main'dan avto-deploy
+- **Joylashuv:** Cloudflare Pages, GitHub main'dan avto-deploy (Vercel tijorat uchun ruxsat bermagani sababli olib tashlangan)
 - **Shriftlar (Google Fonts'dan yuklanadi):**
   - `Plus Jakarta Sans` (400, 500, 600, 700, 800) — asosiy sans
   - `DM Serif Display` (italic 0;1) — accent serif (kursiv so'zlar uchun)

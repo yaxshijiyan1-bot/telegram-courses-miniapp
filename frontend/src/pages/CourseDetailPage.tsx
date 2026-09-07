@@ -30,6 +30,7 @@ import { useTelegram } from '../context/TelegramContext';
 import { useSettings } from '../context/SettingsContext';
 import { formatNumber } from '../utils/format';
 import { api, toMediaUrl } from '../services/api';
+import { Lightbox } from '../components/Lightbox';
 
 interface CourseDetailPageProps {
   course: Course;
@@ -76,7 +77,6 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   const [openModuleId, setOpenModuleId] = useState<string | null>(null);
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
   const [activePreviewIdx, setActivePreviewIdx] = useState<number | null>(null);
-  const swipeStartX = useRef<number | null>(null);
   const { haptic } = useTelegram();
   const { t } = useSettings();
 
@@ -105,18 +105,6 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [course.id]);
-
-  // Lightbox ochiq bo'lganda orqa sahifa scroll bo'lmasligi uchun tanani qulflash
-  useEffect(() => {
-    if (activePreviewIdx === null) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.body.style.overscrollBehavior = 'none';
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.style.overscrollBehavior = '';
-    };
-  }, [activePreviewIdx]);
 
   const [channelLoading, setChannelLoading] = useState(false);
   const [channelError, setChannelError] = useState<string | null>(null);
@@ -766,85 +754,17 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
         </div>
       </div>
 
-      {/* Lightbox — to'liq ekran, sahifa scrolli qulflangan */}
+      {/* Lightbox — portal orqali document.body'da: kurs sahifasi ildizidagi
+          animate-fade-up transform'i fixed elementni o'ziga bog'lab qo'yardi
+          va rasm skrol bilan surilib kesilar edi. */}
       {activePreviewIdx !== null && galleryList[activePreviewIdx] && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center animate-fade-in touch-none select-none"
-          onClick={() => setActivePreviewIdx(null)}
-          onTouchStart={(e) => {
-            swipeStartX.current = e.touches[0]?.clientX ?? null;
-          }}
-          onTouchEnd={(e) => {
-            const startX = swipeStartX.current;
-            swipeStartX.current = null;
-            if (startX === null || galleryList.length < 2) return;
-            const dx = (e.changedTouches[0]?.clientX ?? startX) - startX;
-            if (Math.abs(dx) < 48) return;
-            const nextIdx = dx < 0 ? activePreviewIdx + 1 : activePreviewIdx - 1;
-            if (nextIdx >= 0 && nextIdx < galleryList.length) {
-              haptic?.selection?.();
-              setActivePreviewIdx(nextIdx);
-            }
-          }}
-        >
-          <img
-            key={activePreviewIdx}
-            src={toMediaUrl(galleryList[activePreviewIdx])}
-            alt={`Kurs lavhasi ${activePreviewIdx + 1}`}
-            draggable={false}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full h-full object-contain animate-zoom-in select-none"
-            style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
-          />
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActivePreviewIdx(null);
-            }}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-            aria-label={t('Yopish')}
-          >
-            <X className="w-5 h-5" strokeWidth={2.4} />
-          </button>
-
-          {galleryList.length > 1 && activePreviewIdx > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                haptic?.selection?.();
-                setActivePreviewIdx(activePreviewIdx - 1);
-              }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-              aria-label={t('Oldingi surat')}
-            >
-              <ChevronLeft className="w-5 h-5" strokeWidth={2.4} />
-            </button>
-          )}
-
-          {galleryList.length > 1 && activePreviewIdx < galleryList.length - 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                haptic?.selection?.();
-                setActivePreviewIdx(activePreviewIdx + 1);
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all"
-              aria-label={t('Keyingi surat')}
-            >
-              <ChevronRight className="w-5 h-5" strokeWidth={2.4} />
-            </button>
-          )}
-
-          {galleryList.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-white/15 text-white text-[11px] font-bold pointer-events-none">
-              {activePreviewIdx + 1} / {galleryList.length}
-            </div>
-          )}
-        </div>
+        <Lightbox
+          images={galleryList.map(toMediaUrl)}
+          activeIndex={activePreviewIdx}
+          onClose={() => setActivePreviewIdx(null)}
+          onNavigate={(idx) => setActivePreviewIdx(idx)}
+          altFor={(idx) => t(`Kurs lavhasi ${idx + 1}`)}
+        />
       )}
     </div>
   );

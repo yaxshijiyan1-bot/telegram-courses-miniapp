@@ -299,8 +299,10 @@ async def reject_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, s
         return False, "Chek holati o'zgargan; ro'yxatni yangilang"
 
     # Chek rad etilsa — submit paytida hamyondan yechirilgan summa qaytariladi.
-    # Yechirilganlik haqiqatan hamyon tranzaksiya tarixida mavjud bo'lsa va hali qaytarilmagan bo'lsa qaytaramiz.
-    comment = str(purchase.get("comment") or "")
+    # Haqiqiy summa faqat hamyon tranzaksiya ledgeridan o'qiladi (type=spend,
+    # tx=buyurtma ID). Comment'dagi SYSTEM[wallet:N] yozuviga tayanilmaydi —
+    # u foydalanuvchi tomonidan soxtalashtirilishi mumkin va checkout oqimi
+    # uni allaqachon tozalaydi.
     order_tx = purchase.get("transaction_id") or purchase.get("id") or ""
     refund_tx = f"refund_{order_tx}"
 
@@ -309,15 +311,8 @@ async def reject_purchase(transaction_id: str, admin_name: str) -> Tuple[bool, s
         try:
             already_refunded = await wallet_service.has_tx(store, str(purchase["user_id"]), refund_tx)
             if not already_refunded:
-                # 1. Hamyon tranzaksiya tarixidan buyurtma bo'yicha yechilgan aniq summani olamiz
+                # Hamyon tranzaksiya tarixidan buyurtma bo'yicha yechilgan aniq summani olamiz
                 spent = await wallet_service.get_tx_debit_amount(store, str(purchase["user_id"]), order_tx)
-                # 2. Agar tranzaksiya tarixida bo'lmasa, faqat tizim xavfsiz tegi SYSTEM[...] ichidan qaraymiz
-                if spent <= 0 and "SYSTEM[" in comment:
-                    import re
-                    m_wallet = re.search(r"SYSTEM\[.*?wallet:(\d+)", comment)
-                    if m_wallet:
-                        spent = int(m_wallet.group(1))
-
                 if spent > 0:
                     refunded = await wallet_service.credit(
                         store, str(purchase["user_id"]), spent, "refund",
