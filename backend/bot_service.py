@@ -53,18 +53,60 @@ _GROUP_SALES_KEYWORDS = (
 _pending_admin_videos: Dict[int, Dict[str, Any]] = {}
 
 
+def flag_is_true(value: Any) -> bool:
+    """Qat'iy boolean tekshiruvi (H2 yechimi: 'false', '0' kabi qiymatlarni rad etadi)."""
+    if value is True:
+        return True
+    if type(value) is int and value == 1:
+        return True
+    if isinstance(value, str) and value.strip().lower() in ("true", "1"):
+        return True
+    return False
+
+
+def delivery_error_text(result: dict) -> str:
+    """Telegram xatoliklarini granulyar ajratib, talabaga aniq sababni ko'rsatish (D yechimi)."""
+    if result.get("delivery_unknown"):
+        return (
+            "Telegram javobi olinmadi. Video yetkazilgan bo'lishi mumkin; "
+            "avval chatni tekshiring."
+        )
+
+    code = result.get("error_code")
+    params = result.get("parameters")
+    params = params if isinstance(params, dict) else {}
+    desc = str(result.get("description") or "").lower()
+
+    if code == 429:
+        try:
+            delay = max(1, int(params.get("retry_after", 1)))
+        except (TypeError, ValueError):
+            delay = 1
+        return f"Telegram so'rovlar limiti. Kamida {delay} soniya kuting."
+
+    if code == 403:
+        return "Telegram amalni taqiqladi. Administratorga murojaat qiling."
+
+    if "query is too old" in desc or "query_id_invalid" in desc:
+        return "Tugma so'rovi eskirgan. Qaytadan bosing."
+
+    return "Video ochilmadi. Keyinroq urinib ko'ring yoki yordamga yozing."
+
+
 class BoundedCooldown:
-    """Xotirasi cheklangan va eskirgan kalitlarni avtomatik tozalovchi rate limiter (M7 yechimi)."""
+    """Xotirasi cheklangan va eskirgan kalitlarni avtomatik tozalovchi rate limiter (monotonic va in-place)."""
     def __init__(self, seconds: float = 5.0, max_keys: int = 50000):
         self.seconds = seconds
         self.max_keys = max_keys
         self.items: Dict[Any, float] = {}
 
     def take(self, key: Any) -> bool:
-        now = time.time()
+        now = time.monotonic()
         if len(self.items) >= self.max_keys:
             cutoff = now - self.seconds
-            self.items = {k: ts for k, ts in self.items.items() if ts > cutoff}
+            expired = [k for k, ts in self.items.items() if ts <= cutoff]
+            for k in expired:
+                del self.items[k]
             if len(self.items) >= self.max_keys:
                 return False
         last = self.items.get(key, 0.0)
@@ -243,7 +285,7 @@ async def send_ephemeral_video(
         "caption": caption[:1024],
         "parse_mode": "HTML",
         "supports_streaming": True,
-        "protect_content": protect_content,
+        "protect_content": True,
         "ephemeral_message_parameters": {
             "receiver_user_id": int(callback_user_id),
             "callback_query_id": str(callback_query_id),
@@ -450,9 +492,26 @@ async def _send_payment_info(client: httpx.AsyncClient, chat_id: int) -> None:
 
 
 async def _start_checkout(client: httpx.AsyncClient, chat_id: int, user: Dict[str, Any], course_id: str) -> None:
+    # Guruhda to'lov boshlanmasligi kerak — maxfiylik va xavfsizlik uchun faqat shaxsiy chatda (F yechimi)
+    user_tg_id = int(user.get("telegram_id") or 0)
+    if int(chat_id) != user_tg_id:
+        bot_user = (settings.BOT_USERNAME or "").lstrip("@")
+        await send_tg_message(
+            client,
+            chat_id,
+            "⚠️ Xavfsizlik va maxfiylik maqsadida to'lov faqat botning shaxsiy chatida amalga oshiriladi.",
+            {
+                "inline_keyboard": [[{
+                    "text": "💳 Botda to'lovni boshlash",
+                    "url": f"https://t.me/{bot_user}?start=pay_{course_id}" if bot_user else settings.WEBAPP_URL,
+                }]]
+            },
+        )
+        return
+
     store = get_store()
     course = await store.get_course(course_id)
-    if not course or not course.get("published", True):
+    if not course or not flag_is_true(course.get("published", True)):
         await send_tg_message(client, chat_id, "⚠️ Bu kurs hozir mavjud emas.")
         return
     card = await _get_active_card_info()
@@ -838,37 +897,35 @@ async def require_lesson_access(
         raise LessonAccessDenied("Xavfsizlik tekshiruvida xatolik yuz berdi. Keyinroq urinib ko'ring.")
 
     # 5. Kurs tekshiruvi: Dars biriktirilgan kurs bo'lishi shart (H2 yechimi)
+    # 5. Kurs va darsning published holati tekshiruvi (H2 & H5 yechimi)
     if not target_course_id:
         raise LessonAccessDenied("Ushbu darsga kirish hozircha mumkin emas (kurs belgilanmagan).")
 
     course = await store.get_course(target_course_id)
-    if not course or not course.get("published", True):
+    if not course or not flag_is_true(course.get("published", True)):
         raise LessonAccessDenied("Kurs hali ochilmagan yoki nofaol.")
 
-    # 6. Preview dars bo'lsa darhol ruxsat
-    if lesson.get("is_preview"):
+    if lesson.get("published") is not None and not flag_is_true(lesson.get("published")):
+        raise LessonAccessDenied("Dars hali ochilmagan.")
+
+    # 6. Preview dars bo'lsa darhol ruxsat (Qat'iy boolean tekshiruv)
+    if flag_is_true(lesson.get("is_preview")):
         return store, lesson, await store.get_user_by_tg(user_id)
 
-    # 7. Foydalanuvchi va Enrollment tekshiruvi
+    # 7. Foydalanuvchi va Faol Enrollment tekshiruvi (H1 yechimi: eski xarid orqali resurrection olib tashlandi)
     user = await store.get_user_by_tg(user_id)
     if not user:
         raise LessonAccessDenied("Avval botimizga kiring: /start", can_buy=True, course_id=target_course_id)
 
     enr = await store.get_enrollment(user["id"], target_course_id)
-    if enr and enr.get("status") == "active":
-        return store, lesson, user
+    if not enr or enr.get("status") != "active":
+        raise LessonAccessDenied(
+            f"🔒 «{lesson.get('title') or 'Dars'}» himoyalangan dars.\n\nUshbu kurs uchun faol ruxsat mavjud emas.",
+            can_buy=enr is None,
+            course_id=target_course_id,
+        )
 
-    # Agar approved xarid bo'lsa, enrollmentni ochish
-    purchase = await store.get_approved_purchase_for(user["id"], target_course_id)
-    if purchase:
-        await store.create_enrollment(user["id"], target_course_id, purchase.get("id"))
-        return store, lesson, user
-
-    raise LessonAccessDenied(
-        f"🔒 «{lesson.get('title') or 'Dars'}» himoyalangan dars.\n\nUshbu darsni ko'rish uchun avval kursga a'zo bo'lishingiz kerak.",
-        can_buy=True,
-        course_id=target_course_id,
-    )
+    return store, lesson, user
 
 
 async def deliver_private_lesson(
@@ -878,8 +935,10 @@ async def deliver_private_lesson(
     query_id: Optional[str] = None,
 ) -> bool:
     """
-    Dars videosini 100% xavfsiz holda FAQAT talabaning shaxsiy chatiga yetkazish.
-    Guruhga HECH QACHON pullik video yuborilmaydi (C1 xavfsizligi).
+    Shaxsiy chatga dars yo'naltirish:
+    Oddiy talabaga pullik dars xom video fayl sifatida yuborilmaydi (AyuGram himoyasi).
+    Buning o'rniga yopiq o'quv guruhida ephemeral ko'rish yoki Mini App bo'yicha yo'riqnoma beriladi.
+    Faqat adminlar yoki bepul preview darslar uchun to'g'ridan-to'g'ri yuboriladi.
     """
     store = get_store()
     try:
@@ -898,7 +957,7 @@ async def deliver_private_lesson(
             else:
                 await _answer_callback(client, query_id, exc.message[:200], show_alert=True)
         else:
-            await send_tg_message(client, user_id, f"⚠️ {exc.message}")
+            await send_tg_message(client, user_id, f"⚠️ {_escape(exc.message)}")
         return False
     except Exception as exc:
         logger.error("Lesson auth unexpected error: %s", exc)
@@ -926,9 +985,8 @@ async def deliver_private_lesson(
         duration = lesson["duration"]
 
     # Admin yoki preview dars bo'lmasa, shaxsiy chatga xom video fayl yuborilmaydi
-    # (AyuGram va norasmiy modlar yuklab olishiga yo'l qo'ymaslik uchun).
-    # Buning o'rniga Mini App yoki Yopiq Guruhdagi Ephemeral ko'rishga yo'naltiriladi!
-    if not is_admin(user_id) and not lesson.get("is_preview"):
+    # Qat'iy boolean tekshiruv (H2 yechimi)
+    if not is_admin(user_id) and not flag_is_true(lesson.get("is_preview")):
         target_course_id = lesson.get("course_id")
         target_id, target_title = await _get_effective_target_group(store, target_course_id)
         group_url = None
@@ -1074,7 +1132,7 @@ async def handle_student_ephemeral_lesson(
             duration=duration,
             width=lesson.get("width"),
             height=lesson.get("height"),
-            protect_content=getattr(settings, "PROTECT_CONTENT", True),
+            protect_content=True,
         )
         if res.get("ok"):
             await _answer_callback(client, query_id, "✅ Dars videosi faqat siz uchun ochildi!")
@@ -1092,12 +1150,12 @@ async def handle_student_ephemeral_lesson(
             except Exception as exc:
                 logger.error("Access log update error: %s", exc)
         else:
-            # Ephemeral ishlamasa (masalan norasmiy klient ishlatilsa), privat video yuborilmaydi
+            # Ephemeral yetkazilmasa, privat fallback qilinmaydi (Anti-AyuGram)
             logger.warning("Ephemeral delivery failed in group for %s: %s", user_id, res)
             await _answer_callback(
                 client,
                 query_id,
-                "⚠️ Himoyalangan darsni ko'rish uchun rasmiy Telegram ilovasidan foydalaning va yangilang.",
+                delivery_error_text(res),
                 show_alert=True,
             )
         return
@@ -1191,11 +1249,15 @@ async def _save_pending_admin_video(
     admin_id: int,
     custom_title: Optional[str] = None,
     message_id_to_edit: Optional[int] = None,
+    expected_session_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Kutilayotgan videoni bazaga va Mini App katalogiga sinxron saqlash."""
-    video_data = _pending_admin_videos.pop(admin_id, None)
+    video_data = _pending_admin_videos.get(admin_id)
     if not video_data:
         return None
+    if expected_session_id and video_data.get("session_id") != expected_session_id:
+        return None
+    _pending_admin_videos.pop(admin_id, None)
 
     store = get_store()
     title = (custom_title or video_data.get("suggested_title") or "Yangi dars").strip()
@@ -1334,21 +1396,21 @@ async def _handle_admin_callback(client: httpx.AsyncClient, callback_query: Dict
             parts = data.split(":")
             session_id = parts[2] if len(parts) > 2 else None
             pending = _pending_admin_videos.get(int(admin_tg_id))
-            if session_id and pending and pending.get("session_id") != session_id:
-                await _answer_callback(client, query_id, "⚠️ Bu video so'rovi allaqachon eskirgan.", show_alert=True)
+            if not pending or not session_id or pending.get("session_id") != session_id:
+                await _answer_callback(client, query_id, "⚠️ Bu video so'rovi topilmadi yoki allaqachon eskirgan.", show_alert=True)
                 return True
             msg = callback_query.get("message") or {}
             msg_id = msg.get("message_id")
             await _answer_callback(client, query_id, "✅ Dars saqlanmoqda...")
-            await _save_pending_admin_video(client, int(admin_tg_id), message_id_to_edit=msg_id)
+            await _save_pending_admin_video(client, int(admin_tg_id), message_id_to_edit=msg_id, expected_session_id=session_id)
             return True
 
         if data.startswith("admin:cancel_video"):
             parts = data.split(":")
             session_id = parts[2] if len(parts) > 2 else None
             pending = _pending_admin_videos.get(int(admin_tg_id))
-            if session_id and pending and pending.get("session_id") != session_id:
-                await _answer_callback(client, query_id, "⚠️ Bu video so'rovi allaqachon eskirgan.", show_alert=True)
+            if not pending or not session_id or pending.get("session_id") != session_id:
+                await _answer_callback(client, query_id, "⚠️ Bu video so'rovi topilmadi yoki allaqachon eskirgan.", show_alert=True)
                 return True
             _pending_admin_videos.pop(int(admin_tg_id), None)
             await _answer_callback(client, query_id, "Video bekor qilindi.")
@@ -1505,7 +1567,9 @@ async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict
 
     authorized, purchase = await is_join_request_authorized(int(chat_id), int(telegram_id), invite_link)
     if not authorized:
-        await _telegram_call(client, "declineChatJoinRequest", {"chat_id": chat_id, "user_id": telegram_id})
+        decline_res = await _telegram_call(client, "declineChatJoinRequest", {"chat_id": chat_id, "user_id": telegram_id})
+        if not decline_res.get("ok"):
+            logger.warning("declineChatJoinRequest muvaffaqiyatsiz bo'ldi: user_id=%s, res=%s", telegram_id, decline_res)
         await send_tg_message(
             client,
             int(telegram_id),
@@ -1909,12 +1973,23 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
             tg_id_int = None
         if tg_id_int is not None and tg_id_int not in settings.ADMIN_IDS:
             try:
-                if await get_store().is_user_blocked(tg_id_int):
-                    if "callback_query" in update:
-                        await _answer_callback(client, update["callback_query"].get("id"), "Hisobingiz bloklangan.")
+                blocked = await get_store().is_user_blocked(tg_id_int)
+            except Exception as exc:
+                logger.error("Foydalanuvchi bloklanganligini tekshirishda DB xatosi (%s): %s", tg_id_int, exc)
+                # Xavfsizlik: DB xatosi yuz bersa nozik amallar (callback, to'lov/chek, start buyruqlari) to'xtatiladi (fail-closed)
+                if "callback_query" in update:
+                    await _answer_callback(client, update["callback_query"].get("id"), "Tizimda vaqtinchalik xatolik. Qaytadan urinib ko'ring.", show_alert=True)
                     return
-            except Exception:
-                pass
+                msg = update.get("message") or {}
+                if msg.get("photo") or str(msg.get("text") or "").startswith("/"):
+                    await send_tg_message(client, tg_id_int, "⚠️ Tizimda vaqtinchalik xatolik. Iltimos, birozdan so'ng qayta urinib ko'ring.")
+                    return
+                blocked = False
+
+            if blocked:
+                if "callback_query" in update:
+                    await _answer_callback(client, update["callback_query"].get("id"), "Hisobingiz bloklangan.", show_alert=True)
+                return
 
     if "callback_query" in update:
         await handle_callback_query(client, update["callback_query"])
@@ -1968,6 +2043,13 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
         if payload.lower().startswith("lesson_"):
             lid = payload.split("_", 1)[1].strip()
             await _send_direct_lesson_video(client, int(chat_id), int(user["telegram_id"]), lid)
+            return
+        if payload.lower().startswith("pay_"):
+            cid = payload.split("_", 1)[1].strip()
+            await _start_checkout(client, int(chat_id), user, cid)
+            return
+        if payload.lower() in {"catalog", "courses", "kurslar"}:
+            await show_course_card(client, int(chat_id), 0)
             return
         if payload.lower().startswith("ref_"):
             from app.services.promos import link_referral
@@ -2203,6 +2285,12 @@ async def start_telegram_bot_polling() -> None:
             {"menu_button": {"type": "web_app", "text": "🎓 Course Academy", "web_app": {"url": settings.WEBAPP_URL}}},
         )
 
+        async def _safe_handle_tg_update(item: Dict[str, Any]) -> None:
+            try:
+                await handle_tg_update(client, item)
+            except Exception:
+                logger.exception("Telegram update ishlovida kutilmagan xato (update_id=%s)", item.get("update_id"))
+
         while True:
             try:
                 response = await client.get(
@@ -2220,10 +2308,7 @@ async def start_telegram_bot_polling() -> None:
                     continue
                 for item in data.get("result", []):
                     offset = int(item["update_id"]) + 1
-                    try:
-                        await handle_tg_update(client, item)
-                    except Exception:
-                        logger.exception("Telegram update ishlovida kutilmagan xato")
+                    asyncio.create_task(_safe_handle_tg_update(item))
             except asyncio.CancelledError:
                 logger.info("Telegram polling to'xtatildi.")
                 reports_task.cancel()
