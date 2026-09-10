@@ -1031,8 +1031,7 @@ async def handle_student_ephemeral_lesson(
     if duration is None and isinstance(lesson.get("duration"), int):
         duration = lesson["duration"]
 
-    # 3. Guruhda bosilgan bo'lsa -> Ephemeral Video (Telegramda FAQAT o'sha talabaning ekranida ko'rinadi!)
-    sent_ok = False
+    # 3. Guruhda bosilgan bo'lsa -> Faqat Ephemeral Video (AyuGram yoki mod klientlar uchun privat fallback qilinmaydi!)
     if chat_id and chat_type in ("group", "supergroup"):
         res = await send_ephemeral_video(
             client=client,
@@ -1048,28 +1047,33 @@ async def handle_student_ephemeral_lesson(
             protect_content=getattr(settings, "PROTECT_CONTENT", True),
         )
         if res.get("ok"):
-            sent_ok = True
             await _answer_callback(client, query_id, "✅ Dars videosi faqat siz uchun ochildi!")
+            try:
+                await store.log_access({
+                    "lesson_id": str(lesson["id"]),
+                    "user_id": user_id,
+                    "mode": "group_ephemeral",
+                })
+                target_course_id = lesson.get("course_id")
+                if user and target_course_id:
+                    await store.upsert_progress(
+                        user["id"], target_course_id, str(lesson["id"]), completed=False
+                    )
+            except Exception as exc:
+                logger.error("Access log update error: %s", exc)
+        else:
+            # Ephemeral ishlamasa (masalan norasmiy klient ishlatilsa), privat video yuborilmaydi
+            logger.warning("Ephemeral delivery failed in group for %s: %s", user_id, res)
+            await _answer_callback(
+                client,
+                query_id,
+                "⚠️ Himoyalangan darsni ko'rish uchun rasmiy Telegram ilovasidan foydalaning va yangilang.",
+                show_alert=True,
+            )
+        return
 
-    # 4. Guruh bo'lmasa yoki ephemeral yuborishda xatolik bo'lsa -> Shaxsiy chatga fallback
-    if not sent_ok:
-        sent_ok = await deliver_private_lesson(client, user_id=user_id, lesson_id=lesson_id, query_id=query_id)
-
-    # 5. Telemetriya va progress
-    if sent_ok:
-        try:
-            await store.log_access({
-                "lesson_id": str(lesson["id"]),
-                "user_id": user_id,
-                "mode": "group_ephemeral" if chat_type in ("group", "supergroup") else "private_protected",
-            })
-            target_course_id = lesson.get("course_id")
-            if user and target_course_id:
-                await store.upsert_progress(
-                    user["id"], target_course_id, str(lesson["id"]), completed=False
-                )
-        except Exception as exc:
-            logger.error("Access log update error: %s", exc)
+    # 4. Agar botning o'zida shaxsiy chatda bosilgan bo'lsa -> Shaxsiy chatga yetkazish
+    await deliver_private_lesson(client, user_id=user_id, lesson_id=lesson_id, query_id=query_id)
 
 
 
