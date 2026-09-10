@@ -139,9 +139,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   const goalParts = t(TEAM_GOAL).split(t('natijaga'));
 
   const statTiles = [
-    { icon: BookOpen, val: String(completedLessons), lbl: t('yakunlangan dars'), cls: 'bg-cyan/10 text-cyan' },
-    { icon: GraduationCap, val: String(enrolledCount), lbl: t('aktiv kurs'), cls: 'bg-violet/10 text-violet' },
-    { icon: Trophy, val: `${overallProgress}%`, lbl: t('umumiy progress'), cls: 'bg-gold/10 text-gold' },
+    { icon: BookOpen, val: `${courses.length || '10'}+`, lbl: t('amaliy kurslar'), cls: 'bg-cyan/10 text-cyan' },
+    { icon: GraduationCap, val: '2 500+', lbl: t('faol talabalar'), cls: 'bg-violet/10 text-violet' },
+    { icon: Trophy, val: '98%', lbl: t('ijobiy natija'), cls: 'bg-gold/10 text-gold' },
   ];
 
   return (

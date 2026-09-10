@@ -21,7 +21,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const tabs: { id: NavTab; label: string; icon: typeof Home }[] = [
     { id: 'home', label: t('Bosh sahifa'), icon: Home },
     { id: 'courses', label: t('Kurslar'), icon: Compass },
-    { id: 'learning', label: t('Darslarim'), icon: BookOpen },
+    { id: 'learning', label: t('Xaridlarim'), icon: BookOpen },
     { id: 'profile', label: t('Profil'), icon: User },
   ];
 

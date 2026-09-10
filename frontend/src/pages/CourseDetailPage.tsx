@@ -36,7 +36,6 @@ interface CourseDetailPageProps {
   course: Course;
   onBack: () => void;
   onPurchase: (course: Course) => void;
-  onPlayLesson: (course: Course, lesson: Lesson) => void;
   onOpenTeacher?: (course: Course) => void;
 }
 
@@ -67,7 +66,6 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
   course: courseProp,
   onBack,
   onPurchase,
-  onPlayLesson,
   onOpenTeacher,
 }) => {
   // Ro'yxat endpointi is_enrolled/modules/descriptionni qaytarmaydi —
@@ -553,7 +551,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
             right={<span className="text-[11px] text-ink-muted font-semibold">{course.modules?.length || 0} {t('modul')} · {totalLessons} {t('dars')}</span>}
           />
 
-          {/* Yopiq kanal haqida eslatma */}
+          {/* Yopiq o'quv guruhi haqida eslatma */}
           <div
             className="flex items-start gap-2.5 text-xs text-cyan leading-relaxed mt-2"
             style={{
@@ -565,9 +563,9 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           >
             <ShieldAlert className="w-4 h-4 text-cyan flex-shrink-0 mt-0.5" />
             <div>
-              <b className="font-extrabold block text-ink mb-0.5">{t('Yopiq kanal orqali o‘rganish:')}</b>
+              <b className="font-extrabold block text-ink mb-0.5">{t('Yopiq o‘quv guruhi:')}</b>
               <span className="text-ink-secondary">
-                {t("Barcha to‘liq video darslar xavfsiz Telegram yopiq kanalida joylashgan. To‘lov tasdiqlangach, bot sizga bir martalik kirish havolasini yuboradi.")}
+                {t("Barcha to‘liq video darslar xavfsiz Telegram yopiq guruhida o'tiladi. Kurs xarid qilingach, bot orqali guruhga shaxsiy kirish havolasi beriladi.")}
               </span>
             </div>
           </div>
@@ -575,7 +573,6 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           <div className="space-y-2 mt-2.5">
             {course.modules?.map((module, mIdx) => {
               const isOpen = openModuleId === module.id;
-              const doneCount = module.lessons.filter((l) => l.completed).length;
 
               return (
                 <div key={module.id} className="bg-white overflow-hidden" style={{ border: '1px solid var(--soft-border)', borderRadius: 20 }}>
@@ -599,7 +596,6 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                         <span className="text-[13px] font-bold text-ink block truncate tracking-[-0.005em]">{module.title}</span>
                         <span className="text-[10.5px] text-ink-muted font-medium">
                           {module.lessons.length} {t('dars')}
-                          {course.is_enrolled && doneCount > 0 ? ` · ${doneCount} ${t('yakunlandi')}` : ''}
                         </span>
                       </div>
                     </div>
@@ -609,47 +605,43 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
                   {isOpen && (
                     <div className="px-3 pb-3 pt-1 space-y-1.5" style={{ borderTop: '1px solid var(--soft-border)' }}>
                       {module.lessons.map((lesson, lIdx) => {
-                        const unlocked = lesson.is_preview || course.is_enrolled;
                         return (
                           <div
                             key={lesson.id}
                             onClick={() => {
-                              if (unlocked) {
+                              if (course.is_enrolled) {
                                 haptic?.impact?.('light');
-                                onPlayLesson(course, lesson);
+                                openChannel();
+                              } else {
+                                haptic?.impact?.('medium');
+                                onPurchase(course);
                               }
                             }}
-                            className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all ${
-                              unlocked
-                                ? 'bg-white border border-slate-200 hover:border-cyan cursor-pointer active:scale-[0.99] shadow-sm'
-                                : 'bg-slate-100/60 border border-transparent text-slate-400'
-                            }`}
+                            className="flex items-center justify-between p-2.5 rounded-xl text-xs transition-all bg-white border border-slate-200/80 hover:border-cyan cursor-pointer active:scale-[0.99] shadow-sm"
                           >
                             <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                              <span className={`text-[10px] font-mono font-bold flex-shrink-0 ${unlocked ? 'text-cyan' : 'text-slate-400'}`}>
+                              <span className="text-[10px] font-mono font-bold flex-shrink-0 text-cyan">
                                 {String(lIdx + 1).padStart(2, '0')}
                               </span>
                               <div className="min-w-0">
-                                <span className={`font-semibold text-xs block truncate ${unlocked ? 'text-ink' : 'text-slate-500'}`}>
+                                <span className="font-semibold text-xs block truncate text-ink">
                                   {lesson.title}
                                 </span>
-                                {lesson.completed && (
-                                  <span className="text-[9px] text-emerald-600 font-bold">{t('Yakunlangan ✓')}</span>
-                                )}
                               </div>
                             </div>
 
                             <div className="flex items-center space-x-2 flex-shrink-0">
-                              <span className="text-[10px] text-slate-400">{lesson.duration}</span>
-                              {lesson.is_preview ? (
+                              <span className="text-[10px] text-slate-400">{lesson.duration || '15 min'}</span>
+                              {course.is_enrolled ? (
                                 <span className="text-[9px] font-bold bg-cyan/10 border border-cyan/20 text-cyan px-2 py-0.5 rounded-md flex items-center space-x-1">
-                                  <Play className="w-2.5 h-2.5 fill-current" />
-                                  <span>{t('Ochiq')}</span>
+                                  <Send className="w-2.5 h-2.5" />
+                                  <span>{t('Guruhda')}</span>
                                 </span>
-                              ) : course.is_enrolled ? (
-                                <Play className="w-3.5 h-3.5 text-cyan fill-current" />
                               ) : (
-                                <Lock className="w-3.5 h-3.5 text-slate-400" />
+                                <span className="text-[9px] font-bold bg-slate-100 text-slate-400 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                                  <Lock className="w-2.5 h-2.5" />
+                                  <span>{t('Qulf')}</span>
+                                </span>
                               )}
                             </div>
                           </div>
@@ -748,7 +740,7 @@ export const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
               ) : (
                 <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
               )}
-              <span>{course.is_enrolled ? t("Kanalga o'tish") : t('Sotib olish')}</span>
+              <span>{course.is_enrolled ? t("👥 O'quv guruhiga o'tish") : t('Sotib olish')}</span>
             </button>
           </div>
         </div>

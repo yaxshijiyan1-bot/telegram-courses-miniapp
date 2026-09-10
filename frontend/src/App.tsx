@@ -11,7 +11,6 @@ import { INSTRUCTORS, Instructor } from './components/InstructorsSection';
 import { PurchaseSuccessPage } from './pages/PurchaseSuccessPage';
 import { LoginPage } from './pages/LoginPage';
 import { MyCoursesPage } from './pages/MyCoursesPage';
-import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { CheckoutModal } from './components/CheckoutModal';
 import { NotificationsPanel } from './components/NotificationsPanel';
@@ -98,13 +97,6 @@ export const AppContent: React.FC = () => {
     setSelectedTeacher(t);
     setOverlayStack((s) => [...s.filter((x) => x !== 'teacher'), 'teacher']);
   }, []);
-  const [selectedLesson, setSelectedLesson] = useState<{
-    course: Course;
-    lesson: Lesson;
-    moduleTitle: string;
-    prev: string | null;
-    next: string | null;
-  } | null>(null);
   const [purchasedCourse, setPurchasedCourse] = useState<Course | null>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
@@ -128,16 +120,16 @@ export const AppContent: React.FC = () => {
   // tarixda doim kamida bitta yozuv (sentinel) saqlanadi — back bosilganda
   // chiqib ketmaydi, popstate orqali bir qatlam yopiladi.
   const navStateRef = useRef({
-    selectedCourse, selectedTeacher, overlayStack, selectedLesson, purchasedCourse,
+    selectedCourse, selectedTeacher, overlayStack, purchasedCourse,
     isCheckoutOpen, isAdminOpen, isNotifsOpen, isSettingsOpen, activeTab,
   });
   navStateRef.current = {
-    selectedCourse, selectedTeacher, overlayStack, selectedLesson, purchasedCourse,
+    selectedCourse, selectedTeacher, overlayStack, purchasedCourse,
     isCheckoutOpen, isAdminOpen, isNotifsOpen, isSettingsOpen, activeTab,
   };
 
   const canGoBack = !!(
-    selectedCourse || selectedTeacher || selectedLesson || purchasedCourse ||
+    selectedCourse || selectedTeacher || purchasedCourse ||
     isCheckoutOpen || isAdminOpen || isNotifsOpen || isSettingsOpen
   ) || activeTab !== 'home';
 
@@ -175,7 +167,6 @@ export const AppContent: React.FC = () => {
     else if (s.isNotifsOpen) setIsNotifsOpen(false);
     else if (s.isAdminOpen) setIsAdminOpen(false);
     else if (s.isSettingsOpen) setIsSettingsOpen(false);
-    else if (s.selectedLesson) setSelectedLesson(null);
     else if (s.purchasedCourse) setPurchasedCourse(null);
     else if (s.selectedTeacher && top === 'teacher') {
       setSelectedTeacher(null);
@@ -340,27 +331,6 @@ export const AppContent: React.FC = () => {
     }
   }, [canGoBack, showBackButton, hideBackButton, goBack]);
 
-  const handlePlayLesson = async (course: Course, lesson: Lesson) => {
-    try {
-      const lData = await api.getProtectedLesson(course.id, lesson.id);
-      setSelectedLesson({
-        course,
-        lesson: lData.lesson || lesson,
-        moduleTitle: lData.module_title || 'Dars',
-        prev: lData.prev_lesson_id || null,
-        next: lData.next_lesson_id || null,
-      });
-    } catch {
-      setSelectedLesson({
-        course,
-        lesson,
-        moduleTitle: 'Dars',
-        prev: null,
-        next: null,
-      });
-    }
-  };
-
   // Sotib olingan kurslar ID'lari — sotuv bo'limlarida ko'rsatilmaydi
   const purchasedCourseIds = useMemo(() => {
     const ids = new Set<string>(cachedPurchasedIds);
@@ -395,31 +365,7 @@ export const AppContent: React.FC = () => {
     return <SplashPage onStart={() => setShowSplash(false)} />;
   }
 
-  // 1. Lesson Player View
-  if (selectedLesson) {
-    return (
-      <LessonPlayerPage
-        course={selectedLesson.course}
-        lesson={selectedLesson.lesson}
-        moduleTitle={selectedLesson.moduleTitle}
-        prevLessonId={selectedLesson.prev}
-        nextLessonId={selectedLesson.next}
-        onBack={goBack}
-        onSelectLesson={async (c, lId) => {
-          const lData = await api.getProtectedLesson(c.id, lId);
-          setSelectedLesson({
-            course: c,
-            lesson: lData.lesson,
-            moduleTitle: lData.module_title,
-            prev: lData.prev_lesson_id,
-            next: lData.next_lesson_id,
-          });
-        }}
-      />
-    );
-  }
-
-  // 2. Purchase Success View
+  // 1. Purchase Success View
   if (purchasedCourse) {
     return (
       <PurchaseSuccessPage
@@ -435,7 +381,7 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  // 3. Teacher Profile View (ustoz sahifasi kurs ustida ham ochilishi mumkin)
+  // 2. Teacher Profile View (ustoz sahifasi kurs ustida ham ochilishi mumkin)
   if (selectedTeacher && topOverlay === 'teacher') {
     return (
       <TeacherPage
@@ -449,7 +395,7 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  // 4. Course Detail View
+  // 3. Course Detail View
   if (selectedCourse && topOverlay !== 'teacher') {
     return (
       <>
@@ -460,7 +406,6 @@ export const AppContent: React.FC = () => {
             setCheckoutCourse(c);
             setIsCheckoutOpen(true);
           }}
-          onPlayLesson={(c, l) => handlePlayLesson(c, l)}
           onOpenTeacher={openTeacherForCourse}
         />
 

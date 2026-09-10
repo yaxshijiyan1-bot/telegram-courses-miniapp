@@ -70,9 +70,9 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
       {/* Sarlavha */}
       <motion.div variants={item} className="flex items-center justify-between">
         <div className="space-y-1">
-          <p className="eyebrow">{t('O‘quv hududingiz')}</p>
+          <p className="eyebrow">{t('Siz xarid qilgan kurslar')}</p>
           <h1 className="text-[28px] sm:text-[32px] font-extrabold text-ink leading-tight tracking-tight">
-            {t('Darslarim')}
+            {t('Xaridlarim')}
           </h1>
         </div>
         <span className="w-11 h-11 rounded-2xl glass-chip text-cyan font-extrabold text-sm flex items-center justify-center tabular-nums">
@@ -86,10 +86,17 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
           <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 text-cyan flex items-center justify-center mx-auto">
             <BookOpen className="w-6 h-6" strokeWidth={2} />
           </div>
-          <b className="text-sm text-ink block">{t('Hozircha aktiv kurs yo‘q')}</b>
+          <b className="text-sm text-ink block">{t('Hozircha xarid qilingan kurs yo‘q')}</b>
           <p className="text-[11px] text-ink-muted leading-relaxed max-w-[260px] mx-auto">
-            {t("Kurs xarid qilgach, bu yerda «Kanalga o'tish» tugmasi paydo bo'ladi — barcha darslar yopiq kanalda joylashgan.")}
+            {t("Kurs xarid qilganingizdan so'ng, bu yerda «O'quv guruhiga o'tish» tugmasi paydo bo'ladi — barcha darslar yopiq guruhda.")}
           </p>
+          <button
+            type="button"
+            onClick={onExploreCourses}
+            className="mt-2 px-5 py-2.5 rounded-xl bg-cyan text-white text-xs font-bold shadow-cyanGlowSm active:scale-95 transition-transform"
+          >
+            {t('Katalogni ko‘rish')}
+          </button>
         </motion.div>
       ) : (
         <div className="space-y-3">
@@ -195,7 +202,7 @@ export const MyCoursesPage: React.FC<MyCoursesPageProps> = ({
                   ) : (
                     <Send className="w-4 h-4" strokeWidth={2.4} />
                   )}
-                  <span>{t("Kanalga o'tish — darslar shu yerda")}</span>
+                  <span>{t("👥 O'quv guruhiga o'tish — darslar shu yerda")}</span>
                 </button>
 
                 {channelError?.id === enrolled.id && (

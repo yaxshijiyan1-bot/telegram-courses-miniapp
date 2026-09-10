@@ -938,18 +938,16 @@ async def deliver_private_lesson(
             group_url = f"https://t.me/c/{str(target_id).replace('-100', '')}"
 
         keyboard_rows = [
-            [{"text": "🚀 Mini Appda tomosha qilish", "web_app": {"url": f"{settings.WEBAPP_URL}#course_{target_course_id}"}}],
+            [{"text": "ℹ️ Kurs ma'lumotlari (Mini App)", "web_app": {"url": f"{settings.WEBAPP_URL}#course_{target_course_id}"}}],
         ]
         if group_url:
-            keyboard_rows.insert(0, [{"text": "👥 O'quv guruhida ko'rish", "url": group_url}])
+            keyboard_rows.insert(0, [{"text": "👥 O'quv guruhiga o'tish", "url": group_url}])
 
         guide_text = (
             f"🎓 <b>{_escape(raw_title)}</b>\n\n"
             "🔒 <b>Himoyalangan dars videosi</b>\n"
-            "Mualliflik huquqini himoya qilish maqsadida ushbu dars videolari shaxsiy chatga fayl sifatida yuborilmaydi.\n\n"
-            "Darsni quyidagi xavfsiz muhitlarda tomosha qilishingiz mumkin:\n"
-            "1. <b>O'quv guruhida</b> — dars e'lonidagi [▶️ Darsni ko'rish] tugmasi orqali (video faqat sizning ekraningizda ochiladi);\n"
-            "2. <b>Mini Appda</b> — qulay o'quv pleyeri va AI mentor bilan."
+            "Barcha to'liq video darslar faqat rasmiy yopiq <b>O'quv guruhida</b> namoyish etiladi va shaxsiy chatga xom fayl ko'rinishida yuborilmaydi.\n\n"
+            "Darsni tomosha qilish uchun o'quv guruhidagi ushbu dars e'lonidagi <b>[▶️ Darsni ko'rish]</b> tugmasini bosing — video faqat sizning ekraningizda ochiladi!"
         )
         if query_id:
             await _answer_callback(client, query_id)

@@ -61,7 +61,7 @@ async def _notify_student(
     elif invite_link:
         buttons.append([{"text": "📢 Yopiq dars kanaliga kirish", "url": invite_link}])
     buttons.append(
-        [{"text": "🚀 Mini Appda darslarni ko'rish", "web_app": {"url": settings.WEBAPP_URL}}]
+        [{"text": "🚀 Mini App katalogi", "web_app": {"url": settings.WEBAPP_URL}}]
     )
 
     try:
