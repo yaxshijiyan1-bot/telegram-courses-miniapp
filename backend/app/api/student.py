@@ -279,8 +279,16 @@ async def get_protected_lesson(
         raise HTTPException(status_code=404, detail="Dars topilmadi")
 
     # HUQUQ TEKSHIRUVI: preview bo'lmagan darslar faqat xaridorga
+    tg_id = current_user.get("telegram_id")
+    if tg_id:
+        if await store.is_user_blocked(int(tg_id)):
+            raise HTTPException(status_code=403, detail="Hisobingiz ma'muriyat tomonidan bloklangan.")
+        is_l_blocked, b_reason = await store.is_user_blocked_for_lesson(int(tg_id), lesson_id)
+        if is_l_blocked:
+            raise HTTPException(status_code=403, detail=f"Ushbu darsga kirish cheklangan: {b_reason or 'Ma\'muriyat qarori'}")
+
     enrollment = await store.get_enrollment(user_id, course["id"])
-    if not target_lesson.get("is_preview") and not enrollment:
+    if not target_lesson.get("is_preview") and (not enrollment or enrollment.get("status") != "active"):
         raise HTTPException(
             status_code=403,
             detail="Bu darsga kirish uchun kursni sotib oishingiz kerak. Kursni xarid qiling yoki admin tasdiqlashini kuting."
@@ -353,7 +361,14 @@ async def send_lesson_video_to_telegram(
     if not target_lesson:
         raise HTTPException(status_code=404, detail="Dars topilmadi")
 
-    if not target_lesson.get("is_preview") and not enrollment:
+    if telegram_id:
+        if await store.is_user_blocked(int(telegram_id)):
+            raise HTTPException(status_code=403, detail="Hisobingiz ma'muriyat tomonidan bloklangan.")
+        is_l_blocked, b_reason = await store.is_user_blocked_for_lesson(int(telegram_id), lesson_id)
+        if is_l_blocked:
+            raise HTTPException(status_code=403, detail=f"Ushbu darsga kirish cheklangan: {b_reason or 'Ma\'muriyat qarori'}")
+
+    if not target_lesson.get("is_preview") and (not enrollment or enrollment.get("status") != "active"):
         raise HTTPException(status_code=403, detail="Darsni ko'rish uchun kurs xarid qilingan bo'lishi kerak")
 
     tg_file = target_lesson.get("telegram_file_id") or target_lesson.get("file_id")

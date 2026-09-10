@@ -373,8 +373,17 @@ async def is_join_request_authorized(
             return False, {"course_title": cached.get("course_title")}
 
     store = get_store()
+    try:
+        if await store.is_user_blocked(int(telegram_id)):
+            return False, None
+    except Exception as exc:
+        logger.error("Join request blocklist check error: %s", exc)
+        return False, None
+
     purchase = await store.get_purchase_by_invite_link(invite_link)
     if not purchase or purchase.get("status") != "approved":
+        return False, purchase
+    if purchase.get("invite_consumed_at"):
         return False, purchase
     if int(purchase.get("telegram_id") or 0) != int(telegram_id):
         return False, purchase
@@ -425,8 +434,12 @@ async def revoke_join_request_link(
     try:
         purchase = await store.get_purchase_by_invite_link(invite_link)
         if purchase:
+            now_iso = datetime.now(timezone.utc).isoformat()
             await store.update_purchase(
-                purchase["id"], {"invite_expires_at": datetime.now(timezone.utc).isoformat()}
+                purchase["id"], {
+                    "invite_expires_at": now_iso,
+                    "invite_consumed_at": now_iso,
+                }
             )
     except Exception as exc:
         logger.warning("Invite link muddati bazada yangilanmadi: %s", exc)
