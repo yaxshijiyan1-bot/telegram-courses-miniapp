@@ -132,11 +132,55 @@ class SqliteStore(Store):
                 value TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS lessons (
+                id TEXT PRIMARY KEY,
+                course_id TEXT,
+                module_id TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                video_url TEXT,
+                video_file_id TEXT,
+                video_file_unique_id TEXT,
+                duration TEXT,
+                duration_seconds INTEGER,
+                width INTEGER,
+                height INTEGER,
+                file_size INTEGER,
+                order_index INTEGER DEFAULT 1,
+                is_preview INTEGER DEFAULT 0,
+                resources TEXT DEFAULT '[]',
+                created_by INTEGER,
+                published_message_id INTEGER,
+                published INTEGER DEFAULT 1,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS access_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lesson_id TEXT NOT NULL,
+                user_id INTEGER NOT NULL,
+                username TEXT,
+                first_name TEXT,
+                client_callback_id TEXT,
+                mode TEXT,
+                opened_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS user_permissions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                lesson_id TEXT,
+                is_blocked INTEGER DEFAULT 1,
+                reason TEXT,
+                created_at TEXT NOT NULL,
+                UNIQUE(user_id, lesson_id)
+            );
             CREATE INDEX IF NOT EXISTS idx_purchases_tx ON purchases(transaction_id);
             CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases(status);
             CREATE INDEX IF NOT EXISTS idx_enroll_user ON enrollments(user_id);
             CREATE INDEX IF NOT EXISTS idx_prog_user_course ON lesson_progress(user_id, course_id);
             CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id);
+            CREATE INDEX IF NOT EXISTS idx_lessons_course ON lessons(course_id);
+            CREATE INDEX IF NOT EXISTS idx_access_logs_user ON access_logs(user_id);
+            CREATE INDEX IF NOT EXISTS idx_access_logs_lesson ON access_logs(lesson_id);
             """)
 
             # Safe column additions
@@ -600,3 +644,183 @@ class SqliteStore(Store):
                 (key, value, _now())
             )
         return True
+
+    # ---------------- LESSONS ----------------
+    def _lesson_row(self, r: Any) -> Dict[str, Any]:
+        d = dict(r)
+        d["is_preview"] = bool(d.get("is_preview"))
+        d["published"] = bool(d.get("published", 1))
+        d["order"] = d.get("order_index", 1)
+        res_raw = d.get("resources")
+        if isinstance(res_raw, str):
+            try:
+                d["resources"] = json.loads(res_raw)
+            except Exception:
+                d["resources"] = []
+        elif res_raw is None:
+            d["resources"] = []
+        d["telegram_file_id"] = d.get("video_file_id")
+        d["file_id"] = d.get("video_file_id")
+        return d
+
+    async def add_lesson(self, lesson: Dict[str, Any]) -> Dict[str, Any]:
+        with self.lock, self._conn() as c:
+            lesson_id = str(lesson.get("id") or "").strip()
+            if not lesson_id:
+                max_row = c.execute("SELECT MAX(CAST(id AS INTEGER)) FROM lessons").fetchone()
+                max_id = (max_row[0] or 0) if max_row and max_row[0] is not None else 0
+                lesson_id = str(max_id + 1)
+
+            row = {
+                "id": lesson_id,
+                "course_id": lesson.get("course_id"),
+                "module_id": lesson.get("module_id"),
+                "title": lesson.get("title") or "Dars",
+                "description": lesson.get("description"),
+                "video_url": lesson.get("video_url"),
+                "video_file_id": lesson.get("video_file_id") or lesson.get("telegram_file_id") or lesson.get("file_id"),
+                "video_file_unique_id": lesson.get("video_file_unique_id"),
+                "duration": str(lesson.get("duration") or ""),
+                "duration_seconds": lesson.get("duration_seconds") or (lesson.get("duration") if isinstance(lesson.get("duration"), int) else None),
+                "width": lesson.get("width"),
+                "height": lesson.get("height"),
+                "file_size": lesson.get("file_size"),
+                "order_index": lesson.get("order") or lesson.get("order_index") or 1,
+                "is_preview": 1 if lesson.get("is_preview") else 0,
+                "resources": json.dumps(lesson.get("resources") or []),
+                "created_by": lesson.get("created_by"),
+                "published_message_id": lesson.get("published_message_id"),
+                "published": 1 if lesson.get("published", True) else 0,
+                "created_at": lesson.get("created_at") or _now(),
+            }
+
+            c.execute(
+                """INSERT INTO lessons (id, course_id, module_id, title, description, video_url, video_file_id,
+                   video_file_unique_id, duration, duration_seconds, width, height, file_size, order_index,
+                   is_preview, resources, created_by, published_message_id, published, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(id) DO UPDATE SET
+                   title=excluded.title, description=excluded.description, video_url=excluded.video_url,
+                   video_file_id=excluded.video_file_id, video_file_unique_id=excluded.video_file_unique_id,
+                   duration=excluded.duration, duration_seconds=excluded.duration_seconds,
+                   width=excluded.width, height=excluded.height, file_size=excluded.file_size,
+                   order_index=excluded.order_index, is_preview=excluded.is_preview,
+                   resources=excluded.resources, published_message_id=excluded.published_message_id,
+                   published=excluded.published""",
+                (row["id"], row["course_id"], row["module_id"], row["title"], row["description"],
+                 row["video_url"], row["video_file_id"], row["video_file_unique_id"], row["duration"],
+                 row["duration_seconds"], row["width"], row["height"], row["file_size"], row["order_index"],
+                 row["is_preview"], row["resources"], row["created_by"], row["published_message_id"],
+                 row["published"], row["created_at"])
+            )
+            return self._lesson_row(row)
+
+    async def get_lesson(self, lesson_id: Any) -> Optional[Dict[str, Any]]:
+        lid = str(lesson_id)
+        with self.lock, self._conn() as c:
+            row = c.execute("SELECT * FROM lessons WHERE id=? OR id=?", (lid, lid.lstrip("0"))).fetchone()
+            return self._lesson_row(row) if row else None
+
+    async def list_lessons(self, course_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        with self.lock, self._conn() as c:
+            if course_id:
+                rows = c.execute("SELECT * FROM lessons WHERE course_id=? ORDER BY order_index ASC, created_at ASC", (course_id,)).fetchall()
+            else:
+                rows = c.execute("SELECT * FROM lessons ORDER BY order_index ASC, created_at ASC").fetchall()
+            return [self._lesson_row(r) for r in rows]
+
+    async def delete_lesson(self, lesson_id: Any) -> bool:
+        lid = str(lesson_id)
+        with self.lock, self._conn() as c:
+            cur = c.execute("DELETE FROM lessons WHERE id=?", (lid,))
+            return cur.rowcount > 0
+
+    async def update_lesson(self, lesson_id: Any, fields: Dict[str, Any]) -> bool:
+        lid = str(lesson_id)
+        if not fields:
+            return True
+        cols = []
+        vals = []
+        for k, v in fields.items():
+            if k == "order":
+                cols.append("order_index = ?")
+                vals.append(v)
+            elif k == "resources" and not isinstance(v, str):
+                cols.append("resources = ?")
+                vals.append(json.dumps(v))
+            elif k in ("video_file_id", "telegram_file_id", "file_id"):
+                cols.append("video_file_id = ?")
+                vals.append(v)
+            else:
+                cols.append(f'"{k}" = ?')
+                vals.append(v)
+        vals.append(lid)
+        with self.lock, self._conn() as c:
+            cur = c.execute(f"UPDATE lessons SET {', '.join(cols)} WHERE id=?", vals)
+            return cur.rowcount > 0
+
+    async def count_lessons(self, course_id: Optional[str] = None) -> int:
+        with self.lock, self._conn() as c:
+            if course_id:
+                row = c.execute("SELECT COUNT(*) FROM lessons WHERE course_id=?", (course_id,)).fetchone()
+            else:
+                row = c.execute("SELECT COUNT(*) FROM lessons").fetchone()
+            return row[0] if row else 0
+
+    # ---------------- ACCESS LOGS ----------------
+    async def log_access(self, access: Dict[str, Any]) -> Dict[str, Any]:
+        with self.lock, self._conn() as c:
+            c.execute(
+                """INSERT INTO access_logs (lesson_id, user_id, username, first_name, client_callback_id, mode, opened_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (str(access.get("lesson_id") or ""), int(access.get("user_id") or 0),
+                 access.get("username"), access.get("first_name"), access.get("client_callback_id"),
+                 access.get("mode") or "ephemeral", access.get("opened_at") or _now())
+            )
+        return access
+
+    async def get_recent_access_logs(self, limit: int = 10) -> List[Dict[str, Any]]:
+        with self.lock, self._conn() as c:
+            rows = c.execute("SELECT * FROM access_logs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    async def count_access_logs(self) -> int:
+        with self.lock, self._conn() as c:
+            row = c.execute("SELECT COUNT(*) FROM access_logs").fetchone()
+            return row[0] if row else 0
+
+    # ---------------- USER PERMISSIONS ----------------
+    async def block_user_lesson(self, user_id: int, lesson_id: Optional[Any] = None, reason: str = "") -> bool:
+        lid = str(lesson_id) if lesson_id is not None else None
+        with self.lock, self._conn() as c:
+            c.execute(
+                """INSERT INTO user_permissions (user_id, lesson_id, is_blocked, reason, created_at)
+                   VALUES (?, ?, 1, ?, ?)
+                   ON CONFLICT(user_id, lesson_id) DO UPDATE SET is_blocked=1, reason=excluded.reason""",
+                (int(user_id), lid, reason, _now())
+            )
+        return True
+
+    async def unblock_user_lesson(self, user_id: int, lesson_id: Optional[Any] = None) -> bool:
+        lid = str(lesson_id) if lesson_id is not None else None
+        with self.lock, self._conn() as c:
+            if lid is None:
+                c.execute("DELETE FROM user_permissions WHERE user_id=?", (int(user_id),))
+            else:
+                c.execute("DELETE FROM user_permissions WHERE user_id=? AND (lesson_id=? OR lesson_id IS NULL)", (int(user_id), lid))
+        return True
+
+    async def is_user_blocked_for_lesson(self, user_id: int, lesson_id: Optional[Any] = None) -> tuple[bool, str]:
+        # 1. Global blocked list
+        if await self.is_user_blocked(int(user_id)):
+            return True, "Foydalanuvchi hisobi bloklangan"
+        # 2. Per-lesson or per-user permissions table
+        lid = str(lesson_id) if lesson_id is not None else None
+        with self.lock, self._conn() as c:
+            row = c.execute(
+                "SELECT reason FROM user_permissions WHERE user_id=? AND is_blocked=1 AND (lesson_id IS NULL OR lesson_id=?)",
+                (int(user_id), lid)
+            ).fetchone()
+            if row:
+                return True, row["reason"] or "Administrator cheklovi"
+        return False, ""

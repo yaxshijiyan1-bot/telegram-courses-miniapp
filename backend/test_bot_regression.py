@@ -48,11 +48,11 @@ class FakeClient:
     def __init__(self):
         self.calls = []
 
-    async def post(self, url, json=None, data=None, files=None):
+    async def post(self, url, json=None, data=None, files=None, **kwargs):
         self.calls.append(("POST", url, json if json is not None else data))
         return FakeResponse(payload={"ok": False, "description": "fake"})
 
-    async def get(self, url):
+    async def get(self, url, **kwargs):
         self.calls.append(("GET", url, None))
         return FakeResponse(payload={"ok": False})
 

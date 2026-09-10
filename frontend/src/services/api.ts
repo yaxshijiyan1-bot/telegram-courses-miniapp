@@ -385,6 +385,18 @@ class ApiService {
     return true;
   }
 
+  async sendLessonVideoToTelegram(courseId: string, lessonId: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/student/courses/${courseId}/lessons/${lessonId}/send-video`, {
+      method: 'POST',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Video yuborishda xatolik yuz berdi');
+    }
+    return await res.json();
+  }
+
   async createOrder(courseId: string, paymentMethod: string): Promise<{ order_id: string; amount: number; course_title: string }> {
     const res = await fetch(`${API_BASE_URL}/checkout/create-order`, {
       method: 'POST',

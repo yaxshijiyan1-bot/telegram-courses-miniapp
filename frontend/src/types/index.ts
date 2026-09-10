@@ -21,6 +21,9 @@ export interface Lesson {
   is_preview?: boolean;
   description?: string;
   video_url?: string;
+  telegram_file_id?: string;
+  file_id?: string;
+  is_telegram_video?: boolean;
   resources?: LessonResource[];
   completed?: boolean;
 }

@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     # Telegram Bot Config
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     BOT_USERNAME: str = os.getenv("BOT_USERNAME", "kreativaibot")
+    TARGET_GROUP_ID: str = os.getenv("TARGET_GROUP_ID", "")
+    PROTECT_CONTENT: bool = os.getenv("PROTECT_CONTENT", "true").lower() in ("true", "1", "yes")
 
     # Teng huquqli Adminlar ro'yxati
     ADMIN_IDS_RAW: str = os.getenv("ADMIN_IDS", "8544023815,8112688757")

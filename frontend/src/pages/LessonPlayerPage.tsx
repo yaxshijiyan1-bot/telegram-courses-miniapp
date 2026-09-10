@@ -10,7 +10,10 @@ import {
   Maximize2,
   X,
   Image as ImageIcon,
-  BookOpen
+  BookOpen,
+  Play,
+  ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Course, Lesson } from '../types';
@@ -57,6 +60,34 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
       document.body.style.overscrollBehavior = '';
     };
   }, [isImageZoomed]);
+
+  const [sendingVideo, setSendingVideo] = useState(false);
+  const [videoStatus, setVideoStatus] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+
+  const isTelegramVideo = Boolean(
+    lesson.telegram_file_id ||
+    lesson.file_id ||
+    lesson.is_telegram_video ||
+    (lesson.video_url && lesson.video_url.startsWith('tg-file:'))
+  );
+
+  const handleRequestVideo = async () => {
+    haptic?.impact?.('light');
+    setSendingVideo(true);
+    setVideoError(null);
+    setVideoStatus(null);
+    try {
+      const res = await api.sendLessonVideoToTelegram(course.id, lesson.id);
+      haptic?.notification?.('success');
+      setVideoStatus(res.message || t("Video Telegram botingizga yuborildi!"));
+    } catch (err: any) {
+      haptic?.notification?.('error');
+      setVideoError(err.message || t("Video yuborishda xatolik yuz berdi"));
+    } finally {
+      setSendingVideo(false);
+    }
+  };
 
   const handleMarkComplete = async () => {
     haptic?.impact?.('medium');
@@ -119,7 +150,9 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
               </span>
             </div>
             <div className="space-y-0.5">
-              <span className="badge-cyan text-[8px] py-0 px-1.5 font-bold">{t('Amaliy Dars Materiali')}</span>
+              <span className="badge-cyan text-[8px] py-0 px-1.5 font-bold">
+                {isTelegramVideo ? t('🔒 Himoyalangan Video') : t('Amaliy Dars Materiali')}
+              </span>
               <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">{lesson.title}</h3>
             </div>
           </div>
@@ -131,6 +164,62 @@ export const LessonPlayerPage: React.FC<LessonPlayerPageProps> = ({
             <span className="text-[10px] font-bold text-slate-400">{t('Dars tartibi')}: {lesson.duration || t('15 daqiqa')}</span>
             <h1 className="text-base font-extrabold text-slate-900 mt-0.5">{lesson.title}</h1>
           </div>
+
+          {/* Telegram Ephemeral Protected Video Banner & Action */}
+          {isTelegramVideo && (
+            <div className="p-3.5 bg-gradient-to-r from-sky-50 to-cyan-50 rounded-2xl border border-sky-100/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="w-6 h-6 rounded-lg bg-cyan-500/10 text-cyan-600 flex items-center justify-center">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-800">
+                    {t('Telegram Himoyalangan Video')}
+                  </span>
+                </div>
+                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700 tracking-wider">
+                  {t('Protected Stream')}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                {t("Ushbu dars videosi faqat siz uchun Telegram orqali xavfsiz va tezkor holda uzatiladi.")}
+              </p>
+
+              <button
+                type="button"
+                onClick={handleRequestVideo}
+                disabled={sendingVideo}
+                className="w-full py-2.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs flex items-center justify-center space-x-2 active:scale-98 transition-all disabled:opacity-70 shadow-sm"
+              >
+                {sendingVideo ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{t("Yuborilmoqda...")}</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>{t("Videoni Telegram botimga yuborish")}</span>
+                  </>
+                )}
+              </button>
+
+              {videoStatus && (
+                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium flex items-center space-x-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-emerald-600" />
+                  <span>{videoStatus}</span>
+                </div>
+              )}
+
+              {videoError && (
+                <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-medium flex items-center space-x-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
+                  <span>{videoError}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Complete CTA */}
           <motion.button

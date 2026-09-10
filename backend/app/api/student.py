@@ -162,6 +162,87 @@ async def get_channel_link(course_id: str, current_user: dict = Depends(get_curr
     except PermissionError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
+@router.get("/courses/{course_id}/lessons")
+async def get_course_lessons(
+    course_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Kursning barcha darslari va talaba o'zlashtirish holati"""
+    store = get_store()
+    user_id = current_user.get("sub")
+
+    course = await store.get_course(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Kurs topilmadi")
+
+    enrollment = await store.get_enrollment(user_id, course["id"])
+    modules = resolve_course_modules(course)
+    progress_map = await store.get_progress_map(user_id, course["id"])
+
+    lessons = []
+    for m in modules:
+        for l in m.get("lessons", []):
+            prog = progress_map.get(str(l.get("id")), {})
+            can_access = bool(l.get("is_preview") or enrollment)
+            v_url = l.get("video_url")
+            if v_url and can_access and not str(v_url).startswith("tg-file:"):
+                v_url = r2_client.resolve_stream_url(v_url, expires_in=7200)
+            elif not can_access:
+                v_url = None
+
+            tg_file = l.get("telegram_file_id") or l.get("file_id")
+            if not tg_file and str(l.get("video_url") or "").startswith("tg-file:"):
+                tg_file = str(l["video_url"]).split("tg-file:", 1)[1]
+
+            lessons.append({
+                **l,
+                "video_url": v_url,
+                "telegram_file_id": tg_file,
+                "file_id": tg_file,
+                "module_id": m.get("id"),
+                "module_title": m.get("title"),
+                "completed": bool(prog.get("completed", False)),
+                "last_position": prog.get("last_position", 0),
+                "is_locked": not can_access,
+            })
+
+    existing_ids = {str(l.get("id")) for l in lessons}
+    db_lessons = await store.list_lessons(course["id"])
+    for dbl in db_lessons:
+        if str(dbl.get("id")) not in existing_ids:
+            prog = progress_map.get(str(dbl.get("id")), {})
+            can_access = bool(dbl.get("is_preview") or enrollment)
+            v_url = dbl.get("video_url")
+            if v_url and can_access and not str(v_url).startswith("tg-file:"):
+                v_url = r2_client.resolve_stream_url(v_url, expires_in=7200)
+            elif not can_access:
+                v_url = None
+
+            tg_file = dbl.get("telegram_file_id") or dbl.get("file_id")
+            if not tg_file and str(dbl.get("video_url") or "").startswith("tg-file:"):
+                tg_file = str(dbl["video_url"]).split("tg-file:", 1)[1]
+
+            lessons.append({
+                **dbl,
+                "video_url": v_url,
+                "telegram_file_id": tg_file,
+                "file_id": tg_file,
+                "module_id": "m_extra",
+                "module_title": "Qo'shimcha Darslar",
+                "completed": bool(prog.get("completed", False)),
+                "last_position": prog.get("last_position", 0),
+                "is_locked": not can_access,
+            })
+
+    return {
+        "course_id": course["id"],
+        "course_title": course["title"],
+        "is_enrolled": bool(enrollment),
+        "total_lessons": len(lessons),
+        "lessons": lessons,
+    }
+
+
 @router.get("/courses/{course_id}/lessons/{lesson_id}")
 async def get_protected_lesson(
     course_id: str,
@@ -183,9 +264,16 @@ async def get_protected_lesson(
     for m in modules:
         for l in m.get("lessons", []):
             all_lessons.append(l)
-            if l.get("id") == lesson_id:
+            if str(l.get("id")) == str(lesson_id):
                 target_lesson = l
                 target_module = m
+
+    if not target_lesson:
+        db_lesson = await store.get_lesson(lesson_id)
+        if db_lesson and (not db_lesson.get("course_id") or db_lesson.get("course_id") == course["id"]):
+            target_lesson = db_lesson
+            target_module = {"id": "m_extra", "title": "Dars"}
+            all_lessons.append(db_lesson)
 
     if not target_lesson:
         raise HTTPException(status_code=404, detail="Dars topilmadi")
@@ -200,20 +288,27 @@ async def get_protected_lesson(
 
     # Cloudflare R2 dan xavfsiz URL olish (obyekt kaliti, /api/media/ yoki eski r2.dev havolalar)
     video_stream_url = target_lesson.get("video_url")
-    if video_stream_url:
+    if video_stream_url and not str(video_stream_url).startswith("tg-file:"):
         video_stream_url = r2_client.resolve_stream_url(video_stream_url, expires_in=7200)
 
-    current_idx = next((i for i, l in enumerate(all_lessons) if l["id"] == lesson_id), -1)
+    tg_file = target_lesson.get("telegram_file_id") or target_lesson.get("file_id")
+    if not tg_file and str(target_lesson.get("video_url") or "").startswith("tg-file:"):
+        tg_file = str(target_lesson["video_url"]).split("tg-file:", 1)[1]
+
+    current_idx = next((i for i, l in enumerate(all_lessons) if str(l.get("id")) == str(lesson_id)), -1)
     prev_lesson = all_lessons[current_idx - 1] if current_idx > 0 else None
     next_lesson = all_lessons[current_idx + 1] if current_idx != -1 and current_idx < len(all_lessons) - 1 else None
 
     progress_map = await store.get_progress_map(user_id, course["id"])
-    prog = progress_map.get(lesson_id, {})
+    prog = progress_map.get(str(lesson_id), {})
 
     return {
         "lesson": {
             **target_lesson,
             "video_url": video_stream_url,
+            "telegram_file_id": tg_file,
+            "file_id": tg_file,
+            "is_telegram_video": bool(tg_file),
             "completed": bool(prog.get("completed", False)),
             "last_position": prog.get("last_position", 0),
         },
@@ -222,6 +317,70 @@ async def get_protected_lesson(
         "next_lesson_id": next_lesson["id"] if next_lesson else None,
         "completed": bool(prog.get("completed", False))
     }
+
+
+@router.post("/courses/{course_id}/lessons/{lesson_id}/send-video")
+async def send_lesson_video_to_telegram(
+    course_id: str,
+    lesson_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Himoyalangan dars videosini talabaning shaxsiy Telegram bot chatiga yuborish"""
+    store = get_store()
+    user_id = current_user.get("sub")
+    telegram_id = current_user.get("telegram_id")
+    if not telegram_id:
+        raise HTTPException(status_code=400, detail="Telegram hisobingiz aniqlanmadi")
+
+    course = await store.get_course(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Kurs topilmadi")
+
+    enrollment = await store.get_enrollment(user_id, course["id"])
+    modules = resolve_course_modules(course)
+    target_lesson = None
+    for m in modules:
+        for l in m.get("lessons", []):
+            if str(l.get("id")) == str(lesson_id):
+                target_lesson = l
+                break
+
+    if not target_lesson:
+        db_lesson = await store.get_lesson(lesson_id)
+        if db_lesson and (not db_lesson.get("course_id") or db_lesson.get("course_id") == course["id"]):
+            target_lesson = db_lesson
+
+    if not target_lesson:
+        raise HTTPException(status_code=404, detail="Dars topilmadi")
+
+    if not target_lesson.get("is_preview") and not enrollment:
+        raise HTTPException(status_code=403, detail="Darsni ko'rish uchun kurs xarid qilingan bo'lishi kerak")
+
+    tg_file = target_lesson.get("telegram_file_id") or target_lesson.get("file_id")
+    if not tg_file and str(target_lesson.get("video_url") or "").startswith("tg-file:"):
+        tg_file = str(target_lesson["video_url"]).split("tg-file:", 1)[1]
+
+    if not tg_file:
+        raise HTTPException(status_code=400, detail="Ushbu dars uchun Telegram video fayli mavjud emas")
+
+    from bot_service import send_tg_video
+    import httpx
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await send_tg_video(
+            client=client,
+            chat_id=int(telegram_id),
+            video=tg_file,
+            caption=f"🎓 <b>{target_lesson.get('title')}</b>\n\n🔒 <i>Himoyalangan dars videosi (faqat siz uchun)</i>",
+            protect_content=True,
+        )
+    if not res.get("ok"):
+        raise HTTPException(
+            status_code=502,
+            detail="Botdan video yuborilmadi. Avval botga kirib /start bosing."
+        )
+
+    return {"success": True, "message": "Video shaxsiy Telegram botingizga yuborildi!"}
+
 
 @router.post("/progress")
 async def update_lesson_progress(

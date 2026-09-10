@@ -88,7 +88,24 @@ class CourseUpsertRequest(BaseModel):
                     continue
                 ltitle = str(l.get("title") or "").strip()[:300]
                 if ltitle:
-                    lessons.append({"title": ltitle})
+                    l_obj: Dict[str, Any] = {"title": ltitle}
+                    if l.get("id"):
+                        l_obj["id"] = str(l["id"])
+                    if l.get("duration"):
+                        l_obj["duration"] = str(l["duration"])
+                    if l.get("video_url"):
+                        l_obj["video_url"] = str(l["video_url"])
+                    if l.get("telegram_file_id"):
+                        l_obj["telegram_file_id"] = str(l["telegram_file_id"])
+                    if l.get("file_id"):
+                        l_obj["file_id"] = str(l["file_id"])
+                    if "is_preview" in l:
+                        l_obj["is_preview"] = bool(l["is_preview"])
+                    if l.get("description"):
+                        l_obj["description"] = str(l["description"])
+                    if l.get("resources"):
+                        l_obj["resources"] = l["resources"]
+                    lessons.append(l_obj)
             cleaned.append({"title": title, "lessons": lessons})
         return cleaned
 
@@ -959,3 +976,83 @@ async def admin_wallets_overview(admin: dict = Depends(get_current_admin)):
         "users_with_balance": sum(1 for r in rows if r["wallet_balance"] > 0),
         "accounts": rows,
     }
+
+
+class LessonUpsertRequest(BaseModel):
+    title: str
+    course_id: Optional[str] = None
+    module_id: Optional[str] = None
+    video_url: Optional[str] = None
+    video_file_id: Optional[str] = None
+    duration: Optional[str] = None
+    order: Optional[int] = 1
+    is_preview: Optional[bool] = False
+    description: Optional[str] = None
+    resources: Optional[List[Dict[str, Any]]] = None
+
+
+@router.get("/lessons")
+async def get_admin_lessons(
+    course_id: Optional[str] = None,
+    admin: dict = Depends(get_current_admin)
+):
+    """Barcha video darslar ro'yxatini olish"""
+    store = get_store()
+    lessons = await store.list_lessons(course_id=course_id)
+    return {"lessons": lessons, "total": len(lessons)}
+
+
+@router.post("/lessons")
+async def create_admin_lesson(
+    payload: LessonUpsertRequest,
+    admin: dict = Depends(get_current_admin)
+):
+    """Yangi video dars qo'shish va kurs dasturiga sinxronlash"""
+    store = get_store()
+    lesson_data = payload.dict()
+    lesson = await store.add_lesson(lesson_data)
+    # Sync with course modules if course_id is set
+    if payload.course_id:
+        course = await store.get_course(payload.course_id)
+        if course:
+            modules = course.get("modules") or []
+            if not modules:
+                modules = [{"title": "01. Video Darslar", "lessons": []}]
+            modules[-1].setdefault("lessons", []).append({
+                "id": lesson["id"],
+                "title": lesson["title"],
+                "duration": lesson.get("duration", ""),
+                "video_url": lesson.get("video_url"),
+                "telegram_file_id": lesson.get("video_file_id"),
+                "file_id": lesson.get("video_file_id"),
+                "is_preview": lesson.get("is_preview", False),
+            })
+            course["modules"] = modules
+            course["lesson_count"] = sum(len(m.get("lessons", [])) for m in modules)
+            await store.upsert_course(course)
+    return {"success": True, "lesson": lesson}
+
+
+@router.delete("/lessons/{lesson_id}")
+async def delete_admin_lesson(
+    lesson_id: str,
+    admin: dict = Depends(get_current_admin)
+):
+    """Darsni o'chirish"""
+    store = get_store()
+    ok = await store.delete_lesson(lesson_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Dars topilmadi")
+    return {"success": True, "message": "Dars o'chirildi"}
+
+
+@router.get("/access-logs")
+async def get_admin_access_logs(
+    limit: int = 50,
+    admin: dict = Depends(get_current_admin)
+):
+    """Ephemeral video ko'rishlar jurnali (telemetriya)"""
+    store = get_store()
+    logs = await store.get_recent_access_logs(limit=limit)
+    total = await store.count_access_logs()
+    return {"logs": logs, "total": total}

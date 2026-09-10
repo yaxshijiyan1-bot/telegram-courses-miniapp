@@ -11,9 +11,10 @@ import datetime as _dt
 import html
 import json
 import logging
+import secrets
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple, List
 
 import httpx
 
@@ -48,6 +49,39 @@ _GROUP_SALES_KEYWORDS = (
     "sun'iy intellekt", "prompt", "nechchi dars", "qancha turadi",
 )
 
+# Adminlar video yuklash holati: admin_id -> video_meta_dict
+_pending_admin_videos: Dict[int, Dict[str, Any]] = {}
+
+
+class BoundedCooldown:
+    """Xotirasi cheklangan va eskirgan kalitlarni avtomatik tozalovchi rate limiter (M7 yechimi)."""
+    def __init__(self, seconds: float = 5.0, max_keys: int = 50000):
+        self.seconds = seconds
+        self.max_keys = max_keys
+        self.items: Dict[Any, float] = {}
+
+    def take(self, key: Any) -> bool:
+        now = time.time()
+        if len(self.items) >= self.max_keys:
+            cutoff = now - self.seconds
+            self.items = {k: ts for k, ts in self.items.items() if ts > cutoff}
+            if len(self.items) >= self.max_keys:
+                return False
+        last = self.items.get(key, 0.0)
+        if now - last < self.seconds:
+            return False
+        self.items[key] = now
+        return True
+
+    def clear(self) -> None:
+        self.items.clear()
+
+
+# Studentlar uchun dars ko'rish rate limiteri
+_lesson_cooldown = BoundedCooldown(seconds=5.0, max_keys=50000)
+# Backwards-compatibility alias for tests
+_user_lesson_rate_limits = _lesson_cooldown.items
+
 
 def _uzs(amount: Any) -> str:
     try:
@@ -63,16 +97,41 @@ def _escape(value: Any) -> str:
 async def _telegram_call(
     client: httpx.AsyncClient, method: str, payload: Dict[str, Any]
 ) -> Dict[str, Any]:
-    """Telegram so'rovini bajaradi va xatoni logga yozadi."""
+    """Telegram so'rovini bajaradi, rate limit (429) va xatolarni xavfsiz boshqaradi (M8 yechimi)."""
     try:
-        response = await client.post(f"{API_URL}/{method}", json=payload)
-        data = response.json()
-        if response.status_code != 200 or not data.get("ok"):
-            logger.warning("Telegram %s xatosi: %s", method, response.text[:300])
-        return data if isinstance(data, dict) else {}
-    except (httpx.HTTPError, ValueError) as exc:
-        logger.error("Telegram %s so'rovida xato: %s", method, exc)
-        return {}
+        response = await client.post(f"{API_URL}/{method}", json=payload, timeout=25.0)
+        try:
+            data = response.json()
+        except ValueError:
+            return {"ok": False, "error_code": response.status_code, "delivery_unknown": True}
+
+        if not isinstance(data, dict):
+            return {"ok": False, "error_code": response.status_code, "delivery_unknown": True}
+
+        if response.status_code == 200 and data.get("ok"):
+            return data
+
+        code = data.get("error_code") or response.status_code
+        params = data.get("parameters") or {}
+        if code == 429:
+            retry_after = params.get("retry_after", 1)
+            logger.warning("Telegram 429 Too Many Requests on %s: retry_after=%s", method, retry_after)
+        else:
+            logger.warning("Telegram %s xatosi: code=%s desc=%s", method, code, str(data.get("description") or "")[:200])
+
+        return {
+            "ok": False,
+            "error_code": code,
+            "description": data.get("description", ""),
+            "parameters": params,
+            "delivery_unknown": response.status_code >= 500,
+        }
+    except httpx.RequestError as exc:
+        logger.warning("Telegram %s tarmog'ida uzilish: %s", method, type(exc).__name__)
+        return {"ok": False, "error_code": 0, "delivery_unknown": True}
+    except Exception as exc:
+        logger.error("Telegram %s so'rovida kutilmagan xato: %s", method, exc)
+        return {"ok": False, "error_code": 0, "delivery_unknown": True}
 
 
 async def send_tg_message(
@@ -113,6 +172,93 @@ async def send_tg_photo(
     return await _telegram_call(client, "sendPhoto", payload)
 
 
+def is_admin(user_id: int | str) -> bool:
+    """str va int 64-bit xavfsiz admin tekshiruvi"""
+    if not user_id:
+        return False
+    try:
+        uid_int = int(str(user_id).strip())
+        if uid_int in settings.ADMIN_IDS:
+            return True
+    except (ValueError, TypeError):
+        pass
+    uid_str = str(user_id).strip()
+    return uid_str in [str(a) for a in settings.ADMIN_IDS]
+
+
+async def send_tg_video(
+    client: httpx.AsyncClient,
+    chat_id: int | str,
+    video: str,
+    caption: Optional[str] = None,
+    reply_markup: Optional[dict] = None,
+    protect_content: bool = True,
+    supports_streaming: bool = True,
+    duration: Optional[int] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "chat_id": chat_id,
+        "video": video,
+        "protect_content": protect_content,
+        "supports_streaming": supports_streaming,
+    }
+    if caption:
+        payload["caption"] = caption[:1024]
+        payload["parse_mode"] = "HTML"
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+    if duration:
+        payload["duration"] = int(duration)
+    if width:
+        payload["width"] = int(width)
+    if height:
+        payload["height"] = int(height)
+    return await _telegram_call(client, "sendVideo", payload)
+
+
+async def send_ephemeral_video(
+    client: httpx.AsyncClient,
+    chat_id: int | str,
+    video_file_id: str,
+    caption: str,
+    callback_user_id: int,
+    callback_query_id: str,
+    replace_callback_query_message: bool = False,
+    duration: Optional[int] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    protect_content: bool = True,
+) -> Dict[str, Any]:
+    """
+    Telegram Ephemeral Protected Video:
+    Telegram Bot API sendVideo chaqiruvi ephemeral_message_parameters bilan
+    faqat tugmani bosgan studentga va faqat o'sha clientga yuboriladi.
+    protect_content=True qat'iy qo'llaniladi.
+    """
+    payload: Dict[str, Any] = {
+        "chat_id": chat_id,
+        "video": video_file_id,
+        "caption": caption[:1024],
+        "supports_streaming": True,
+        "protect_content": protect_content,
+        "ephemeral_message_parameters": {
+            "receiver_user_id": int(callback_user_id),
+            "callback_query_id": str(callback_query_id),
+            "replace_callback_query_message": bool(replace_callback_query_message),
+        }
+    }
+    if duration:
+        payload["duration"] = int(duration)
+    if width:
+        payload["width"] = int(width)
+    if height:
+        payload["height"] = int(height)
+
+    return await _telegram_call(client, "sendVideo", payload)
+
+
 async def send_tg_chat_action(client: httpx.AsyncClient, chat_id: int, action: str = "typing") -> None:
     await _telegram_call(client, "sendChatAction", {"chat_id": chat_id, "action": action})
 
@@ -127,10 +273,23 @@ def _resolve_media_url(url: str) -> str:
     return str(resolved or "").strip()
 
 
-async def _answer_callback(client: httpx.AsyncClient, query_id: str, text: str = "") -> None:
+async def _answer_callback(
+    client: httpx.AsyncClient,
+    query_id: str,
+    text: str = "",
+    show_alert: bool = False,
+    url: Optional[str] = None,
+    cache_time: int = 0,
+) -> None:
     payload: Dict[str, Any] = {"callback_query_id": query_id}
     if text:
         payload["text"] = text[:190]
+    if show_alert:
+        payload["show_alert"] = True
+    if url:
+        payload["url"] = url
+    if cache_time:
+        payload["cache_time"] = cache_time
     await _telegram_call(client, "answerCallbackQuery", payload)
 
 
@@ -168,7 +327,12 @@ async def _ensure_user(tg_user: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return await store.get_user_by_tg(int(telegram_id))
 
 
-def _course_keyboard(course: Dict[str, Any], index: int, total: int) -> dict:
+def _course_keyboard(course: Dict[str, Any], index: int, total: int, is_group: bool = False) -> dict:
+    bot_user = settings.BOT_USERNAME.lstrip("@")
+    if is_group:
+        app_btn = {"text": "🚀 Mini Appda ochish", "url": f"https://t.me/{bot_user}?start=catalog"}
+    else:
+        app_btn = {"text": "🚀 Mini Appda batafsil", "web_app": {"url": f"{settings.WEBAPP_URL}#course_{course['id']}"}}
     rows = [
         [
             {"text": "⬅️ Oldingi", "callback_data": f"course:{(index - 1) % total}"},
@@ -176,7 +340,7 @@ def _course_keyboard(course: Dict[str, Any], index: int, total: int) -> dict:
             {"text": "Keyingi ➡️", "callback_data": f"course:{(index + 1) % total}"},
         ],
         [{"text": "💳 To'lov qilish", "callback_data": f"pay:{course['id']}"}],
-        [{"text": "🚀 Mini Appda batafsil", "web_app": {"url": f"{settings.WEBAPP_URL}#course_{course['id']}"}}],
+        [app_btn],
     ]
     return {"inline_keyboard": rows}
 
@@ -228,7 +392,8 @@ async def show_course_card(client: httpx.AsyncClient, chat_id: int, index: int) 
         pricing = await course_pricing(store, course)
     except Exception:
         pricing = {"discount_active": False, "discount_spots_left": None, "final_price": course.get("price")}
-    keyboard = _course_keyboard(course, index, len(courses))
+    is_group = int(chat_id) < 0
+    keyboard = _course_keyboard(course, index, len(courses), is_group=is_group)
     caption = _course_caption(course, pricing)
     cover_url = _resolve_media_url(course.get("cover_url") or "")
     if cover_url.startswith(("https://", "http://")):
@@ -371,19 +536,43 @@ async def _notify_admins_about_receipt(
     return notified
 
 
+MAX_RECEIPT_BYTES = 8 * 1024 * 1024
+
+
 async def _store_telegram_receipt(
     client: httpx.AsyncClient, file_id: str, transaction_id: str
 ) -> Optional[str]:
-    """Telegramdan kelgan chekni R2 ga ko'chiradi, admin paneli ham rasmni ko'ra olishi uchun."""
+    """Telegramdan kelgan chekni oqimli (streaming) yuklab, R2 ga ko'chiradi (M9 yechimi)."""
     try:
         file_data = await _telegram_call(client, "getFile", {"file_id": file_id})
         file_path = (file_data.get("result") or {}).get("file_path")
         if not file_path:
             return None
-        response = await client.get(f"https://api.telegram.org/file/bot{settings.BOT_TOKEN}/{file_path}")
-        image_bytes = response.content
-        if response.status_code != 200 or not image_bytes or len(image_bytes) > 8 * 1024 * 1024:
-            return None
+
+        url = f"https://api.telegram.org/file/bot{settings.BOT_TOKEN}/{file_path}"
+        async with client.stream("GET", url, timeout=30.0, follow_redirects=False) as response:
+            if response.status_code != 200:
+                return None
+            raw_len = response.headers.get("content-length")
+            if raw_len:
+                try:
+                    if int(raw_len) > MAX_RECEIPT_BYTES:
+                        logger.warning("Chek hajmi limitdan katta: %s bayt", raw_len)
+                        return None
+                except ValueError:
+                    pass
+
+            body = bytearray()
+            async for chunk in response.aiter_bytes(chunk_size=64 * 1024):
+                if len(body) + len(chunk) > MAX_RECEIPT_BYTES:
+                    logger.warning("Chek oqimi 8MB limitdan oshib ketdi, to'xtatildi")
+                    return None
+                body.extend(chunk)
+
+            if not body:
+                return None
+            image_bytes = bytes(body)
+
         ext = str(file_path).rsplit(".", 1)[-1].lower() if "." in str(file_path) else "jpg"
         if ext not in {"jpg", "jpeg", "png", "webp"}:
             ext = "jpg"
@@ -391,8 +580,8 @@ async def _store_telegram_receipt(
         return await asyncio.to_thread(
             r2_client.upload_bytes, f"receipts/{transaction_id}.{ext}", image_bytes, content_type
         ) or None
-    except (httpx.HTTPError, ValueError) as exc:
-        logger.warning("Telegram cheki R2 ga ko'chirilmadi: %s", exc)
+    except Exception as exc:
+        logger.warning("Telegram cheki yuklanmadi/R2 ga ko'chirilmadi: %s", exc)
         return None
 
 
@@ -462,13 +651,633 @@ async def _handle_receipt_photo(client: httpx.AsyncClient, message: Dict[str, An
     return True
 
 
+async def _get_effective_target_group(store, course_id: Optional[str] = None) -> Tuple[Optional[str], str]:
+    """Hozirda faol bo'lgan Target Guruh ID va nomini olish."""
+    if course_id:
+        course = await store.get_course(course_id)
+        if course and course.get("telegram_channel_id"):
+            return str(course["telegram_channel_id"]), str(course.get("title") or "Kurs Guruhi")
+
+    dyn_id = await store.get_setting("target_group_id")
+    dyn_title = await store.get_setting("target_group_title") or "Kurs Guruhi"
+    if dyn_id:
+        return str(dyn_id), str(dyn_title)
+
+    cfg_id = getattr(settings, "TARGET_GROUP_ID", "")
+    if cfg_id:
+        return str(cfg_id), "Target Guruh"
+
+    return None, ""
+
+
+async def publish_lesson_to_group(
+    client: httpx.AsyncClient,
+    lesson_id: str | int,
+    admin_chat_id: int,
+) -> bool:
+    """Darsni Target Supergroupga faqat inline play tugmasi bilan chiqarish."""
+    store = get_store()
+    lesson = await store.get_lesson(lesson_id)
+    if not lesson:
+        courses = await store.list_courses(published_only=False)
+        for c in courses:
+            from app.api.courses import resolve_course_modules
+            for m in resolve_course_modules(c):
+                for l in m.get("lessons", []):
+                    if str(l.get("id")) == str(lesson_id):
+                        lesson = {**l, "course_id": c["id"]}
+                        break
+                if lesson:
+                    break
+            if lesson:
+                break
+
+    if not lesson:
+        await send_tg_message(client, admin_chat_id, f"❌ #{lesson_id} dars topilmadi.")
+        return False
+
+    if lesson.get("published_message_id") and lesson.get("published"):
+        await send_tg_message(
+            client,
+            admin_chat_id,
+            f"ℹ️ <b>{_escape(lesson.get('title') or 'Dars')}</b> allaqachon guruhga chiqarilgan (Xabar ID: <code>{lesson.get('published_message_id')}</code>).",
+        )
+        return True
+
+    target_id, target_title = await _get_effective_target_group(store, lesson.get("course_id"))
+    if not target_id:
+        await send_tg_message(
+            client,
+            admin_chat_id,
+            "❌ <b>Xatolik:</b> Darslar chiqariladigan Target Guruh hali belgilanmagan!\n\n"
+            "Botni kurs guruhingizga admin qilib qo'shing va o'sha guruhda <code>/set_group</code> buyrug'ini yuboring.",
+        )
+        return False
+
+    lesson_title = lesson.get("title") or "Dars"
+    post_text = (
+        f"🎓 <b>{_escape(lesson_title)}</b>\n\n"
+        "Videoni ko‘rish uchun pastdagi tugmani bosing."
+    )
+    inline_keyboard = {
+        "inline_keyboard": [
+            [
+                {
+                    "text": f"▶️ {_escape(lesson_title[:28])}ni ko'rish",
+                    "callback_data": f"lesson:{lesson_id}",
+                }
+            ]
+        ]
+    }
+
+    tg_target = int(target_id) if str(target_id).lstrip("-").isdigit() else target_id
+    res = await send_tg_message(
+        client,
+        tg_target,
+        post_text,
+        reply_markup=inline_keyboard,
+        protect_content=getattr(settings, "PROTECT_CONTENT", True),
+    )
+    if res.get("ok"):
+        msg_id = (res.get("result") or {}).get("message_id")
+        try:
+            await store.update_lesson(lesson_id, {"published_message_id": msg_id, "published": True})
+        except Exception:
+            pass
+        await send_tg_message(
+            client,
+            admin_chat_id,
+            f"✅ <b>{_escape(lesson_title)}</b> darsi <b>{_escape(target_title)}</b> guruhiga chiqarildi!\n"
+            f"Xabar ID: <code>{msg_id}</code>",
+        )
+        return True
+    else:
+        err = res.get("description") or "Noma'lum xatolik"
+        await send_tg_message(
+            client,
+            admin_chat_id,
+            f"❌ Guruhga chiqarishda xatolik yuz berdi: <i>{_escape(err)}</i>\n\n"
+            "Bot guruhda administrator ekanligini va xabar yozish huquqi borligini tekshiring.",
+        )
+        return False
+
+
+class LessonAccessDenied(Exception):
+    def __init__(self, message: str, can_buy: bool = False, course_id: Optional[str] = None):
+        super().__init__(message)
+        self.message = message
+        self.can_buy = can_buy
+        self.course_id = course_id
+
+
+async def require_lesson_access(
+    user_id: int,
+    lesson_id: str | int,
+) -> Tuple[Any, Dict[str, Any], Optional[Dict[str, Any]]]:
+    """
+    Yagona va qat'iy (fail-closed) darsga kirish huquqi tekshiruvi (H1 & H2 yechimi):
+    - user_id musbat son bo'lishi shart
+    - Global va dars blocklist tekshiruvi (fail-closed)
+    - Dars va Kurs mavjudligi hamda published holati tekshiruvi
+    - Preview yoki Admin bo'lsa ruxsat
+    - Boshqa holatda aktiv (active) enrollment mavjudligi tekshiriladi
+    """
+    if not isinstance(user_id, int) or user_id <= 0:
+        raise LessonAccessDenied("Foydalanuvchi aniqlanmadi.")
+
+    store = get_store()
+
+    # 1. Darsni bazadan qidirish
+    lesson = await store.get_lesson(lesson_id)
+    target_course_id = (lesson or {}).get("course_id")
+    if not lesson:
+        courses = await store.list_courses(published_only=False)
+        for c in courses:
+            from app.api.courses import resolve_course_modules
+            for m in resolve_course_modules(c):
+                for l in m.get("lessons", []):
+                    if str(l.get("id")) == str(lesson_id):
+                        lesson = {**l, "course_id": c["id"]}
+                        target_course_id = c["id"]
+                        break
+                if lesson:
+                    break
+            if lesson:
+                break
+
+    if not lesson:
+        raise LessonAccessDenied("Dars topilmadi yoki o'chirilgan.")
+
+    # 2. Admin huquqi
+    if is_admin(user_id):
+        return store, lesson, await store.get_user_by_tg(user_id)
+
+    # 3. Global blocklist (Fail-closed)
+    try:
+        if await store.is_user_blocked(user_id):
+            raise LessonAccessDenied("Hisobingiz bloklangan.")
+    except LessonAccessDenied:
+        raise
+    except Exception as exc:
+        logger.error("Blocklist tekshiruvida xato: %s", exc)
+        raise LessonAccessDenied("Xavfsizlik tekshiruvida xatolik yuz berdi. Keyinroq urinib ko'ring.")
+
+    # 4. Dars blocklisti (Fail-closed)
+    try:
+        is_blocked, reason = await store.is_user_blocked_for_lesson(user_id, lesson_id)
+        if is_blocked:
+            msg = "Ushbu darsdan foydalanish ma'muriyat tomonidan cheklangan."
+            if reason:
+                msg += f"\nSabab: {reason}"
+            raise LessonAccessDenied(msg)
+    except LessonAccessDenied:
+        raise
+    except Exception as exc:
+        logger.error("Dars blocklist tekshiruvida xato: %s", exc)
+        raise LessonAccessDenied("Xavfsizlik tekshiruvida xatolik yuz berdi. Keyinroq urinib ko'ring.")
+
+    # 5. Kurs tekshiruvi: Dars biriktirilgan kurs bo'lishi shart (H2 yechimi)
+    if not target_course_id:
+        raise LessonAccessDenied("Ushbu darsga kirish hozircha mumkin emas (kurs belgilanmagan).")
+
+    course = await store.get_course(target_course_id)
+    if not course or not course.get("published", True):
+        raise LessonAccessDenied("Kurs hali ochilmagan yoki nofaol.")
+
+    # 6. Preview dars bo'lsa darhol ruxsat
+    if lesson.get("is_preview"):
+        return store, lesson, await store.get_user_by_tg(user_id)
+
+    # 7. Foydalanuvchi va Enrollment tekshiruvi
+    user = await store.get_user_by_tg(user_id)
+    if not user:
+        raise LessonAccessDenied("Avval botimizga kiring: /start", can_buy=True, course_id=target_course_id)
+
+    enr = await store.get_enrollment(user["id"], target_course_id)
+    if enr and enr.get("status") == "active":
+        return store, lesson, user
+
+    # Agar approved xarid bo'lsa, enrollmentni ochish
+    purchase = await store.get_approved_purchase_for(user["id"], target_course_id)
+    if purchase:
+        await store.create_enrollment(user["id"], target_course_id, purchase.get("id"))
+        return store, lesson, user
+
+    raise LessonAccessDenied(
+        f"🔒 «{lesson.get('title') or 'Dars'}» himoyalangan dars.\n\nUshbu darsni ko'rish uchun avval kursga a'zo bo'lishingiz kerak.",
+        can_buy=True,
+        course_id=target_course_id,
+    )
+
+
+async def deliver_private_lesson(
+    client: httpx.AsyncClient,
+    user_id: int,
+    lesson_id: str | int,
+    query_id: Optional[str] = None,
+) -> bool:
+    """
+    Dars videosini 100% xavfsiz holda FAQAT talabaning shaxsiy chatiga yetkazish.
+    Guruhga HECH QACHON pullik video yuborilmaydi (C1 xavfsizligi).
+    """
+    store = get_store()
+    try:
+        store, lesson, user = await require_lesson_access(user_id, lesson_id)
+    except LessonAccessDenied as exc:
+        if query_id:
+            bot_user = settings.BOT_USERNAME.lstrip("@")
+            if exc.can_buy and exc.course_id:
+                await _answer_callback(
+                    client,
+                    query_id,
+                    exc.message[:200],
+                    show_alert=True,
+                    url=f"https://t.me/{bot_user}?start=catalog",
+                )
+            else:
+                await _answer_callback(client, query_id, exc.message[:200], show_alert=True)
+        else:
+            await send_tg_message(client, user_id, f"⚠️ {exc.message}")
+        return False
+    except Exception as exc:
+        logger.error("Lesson auth unexpected error: %s", exc)
+        if query_id:
+            await _answer_callback(client, query_id, "⚠️ Ruxsatni tekshirishda xatolik.", show_alert=True)
+        else:
+            await send_tg_message(client, user_id, "⚠️ Ruxsatni tekshirishda xatolik yuz berdi.")
+        return False
+
+    video_file_id = lesson.get("video_file_id") or lesson.get("telegram_file_id") or lesson.get("file_id")
+    if not video_file_id and str(lesson.get("video_url") or "").startswith("tg-file:"):
+        video_file_id = str(lesson["video_url"]).split("tg-file:", 1)[1]
+
+    if not video_file_id:
+        if query_id:
+            await _answer_callback(client, query_id, "❌ Video fayli topilmadi.", show_alert=True)
+        else:
+            await send_tg_message(client, user_id, "❌ Video fayli topilmadi.")
+        return False
+
+    raw_title = str(lesson.get("title") or "Dars")[:180]
+    caption = f"🎓 <b>{_escape(raw_title)}</b>\n\n🔒 <i>Himoyalangan dars videosi</i>"
+    duration = lesson.get("duration_seconds")
+    if duration is None and isinstance(lesson.get("duration"), int):
+        duration = lesson["duration"]
+
+    # Shaxsiy chatga yuborish
+    res = await send_tg_video(
+        client=client,
+        chat_id=user_id,  # Har doim shaxsiy chat!
+        video=video_file_id,
+        caption=caption,
+        protect_content=getattr(settings, "PROTECT_CONTENT", True),
+        supports_streaming=True,
+        duration=duration,
+        width=lesson.get("width"),
+        height=lesson.get("height"),
+    )
+
+    if not res.get("ok"):
+        err_code = res.get("error_code")
+        desc = str(res.get("description") or "")
+        logger.warning("Private video delivery failed to %s: code=%s desc=%s", user_id, err_code, desc)
+        if query_id:
+            bot_user = settings.BOT_USERNAME.lstrip("@")
+            if err_code == 403 or "blocked" in desc.lower() or "chat not found" in desc.lower():
+                await _answer_callback(
+                    client,
+                    query_id,
+                    "⚠️ Videoni olish uchun avval botimizga kiring!",
+                    show_alert=True,
+                    url=f"https://t.me/{bot_user}?start=lesson_{lesson_id}",
+                )
+            else:
+                await _answer_callback(client, query_id, "⚠️ Video yuborishda xatolik yuz berdi.", show_alert=True)
+        else:
+            await send_tg_message(client, user_id, "❌ Videoni yuborishda xatolik yuz berdi.")
+        return False
+
+    # Telemetriya va log
+    try:
+        await store.log_access({
+            "lesson_id": str(lesson["id"]),
+            "user_id": user_id,
+            "mode": "private_protected",
+        })
+        target_course_id = lesson.get("course_id")
+        if user and target_course_id:
+            await store.upsert_progress(
+                user["id"], target_course_id, str(lesson["id"]), completed=False
+            )
+    except Exception as exc:
+        logger.error("Access log update error: %s", exc)
+
+    if query_id:
+        await _answer_callback(client, query_id, "✅ Dars videosi shaxsiy botingizga yuborildi!")
+    return True
+
+
+async def handle_student_ephemeral_lesson(
+    client: httpx.AsyncClient,
+    callback_query: Dict[str, Any],
+    lesson_id: str | int,
+) -> None:
+    """Student guruhda dars tugmasini bosganda xavfsiz shaxsiy chatga yetkazish (C1 & H1 yechimi)."""
+    query_id = callback_query.get("id", "")
+    tg_user = callback_query.get("from") or {}
+    user_id = int(tg_user.get("id") or 0)
+
+    # 1. Rate limiting (BoundedCooldown orqali xotira himoyalangan)
+    if not _lesson_cooldown.take(user_id):
+        await _answer_callback(client, query_id, "Iltimos, biroz kuting (5 soniya).")
+        return
+
+    # 2. Xavfsiz shaxsiy chatga yetkazish (C1 & H1 & H2 yechimi)
+    await deliver_private_lesson(client, user_id=user_id, lesson_id=lesson_id, query_id=query_id)
+
+
+
+async def _handle_admin_video_message(
+    client: httpx.AsyncClient,
+    message: Dict[str, Any],
+    admin_id: int,
+) -> bool:
+    """Admin to'g'ridan-to'g'ri video yuborganida 1-bosishda dars yaratish oqimi."""
+    video = message.get("video")
+    if not video and message.get("document") and str((message.get("document") or {}).get("mime_type") or "").startswith("video/"):
+        video = message.get("document")
+
+    if not video or not is_admin(admin_id):
+        return False
+
+    store = get_store()
+    file_id = video.get("file_id")
+    file_unique_id = video.get("file_unique_id")
+    duration = int(video.get("duration") or 0)
+    width = video.get("width")
+    height = video.get("height")
+    file_size = int(video.get("file_size") or 0)
+    caption = str(message.get("caption") or "").strip()
+
+    courses = await store.list_courses(published_only=True)
+    active_course = courses[0] if courses else None
+    course_id = active_course["id"] if active_course else None
+
+    existing_count = await store.count_lessons(course_id=course_id)
+    if existing_count == 0 and active_course:
+        from app.api.courses import resolve_course_modules
+        existing_count = len([l for m in resolve_course_modules(active_course) for l in m.get("lessons", [])])
+    next_num = existing_count + 1
+
+    if caption:
+        if "dars" in caption.lower():
+            suggested_title = caption
+        else:
+            suggested_title = f"{next_num}-dars. {caption}"
+    else:
+        suggested_title = f"{next_num}-dars"
+
+    session_id = secrets.token_hex(6)
+    _pending_admin_videos[admin_id] = {
+        "file_id": file_id,
+        "video_file_id": file_id,
+        "video_file_unique_id": file_unique_id,
+        "duration": duration,
+        "duration_seconds": duration,
+        "width": width,
+        "height": height,
+        "file_size": file_size,
+        "suggested_title": suggested_title,
+        "course_id": course_id,
+        "created_by": admin_id,
+        "session_id": session_id,
+    }
+
+    dur_str = f"{duration // 60:02d}:{duration % 60:02d}"
+    size_mb = round(file_size / (1024 * 1024), 1)
+
+    text = (
+        "📹 <b>Yangi video dars qabul qilindi!</b>\n\n"
+        f"⏱ <b>Davomiyligi:</b> <code>{dur_str}</code> | 💾 <b>Hajmi:</b> <code>{size_mb} MB</code>\n\n"
+        f"💡 <b>Taklif etilgan nom:</b>\n"
+        f"👉 <b>{_escape(suggested_title)}</b>\n\n"
+        "<i>Quyidagi tugmani 1 marta bosib darsni darhol saqlashingiz mumkin, "
+        "yoki boshqa nom xohlasangiz, uni shunchaki yozib yuboring:</i>"
+    )
+
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": f"✅ «{suggested_title[:28]}» deb saqlash", "callback_data": f"admin:save_video:{session_id}"}],
+            [{"text": "❌ Bekor qilish", "callback_data": f"admin:cancel_video:{session_id}"}],
+        ]
+    }
+
+    await send_tg_message(client, admin_id, text, reply_markup=keyboard)
+    return True
+
+
+async def _save_pending_admin_video(
+    client: httpx.AsyncClient,
+    admin_id: int,
+    custom_title: Optional[str] = None,
+    message_id_to_edit: Optional[int] = None,
+) -> Optional[Dict[str, Any]]:
+    """Kutilayotgan videoni bazaga va Mini App katalogiga sinxron saqlash."""
+    video_data = _pending_admin_videos.pop(admin_id, None)
+    if not video_data:
+        return None
+
+    store = get_store()
+    title = (custom_title or video_data.get("suggested_title") or "Yangi dars").strip()
+    course_id = video_data.get("course_id")
+    if not course_id:
+        courses = await store.list_courses(published_only=True)
+        if courses:
+            course_id = courses[0]["id"]
+
+    dur_sec = int(video_data.get("duration") or 0)
+    dur_str = f"{dur_sec // 60:02d}:{dur_sec % 60:02d}"
+    size_mb = round((video_data.get("file_size") or 0) / (1024 * 1024), 1)
+
+    lesson = await store.add_lesson({
+        "title": title,
+        "course_id": course_id,
+        "video_file_id": video_data.get("video_file_id"),
+        "video_file_unique_id": video_data.get("video_file_unique_id"),
+        "duration": dur_str,
+        "duration_seconds": dur_sec,
+        "width": video_data.get("width"),
+        "height": video_data.get("height"),
+        "file_size": video_data.get("file_size"),
+        "created_by": admin_id,
+    })
+
+    lesson_id = lesson["id"]
+
+    # Mini App katalogiga va modullariga sinxronlash
+    if course_id:
+        course = await store.get_course(course_id)
+        if course:
+            modules = list(course.get("modules") or [])
+            if not modules:
+                modules = [{"title": "01. Asosiy Video Darslar", "lessons": []}]
+            modules[-1].setdefault("lessons", []).append({
+                "id": str(lesson_id),
+                "title": title,
+                "duration": dur_str,
+                "video_url": f"tg-file:{video_data.get('video_file_id')}",
+                "telegram_file_id": video_data.get("video_file_id"),
+                "file_id": video_data.get("video_file_id"),
+                "is_preview": False,
+            })
+            course["modules"] = modules
+            course["lesson_count"] = sum(len(m.get("lessons", [])) for m in modules)
+            await store.upsert_course(course)
+
+    target_id, target_title = await _get_effective_target_group(store, course_id)
+    target_name = target_title if target_id else "Belgilanmagan (/set_group)"
+
+    confirmation_text = (
+        f"🎉 <b>{_escape(title)}</b> muvaffaqiyatli saqlandi!\n\n"
+        f"📌 <b>Dars ID:</b> <code>{lesson_id}</code>\n"
+        f"⏱ <b>Davomiyligi:</b> <code>{dur_str}</code> | 💾 <b>Hajmi:</b> <code>{size_mb} MB</code>\n"
+        f"👥 <b>Target Guruh:</b> <b>{_escape(target_name)}</b>\n\n"
+        "Endi darsni guruhga chiqarishingiz yoki yangi video yuklashingiz mumkin:"
+    )
+
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "📢 Guruhga chiqarish", "callback_data": f"admin:publish:{lesson_id}"}],
+            [
+                {"text": "📹 Yana dars qo'shish", "callback_data": "admin:add_video"},
+                {"text": "📚 Darslar ro'yxati", "callback_data": "admin:lessons"}
+            ],
+            [{"text": "⚙️ Admin Panel (Mini App)", "web_app": {"url": f"{settings.WEBAPP_URL}#admin"}}],
+        ]
+    }
+
+    if message_id_to_edit:
+        edit_res = await _telegram_call(
+            client,
+            "editMessageText",
+            {"chat_id": admin_id, "message_id": message_id_to_edit, "text": confirmation_text, "parse_mode": "HTML", "reply_markup": keyboard}
+        )
+        if not edit_res.get("ok"):
+            await send_tg_message(client, admin_id, confirmation_text, reply_markup=keyboard)
+    else:
+        await send_tg_message(client, admin_id, confirmation_text, reply_markup=keyboard)
+
+    return lesson
+
+
+async def _send_admin_lessons_list(client: httpx.AsyncClient, admin_id: int) -> None:
+    """Admin uchun barcha darslar va ularni guruhga chiqarish tugmalari."""
+    store = get_store()
+    lessons = await store.list_lessons()
+    if not lessons:
+        await send_tg_message(
+            client,
+            admin_id,
+            "📚 Hozircha saqlangan video darslar yo'q.\n\nVideo yuboring va 1-bosishda dars yarating!",
+            {"inline_keyboard": [[{"text": "📹 Video yuklash", "callback_data": "admin:add_video"}]]}
+        )
+        return
+
+    text = f"📚 <b>Barcha Video Darslar ({len(lessons)} ta):</b>\n\n"
+    rows = []
+    for l in lessons[:15]:
+        lid = l["id"]
+        ltitle = l.get("title") or "Dars"
+        dur = l.get("duration") or ""
+        text += f"• <b>{_escape(ltitle)}</b> (<code>{dur}</code>) — ID: <code>{lid}</code>\n"
+        rows.append([
+            {"text": f"📢 #{lid} Guruhga chiqarish", "callback_data": f"admin:publish:{lid}"},
+            {"text": f"▶️ Sinab ko'rish", "callback_data": f"lesson:{lid}"},
+        ])
+
+    rows.append([{"text": "📹 Yangi dars qo'shish", "callback_data": "admin:add_video"}])
+    await send_tg_message(client, admin_id, text, reply_markup={"inline_keyboard": rows})
+
+
+async def _send_direct_lesson_video(
+    client: httpx.AsyncClient,
+    chat_id: int,
+    user_id: int,
+    lesson_id: str | int,
+) -> None:
+    """Talabaga dars videosini to'g'ridan-to'g'ri shaxsiy chatda himoyalangan holda yuborish (H1 xavfsizligi)."""
+    await deliver_private_lesson(client, user_id=user_id, lesson_id=lesson_id, query_id=None)
+
+
 async def _handle_admin_callback(client: httpx.AsyncClient, callback_query: Dict[str, Any]) -> bool:
     data = str(callback_query.get("data") or "")
+    query_id = callback_query.get("id", "")
+    admin_tg_id = callback_query.get("from", {}).get("id")
+
+    # Admin video & darslar boshqaruvi
+    if data.startswith("admin:"):
+        if not is_admin(admin_tg_id):
+            await _answer_callback(client, query_id, "Sizda admin huquqlari yo'q")
+            return True
+
+        if data.startswith("admin:save_video"):
+            parts = data.split(":")
+            session_id = parts[2] if len(parts) > 2 else None
+            pending = _pending_admin_videos.get(int(admin_tg_id))
+            if session_id and pending and pending.get("session_id") != session_id:
+                await _answer_callback(client, query_id, "⚠️ Bu video so'rovi allaqachon eskirgan.", show_alert=True)
+                return True
+            msg = callback_query.get("message") or {}
+            msg_id = msg.get("message_id")
+            await _answer_callback(client, query_id, "✅ Dars saqlanmoqda...")
+            await _save_pending_admin_video(client, int(admin_tg_id), message_id_to_edit=msg_id)
+            return True
+
+        if data.startswith("admin:cancel_video"):
+            parts = data.split(":")
+            session_id = parts[2] if len(parts) > 2 else None
+            pending = _pending_admin_videos.get(int(admin_tg_id))
+            if session_id and pending and pending.get("session_id") != session_id:
+                await _answer_callback(client, query_id, "⚠️ Bu video so'rovi allaqachon eskirgan.", show_alert=True)
+                return True
+            _pending_admin_videos.pop(int(admin_tg_id), None)
+            await _answer_callback(client, query_id, "Video bekor qilindi.")
+            msg = callback_query.get("message") or {}
+            msg_id = msg.get("message_id")
+            if msg_id:
+                await _telegram_call(
+                    client,
+                    "editMessageText",
+                    {"chat_id": admin_tg_id, "message_id": msg_id, "text": "❌ Video yuklash bekor qilindi.", "parse_mode": "HTML"}
+                )
+            return True
+
+        if data.startswith("admin:publish:"):
+            lid = data.split(":", 2)[2]
+            await _answer_callback(client, query_id, "Guruhga chiqarilmoqda...")
+            await publish_lesson_to_group(client, lid, int(admin_tg_id))
+            return True
+
+        if data == "admin:lessons":
+            await _answer_callback(client, query_id)
+            await _send_admin_lessons_list(client, int(admin_tg_id))
+            return True
+
+        if data == "admin:add_video":
+            await _answer_callback(client, query_id)
+            await send_tg_message(
+                client,
+                int(admin_tg_id),
+                "📹 <b>Yangi dars videosini yuboring.</b>\n\n"
+                "Video yuborganingizda tizim uning hajmi va davomiyligini tekshirib, 1-bosishda dars yaratish imkonini beradi."
+            )
+            return True
+
+        return False
+
     if not (data.startswith("approve_") or data.startswith("reject_")):
         return False
 
-    query_id = callback_query.get("id", "")
-    admin_tg_id = callback_query.get("from", {}).get("id")
     if admin_tg_id not in settings.ADMIN_IDS:
         await _answer_callback(client, query_id, "Sizda admin huquqlari yo'q")
         return True
@@ -530,6 +1339,11 @@ async def handle_callback_query(client: httpx.AsyncClient, callback_query: Dict[
     user = await _ensure_user(tg_user)
     if not user or not chat_id:
         await _answer_callback(client, query_id, "Foydalanuvchi aniqlanmadi")
+        return
+
+    if data.startswith("lesson:"):
+        lesson_id = data.split(":", 1)[1]
+        await handle_student_ephemeral_lesson(client, callback_query, lesson_id)
         return
 
     if data == "noop":
@@ -758,6 +1572,7 @@ async def _send_group_intro(client: httpx.AsyncClient, chat_id: int) -> None:
     """Bot guruhga qo'shilganda qisqa tanishtiruv."""
     if not chat_id:
         return
+    bot_user = settings.BOT_USERNAME.lstrip("@")
     text = (
         "👋 <b>Assalomu alaykum!</b> Men — <b>Kreativ AI</b> o'quv platformasining yordamchisman.\n\n"
         "🤖 Guruhda savolingizni <b>@kreativaibot</b> deb yozib bering — AI yordamchim javob beradi "
@@ -766,7 +1581,7 @@ async def _send_group_intro(client: httpx.AsyncClient, chat_id: int) -> None:
     )
     keyboard = {
         "inline_keyboard": [
-            [{"text": "🚀 Kurslarni ko'rish (Mini App)", "web_app": {"url": settings.WEBAPP_URL}}],
+            [{"text": "🚀 Kurslarni ko'rish", "url": f"https://t.me/{bot_user}?start=catalog"}],
             [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}],
         ]
     }
@@ -851,12 +1666,13 @@ async def _group_ai_answer(
     if len(answer) > 1200:
         answer = answer[:1190].rstrip() + "…"
 
+    bot_user = settings.BOT_USERNAME.lstrip("@")
     payload: Dict[str, Any] = {
         "chat_id": chat_id,
         "text": _escape(answer),
         "disable_web_page_preview": True,
         "reply_markup": {"inline_keyboard": [
-            [{"text": "🚀 Kurslarni ko'rish (Mini App)", "web_app": {"url": settings.WEBAPP_URL}}],
+            [{"text": "🚀 Kurslarni ko'rish", "url": f"https://t.me/{bot_user}?start=catalog"}],
             [{"text": "📚 Kurslar Katalogi", "callback_data": "course:0"}],
         ]},
     }
@@ -906,10 +1722,26 @@ async def _handle_group_message(client: httpx.AsyncClient, message: Dict[str, An
             await _send_help(client, chat_id)
         elif command in {"/stats", "/admin"}:
             tg_id = int(tg_user.get("id") or 0)
-            if tg_id in settings.ADMIN_IDS:
+            if is_admin(tg_id):
                 # Statistika (tushum, talabalar soni) maxfiy — guruhga yozilmaydi,
                 # faqat adminning o'ziga shaxsiy chatda yuboriladi.
                 await _send_stats(client, tg_id, tg_id)
+        elif command in {"/set_group", "/setgroup"}:
+            tg_id = int(tg_user.get("id") or 0)
+            if is_admin(tg_id):
+                store = get_store()
+                chat_title = chat.get("title") or f"Guruh {chat_id}"
+                await store.set_setting("target_group_id", str(chat_id))
+                await store.set_setting("target_group_title", chat_title)
+                settings.TARGET_GROUP_ID = str(chat_id)
+                await send_tg_message(
+                    client,
+                    chat_id,
+                    f"✅ <b>Ushbu guruh asosiy darslar guruhi sifatida biriktirildi!</b>\n\n"
+                    f"🆔 Guruh ID: <code>{chat_id}</code>\n"
+                    f"📌 Nomi: <b>{_escape(chat_title)}</b>\n\n"
+                    "Endi yangi darslar va e'lonlar ushbu guruhga chiqariladi.",
+                )
         return
 
     if not text or not _group_should_answer(message, text):
@@ -974,6 +1806,16 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
     user = await _ensure_user(tg_user)
     if not user:
         return
+
+    admin_tg_id = int(user.get("telegram_id") or 0)
+    has_video = bool(
+        message.get("video")
+        or (message.get("document") and str((message.get("document") or {}).get("mime_type") or "").startswith("video/"))
+    )
+    if has_video and is_admin(admin_tg_id):
+        await _handle_admin_video_message(client, message, admin_tg_id)
+        return
+
     if await _handle_receipt_photo(client, message, user):
         return
 
@@ -983,10 +1825,18 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
             await send_tg_message(client, int(chat_id), "📷 Chekni <b>rasm</b> sifatida yuboring. Hujjat yoki oddiy xabar qabul qilinmaydi.")
         return
 
+    # Kutilayotgan video bo'lsa va admin maxsus nom yozsa
+    if admin_tg_id in _pending_admin_videos and not text.startswith("/"):
+        await _save_pending_admin_video(client, admin_tg_id, custom_title=text)
+        return
+
     command = text.split(maxsplit=1)[0].split("@", 1)[0].lower()
     if command == "/start":
-        # Referal havolasi: /start ref_XYZ
         payload = text.split(maxsplit=1)[1].strip() if len(text.split(maxsplit=1)) > 1 else ""
+        if payload.lower().startswith("lesson_"):
+            lid = payload.split("_", 1)[1].strip()
+            await _send_direct_lesson_video(client, int(chat_id), int(user["telegram_id"]), lid)
+            return
         if payload.lower().startswith("ref_"):
             from app.services.promos import link_referral
             ok, message, bonus = await link_referral(get_store(), user["id"], payload)
@@ -1009,13 +1859,45 @@ async def handle_tg_update(client: httpx.AsyncClient, update: Dict[str, Any]) ->
         await _send_payment_info(client, int(chat_id))
     elif command in {"/stats", "/admin"}:
         await _send_stats(client, int(chat_id), int(user["telegram_id"]))
+    elif command in {"/darslar", "/lessons"}:
+        if is_admin(user["telegram_id"]):
+            await _send_admin_lessons_list(client, int(chat_id))
+        else:
+            await send_tg_message(client, int(chat_id), "❌ Bu buyruq faqat adminlar uchun.")
+    elif command in {"/set_group", "/setgroup"}:
+        if is_admin(user["telegram_id"]):
+            parts = text.split(maxsplit=2)
+            if len(parts) > 1:
+                target_id = parts[1].strip()
+                target_title = parts[2].strip() if len(parts) > 2 else f"Guruh {target_id}"
+                store = get_store()
+                await store.set_setting("target_group_id", target_id)
+                await store.set_setting("target_group_title", target_title)
+                settings.TARGET_GROUP_ID = target_id
+                await send_tg_message(
+                    client,
+                    int(chat_id),
+                    f"✅ <b>Target Guruh muvaffaqiyatli saqlandi!</b>\n\n"
+                    f"🆔 ID: <code>{target_id}</code>\n"
+                    f"📌 Nomi: <b>{_escape(target_title)}</b>"
+                )
+            else:
+                await send_tg_message(
+                    client,
+                    int(chat_id),
+                    "ℹ️ <b>Guruhni biriktirish uchun:</b>\n\n"
+                    "1. Guruh ichida <code>/set_group</code> yozing, yoki\n"
+                    "2. Shaxsiy chatda: <code>/set_group &lt;group_id&gt; [guruh nomi]</code> ko'rinishida yuboring."
+                )
+        else:
+            await send_tg_message(client, int(chat_id), "❌ Bu buyruq faqat adminlar uchun.")
     elif command in {"/hisobot", "/report"}:
-        if int(user["telegram_id"]) in settings.ADMIN_IDS:
+        if is_admin(user["telegram_id"]):
             await _send_daily_report(client, int(chat_id))
         else:
             await send_tg_message(client, int(chat_id), "❌ Bu buyruq faqat superadminlar uchun.")
     elif command == "/backup":
-        if int(user["telegram_id"]) in settings.ADMIN_IDS:
+        if is_admin(user["telegram_id"]):
             await send_tg_message(client, int(chat_id), "📦 Zaxira tayyorlanmoqda...")
             await _send_backup(client, int(chat_id))
         else:

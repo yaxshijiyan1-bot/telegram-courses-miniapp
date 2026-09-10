@@ -270,16 +270,24 @@ def normalize_stored_modules(course_id: str, stored: list) -> list:
             if not ltitle:
                 continue
             l_order += 1
+            l_id = str((l or {}).get("id") or f"l-{course_id}-{order}-{l_order}")
+            v_url = (l or {}).get("video_url")
+            tg_file = (l or {}).get("telegram_file_id") or (l or {}).get("file_id") or (l or {}).get("video_file_id")
+            if not v_url and tg_file:
+                v_url = f"tg-file:{tg_file}"
             lessons.append({
-                "id": f"l-{course_id}-{order}-{l_order}",
+                "id": l_id,
                 "module_id": module_id,
                 "course_id": course_id,
                 "title": ltitle,
                 "duration": str((l or {}).get("duration") or ""),
-                "order": l_order,
+                "order": (l or {}).get("order") or l_order,
                 "is_preview": bool((l or {}).get("is_preview", False)),
                 "description": (l or {}).get("description"),
-                "resources": (l or {}).get("resources") or []
+                "resources": (l or {}).get("resources") or [],
+                "video_url": v_url,
+                "telegram_file_id": tg_file,
+                "file_id": tg_file,
             })
         modules.append({
             "id": module_id,

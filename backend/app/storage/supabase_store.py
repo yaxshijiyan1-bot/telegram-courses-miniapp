@@ -468,3 +468,207 @@ class SupabaseStore(Store):
             return True
         rows = await self._req("POST", "banners", json_body={"tag": key, "title": key, "image_url": value})
         return bool(rows)
+
+    # ---------------- LESSONS (Supabase / KV Fallback) ----------------
+    async def _get_ephemeral_lessons_kv(self) -> Dict[str, Any]:
+        raw = await self.get_setting("ephemeral_lessons")
+        if raw:
+            try:
+                return json.loads(raw)
+            except Exception:
+                return {}
+        return {}
+
+    async def _save_ephemeral_lessons_kv(self, data: Dict[str, Any]) -> bool:
+        return await self.set_setting("ephemeral_lessons", json.dumps(data))
+
+    async def add_lesson(self, lesson: Dict[str, Any]) -> Dict[str, Any]:
+        lesson_id = str(lesson.get("id") or "").strip()
+        kv_data = await self._get_ephemeral_lessons_kv()
+        if not lesson_id:
+            max_id = max([int(k) for k in kv_data.keys() if k.isdigit()] or [0])
+            lesson_id = str(max_id + 1)
+
+        row = {
+            "id": lesson_id,
+            "course_id": lesson.get("course_id"),
+            "module_id": lesson.get("module_id"),
+            "title": lesson.get("title") or "Dars",
+            "description": lesson.get("description"),
+            "video_url": lesson.get("video_url"),
+            "video_file_id": lesson.get("video_file_id") or lesson.get("telegram_file_id") or lesson.get("file_id"),
+            "video_file_unique_id": lesson.get("video_file_unique_id"),
+            "duration": str(lesson.get("duration") or ""),
+            "duration_seconds": lesson.get("duration_seconds") or (lesson.get("duration") if isinstance(lesson.get("duration"), int) else None),
+            "width": lesson.get("width"),
+            "height": lesson.get("height"),
+            "file_size": lesson.get("file_size"),
+            "order": lesson.get("order") or lesson.get("order_index") or 1,
+            "is_preview": bool(lesson.get("is_preview")),
+            "resources": lesson.get("resources") or [],
+            "created_by": lesson.get("created_by"),
+            "published_message_id": lesson.get("published_message_id"),
+            "published": bool(lesson.get("published", True)),
+            "created_at": lesson.get("created_at") or _now(),
+            "telegram_file_id": lesson.get("video_file_id") or lesson.get("telegram_file_id") or lesson.get("file_id"),
+            "file_id": lesson.get("video_file_id") or lesson.get("telegram_file_id") or lesson.get("file_id"),
+        }
+
+        try:
+            res = await self._req("POST", "lessons", json_body=row)
+            if res:
+                return {**row, **(res[0] if isinstance(res, list) else res)}
+        except Exception:
+            pass
+
+        kv_data[lesson_id] = row
+        await self._save_ephemeral_lessons_kv(kv_data)
+        return row
+
+    async def get_lesson(self, lesson_id: Any) -> Optional[Dict[str, Any]]:
+        lid = str(lesson_id)
+        try:
+            rows = await self._req("GET", "lessons", {"id": f"eq.{lid}", "limit": 1})
+            if rows:
+                r = rows[0]
+                r["telegram_file_id"] = r.get("video_file_id")
+                r["file_id"] = r.get("video_file_id")
+                return r
+        except Exception:
+            pass
+        kv_data = await self._get_ephemeral_lessons_kv()
+        return kv_data.get(lid)
+
+    async def list_lessons(self, course_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        try:
+            params: Dict[str, Any] = {"order": "created_at.asc"}
+            if course_id:
+                params["course_id"] = f"eq.{course_id}"
+            rows = await self._req("GET", "lessons", params)
+            if rows:
+                for r in rows:
+                    r["telegram_file_id"] = r.get("video_file_id")
+                    r["file_id"] = r.get("video_file_id")
+                return rows
+        except Exception:
+            pass
+        kv_data = await self._get_ephemeral_lessons_kv()
+        lessons = list(kv_data.values())
+        if course_id:
+            lessons = [l for l in lessons if l.get("course_id") == course_id]
+        return sorted(lessons, key=lambda x: x.get("order", 1))
+
+    async def delete_lesson(self, lesson_id: Any) -> bool:
+        lid = str(lesson_id)
+        try:
+            res = await self._req("DELETE", "lessons", {"id": f"eq.{lid}"})
+            if res is not None:
+                return True
+        except Exception:
+            pass
+        kv_data = await self._get_ephemeral_lessons_kv()
+        if lid in kv_data:
+            kv_data.pop(lid, None)
+            await self._save_ephemeral_lessons_kv(kv_data)
+            return True
+        return False
+
+    async def update_lesson(self, lesson_id: Any, fields: Dict[str, Any]) -> bool:
+        lid = str(lesson_id)
+        try:
+            res = await self._req("PATCH", "lessons", {"id": f"eq.{lid}"}, json_body=fields)
+            if res is not None:
+                return True
+        except Exception:
+            pass
+        kv_data = await self._get_ephemeral_lessons_kv()
+        if lid in kv_data:
+            kv_data[lid].update(fields)
+            await self._save_ephemeral_lessons_kv(kv_data)
+            return True
+        return False
+
+    async def count_lessons(self, course_id: Optional[str] = None) -> int:
+        lessons = await self.list_lessons(course_id)
+        return len(lessons)
+
+    # ---------------- ACCESS LOGS ----------------
+    async def log_access(self, access: Dict[str, Any]) -> Dict[str, Any]:
+        row = {
+            "lesson_id": str(access.get("lesson_id") or ""),
+            "user_id": int(access.get("user_id") or 0),
+            "username": access.get("username"),
+            "first_name": access.get("first_name"),
+            "client_callback_id": access.get("client_callback_id"),
+            "mode": access.get("mode") or "ephemeral",
+            "opened_at": access.get("opened_at") or _now(),
+        }
+        try:
+            await self._req("POST", "access_logs", json_body=row)
+        except Exception:
+            pass
+        raw = await self.get_setting("ephemeral_access_logs")
+        logs = []
+        if raw:
+            try:
+                logs = json.loads(raw)
+            except Exception:
+                logs = []
+        logs.insert(0, row)
+        await self.set_setting("ephemeral_access_logs", json.dumps(logs[:200]))
+        return access
+
+    async def get_recent_access_logs(self, limit: int = 10) -> List[Dict[str, Any]]:
+        try:
+            rows = await self._req("GET", "access_logs", {"order": "opened_at.desc", "limit": limit})
+            if rows:
+                return rows
+        except Exception:
+            pass
+        raw = await self.get_setting("ephemeral_access_logs")
+        if raw:
+            try:
+                return json.loads(raw)[:limit]
+            except Exception:
+                return []
+        return []
+
+    async def count_access_logs(self) -> int:
+        logs = await self.get_recent_access_logs(limit=1000)
+        return len(logs)
+
+    # ---------------- USER PERMISSIONS ----------------
+    async def _get_permissions_kv(self) -> Dict[str, Any]:
+        raw = await self.get_setting("user_permissions")
+        if raw:
+            try:
+                return json.loads(raw)
+            except Exception:
+                return {}
+        return {}
+
+    async def block_user_lesson(self, user_id: int, lesson_id: Optional[Any] = None, reason: str = "") -> bool:
+        perm = await self._get_permissions_kv()
+        key = f"{user_id}:{lesson_id or 'all'}"
+        perm[key] = {"user_id": int(user_id), "lesson_id": str(lesson_id) if lesson_id else None, "reason": reason, "created_at": _now()}
+        return await self.set_setting("user_permissions", json.dumps(perm))
+
+    async def unblock_user_lesson(self, user_id: int, lesson_id: Optional[Any] = None) -> bool:
+        perm = await self._get_permissions_kv()
+        key = f"{user_id}:{lesson_id or 'all'}"
+        perm.pop(key, None)
+        if lesson_id is None:
+            to_del = [k for k in perm.keys() if k.startswith(f"{user_id}:")]
+            for k in to_del:
+                perm.pop(k, None)
+        return await self.set_setting("user_permissions", json.dumps(perm))
+
+    async def is_user_blocked_for_lesson(self, user_id: int, lesson_id: Optional[Any] = None) -> tuple[bool, str]:
+        if await self.is_user_blocked(int(user_id)):
+            return True, "Foydalanuvchi hisobi bloklangan"
+        perm = await self._get_permissions_kv()
+        if f"{user_id}:all" in perm:
+            return True, perm[f"{user_id}:all"].get("reason") or "Administrator cheklovi"
+        if lesson_id is not None and f"{user_id}:{lesson_id}" in perm:
+            return True, perm[f"{user_id}:{lesson_id}"].get("reason") or "Administrator cheklovi"
+        return False, ""
