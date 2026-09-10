@@ -241,6 +241,7 @@ async def send_ephemeral_video(
         "chat_id": chat_id,
         "video": video_file_id,
         "caption": caption[:1024],
+        "parse_mode": "HTML",
         "supports_streaming": True,
         "protect_content": protect_content,
         "ephemeral_message_parameters": {
@@ -924,10 +925,41 @@ async def deliver_private_lesson(
     if duration is None and isinstance(lesson.get("duration"), int):
         duration = lesson["duration"]
 
-    # Shaxsiy chatga yuborish
+    # Admin yoki preview dars bo'lmasa, shaxsiy chatga xom video fayl yuborilmaydi
+    # (AyuGram va norasmiy modlar yuklab olishiga yo'l qo'ymaslik uchun).
+    # Buning o'rniga Mini App yoki Yopiq Guruhdagi Ephemeral ko'rishga yo'naltiriladi!
+    if not is_admin(user_id) and not lesson.get("is_preview"):
+        target_course_id = lesson.get("course_id")
+        target_id, target_title = await _get_effective_target_group(store, target_course_id)
+        group_url = None
+        if target_title and str(target_title).startswith("@"):
+            group_url = f"https://t.me/{str(target_title).lstrip('@')}"
+        elif target_id:
+            group_url = f"https://t.me/c/{str(target_id).replace('-100', '')}"
+
+        keyboard_rows = [
+            [{"text": "🚀 Mini Appda tomosha qilish", "web_app": {"url": f"{settings.WEBAPP_URL}#course_{target_course_id}"}}],
+        ]
+        if group_url:
+            keyboard_rows.insert(0, [{"text": "👥 O'quv guruhida ko'rish", "url": group_url}])
+
+        guide_text = (
+            f"🎓 <b>{_escape(raw_title)}</b>\n\n"
+            "🔒 <b>Himoyalangan dars videosi</b>\n"
+            "Mualliflik huquqini himoya qilish maqsadida ushbu dars videolari shaxsiy chatga fayl sifatida yuborilmaydi.\n\n"
+            "Darsni quyidagi xavfsiz muhitlarda tomosha qilishingiz mumkin:\n"
+            "1. <b>O'quv guruhida</b> — dars e'lonidagi [▶️ Darsni ko'rish] tugmasi orqali (video faqat sizning ekraningizda ochiladi);\n"
+            "2. <b>Mini Appda</b> — qulay o'quv pleyeri va AI mentor bilan."
+        )
+        if query_id:
+            await _answer_callback(client, query_id)
+        await send_tg_message(client, user_id, guide_text, reply_markup={"inline_keyboard": keyboard_rows})
+        return True
+
+    # Faqat Admin yoki Preview darslar uchun shaxsiy chatga jo'natish
     res = await send_tg_video(
         client=client,
-        chat_id=user_id,  # Har doim shaxsiy chat!
+        chat_id=user_id,
         video=video_file_id,
         caption=caption,
         protect_content=getattr(settings, "PROTECT_CONTENT", True),
@@ -1474,46 +1506,8 @@ async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict
         return
 
     authorized, purchase = await is_join_request_authorized(int(chat_id), int(telegram_id), invite_link)
-    method = "approveChatJoinRequest" if authorized else "declineChatJoinRequest"
-    result = await _telegram_call(
-        client, method, {"chat_id": chat_id, "user_id": telegram_id}
-    )
-    if not result.get("ok"):
-        return
-
-    title = _escape((purchase or {}).get("course_title") or chat.get("title") or "kurs")
-    if authorized:
-        if invite_link:
-            await revoke_join_request_link(client, int(chat_id), invite_link)
-
-        store = get_store()
-        first_lesson = None
-        target_course_id = (purchase or {}).get("course_id")
-        if target_course_id:
-            try:
-                all_lessons = await store.list_lessons(target_course_id)
-                if all_lessons:
-                    first_lesson = all_lessons[0]
-            except Exception:
-                first_lesson = None
-
-        keyboard_rows = [
-            [{"text": "🚀 Kursni Mini Appda ochish", "web_app": {"url": settings.WEBAPP_URL}}],
-        ]
-        if first_lesson:
-            l_title = str(first_lesson.get("title") or "1-Dars")[:24]
-            keyboard_rows.insert(0, [{"text": f"▶️ {l_title}ni ko'rish", "callback_data": f"lesson:{first_lesson['id']}"}])
-
-        await send_tg_message(
-            client,
-            int(telegram_id),
-            f"🎉 <b>Xush kelibsiz!</b> Sizning <b>{title}</b> guruhiga a'zoligingiz tasdiqlandi.\n\n"
-            "✅ <b>Darslarni tomosha qilish:</b>\n"
-            "1. Guruhdagi istalgan dars e'lonidagi <b>[▶️ Darsni ko'rish]</b> tugmasini bosing — video to'g'ridan-to'g'ri faqat sizning ekraningizda ochiladi!\n"
-            "2. Yoki to'g'ridan-to'g'ri Mini App orqali barcha darslarni tartib bilan o'rganishingiz mumkin.",
-            {"inline_keyboard": keyboard_rows}
-        )
-    else:
+    if not authorized:
+        await _telegram_call(client, "declineChatJoinRequest", {"chat_id": chat_id, "user_id": telegram_id})
         await send_tg_message(
             client,
             int(telegram_id),
@@ -1521,6 +1515,43 @@ async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict
             "Kursni o'z akkauntingizdan sotib oling.",
             {"inline_keyboard": [[{"text": "🚀 Mini Appni ochish", "web_app": {"url": settings.WEBAPP_URL}}]]},
         )
+        return
+
+    # Authorized: zayavkani tasdiqlash
+    result = await _telegram_call(
+        client, "approveChatJoinRequest", {"chat_id": chat_id, "user_id": telegram_id}
+    )
+    if not result.get("ok"):
+        err_code = result.get("error_code")
+        desc = result.get("description", "")
+        logger.error("approveChatJoinRequest failed for user %s: code=%s desc=%s", telegram_id, err_code, desc)
+        # Failure recovery: link bekor qilinmaydi, talaba qayta urinishi mumkin
+        await send_tg_message(
+            client,
+            int(telegram_id),
+            "⚠️ <b>Guruhga qo'shishda Telegram tomonidan vaqtinchalik xatolik yuz berdi.</b>\n"
+            "Iltimos, havolani qayta bosing yoki birozdan so'ng urinib ko'ring.",
+        )
+        return
+
+    # Muvaffaqiyatli qabul qilinganidan keyingina havola bekor qilinadi
+    if invite_link:
+        await revoke_join_request_link(client, int(chat_id), invite_link)
+
+    title = _escape((purchase or {}).get("course_title") or chat.get("title") or "kurs")
+    keyboard_rows = [
+        [{"text": "🚀 Kursni Mini Appda ochish", "web_app": {"url": settings.WEBAPP_URL}}],
+    ]
+
+    await send_tg_message(
+        client,
+        int(telegram_id),
+        f"🎉 <b>Xush kelibsiz!</b> Sizning <b>{title}</b> guruhiga a'zoligingiz tasdiqlandi.\n\n"
+        "✅ <b>Darslarni tomosha qilish:</b>\n"
+        "1. Guruhdagi istalgan dars e'lonidagi <b>[▶️ Darsni ko'rish]</b> tugmasini bosing — video faqat sizning ekraningizda ochiladi!\n"
+        "2. Yoki to'g'ridan-to'g'ri Mini App orqali barcha darslarni tartib bilan o'rganishingiz mumkin.",
+        {"inline_keyboard": keyboard_rows}
+    )
 
 
 async def handle_my_chat_member(client: httpx.AsyncClient, update: Dict[str, Any]) -> None:
