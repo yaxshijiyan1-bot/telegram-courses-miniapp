@@ -310,12 +310,14 @@ class TestEphemeralVideoAndUpload(unittest.IsolatedAsyncioTestCase):
         }
         await bot_service.handle_callback_query(mock_client, enrolled_query)
 
-        # sendVideo chaqirilganini tekshirish (faqat talabaning shaxsiy chatiga - 111001!)
+        # sendVideo chaqirilganini tekshirish (guruhda faqat o'sha talabaga ko'rinadigan Ephemeral video)
         video_calls = [c for c in mock_client.post.call_args_list if "sendVideo" in str(c)]
         self.assertEqual(len(video_calls), 1)
         v_payload = video_calls[0][1]["json"]
-        self.assertEqual(v_payload["chat_id"], 111001)
+        self.assertEqual(str(v_payload["chat_id"]), "-1009988776655")
         self.assertEqual(v_payload["video"], "SECURE_VID_777")
+        self.assertEqual(v_payload["ephemeral_message_parameters"]["receiver_user_id"], 111001)
+        self.assertEqual(v_payload["ephemeral_message_parameters"]["callback_query_id"], "q_enrolled_1")
         self.assertTrue(v_payload["protect_content"])
 
         # Telemetriya log yozilganini tekshirish

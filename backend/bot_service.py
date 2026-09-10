@@ -982,18 +982,94 @@ async def handle_student_ephemeral_lesson(
     callback_query: Dict[str, Any],
     lesson_id: str | int,
 ) -> None:
-    """Student guruhda dars tugmasini bosganda xavfsiz shaxsiy chatga yetkazish (C1 & H1 yechimi)."""
+    """Student guruhda dars tugmasini bosganda Ephemeral video (faqat o'sha talabaga ko'rinadigan) yetkazish."""
     query_id = callback_query.get("id", "")
     tg_user = callback_query.get("from") or {}
     user_id = int(tg_user.get("id") or 0)
+    chat = (callback_query.get("message") or {}).get("chat") or {}
+    chat_id = chat.get("id")
+    chat_type = str(chat.get("type") or "")
 
     # 1. Rate limiting (BoundedCooldown orqali xotira himoyalangan)
     if not _lesson_cooldown.take(user_id):
         await _answer_callback(client, query_id, "Iltimos, biroz kuting (5 soniya).")
         return
 
-    # 2. Xavfsiz shaxsiy chatga yetkazish (C1 & H1 & H2 yechimi)
-    await deliver_private_lesson(client, user_id=user_id, lesson_id=lesson_id, query_id=query_id)
+    # 2. Xavfsiz avtorizatsiya tekshiruvi (Mini App xaridi / faol enrollment)
+    store = get_store()
+    try:
+        store, lesson, user = await require_lesson_access(user_id, lesson_id)
+    except LessonAccessDenied as exc:
+        bot_user = settings.BOT_USERNAME.lstrip("@")
+        if exc.can_buy and exc.course_id:
+            await _answer_callback(
+                client,
+                query_id,
+                exc.message[:200],
+                show_alert=True,
+                url=f"https://t.me/{bot_user}?start=catalog",
+            )
+        else:
+            await _answer_callback(client, query_id, exc.message[:200], show_alert=True)
+        return
+    except Exception as exc:
+        logger.error("Lesson auth unexpected error: %s", exc)
+        await _answer_callback(client, query_id, "⚠️ Ruxsatni tekshirishda xatolik.", show_alert=True)
+        return
+
+    video_file_id = lesson.get("video_file_id") or lesson.get("telegram_file_id") or lesson.get("file_id")
+    if not video_file_id and str(lesson.get("video_url") or "").startswith("tg-file:"):
+        video_file_id = str(lesson["video_url"]).split("tg-file:", 1)[1]
+
+    if not video_file_id:
+        await _answer_callback(client, query_id, "❌ Video fayli topilmadi.", show_alert=True)
+        return
+
+    raw_title = str(lesson.get("title") or "Dars")[:180]
+    caption = f"🎓 <b>{_escape(raw_title)}</b>\n\n🔒 <i>Himoyalangan dars videosi</i>"
+    duration = lesson.get("duration_seconds")
+    if duration is None and isinstance(lesson.get("duration"), int):
+        duration = lesson["duration"]
+
+    # 3. Guruhda bosilgan bo'lsa -> Ephemeral Video (Telegramda FAQAT o'sha talabaning ekranida ko'rinadi!)
+    sent_ok = False
+    if chat_id and chat_type in ("group", "supergroup"):
+        res = await send_ephemeral_video(
+            client=client,
+            chat_id=chat_id,
+            video_file_id=video_file_id,
+            caption=caption,
+            callback_user_id=user_id,
+            callback_query_id=query_id,
+            replace_callback_query_message=False,
+            duration=duration,
+            width=lesson.get("width"),
+            height=lesson.get("height"),
+            protect_content=getattr(settings, "PROTECT_CONTENT", True),
+        )
+        if res.get("ok"):
+            sent_ok = True
+            await _answer_callback(client, query_id, "✅ Dars videosi faqat siz uchun ochildi!")
+
+    # 4. Guruh bo'lmasa yoki ephemeral yuborishda xatolik bo'lsa -> Shaxsiy chatga fallback
+    if not sent_ok:
+        sent_ok = await deliver_private_lesson(client, user_id=user_id, lesson_id=lesson_id, query_id=query_id)
+
+    # 5. Telemetriya va progress
+    if sent_ok:
+        try:
+            await store.log_access({
+                "lesson_id": str(lesson["id"]),
+                "user_id": user_id,
+                "mode": "group_ephemeral" if chat_type in ("group", "supergroup") else "private_protected",
+            })
+            target_course_id = lesson.get("course_id")
+            if user and target_course_id:
+                await store.upsert_progress(
+                    user["id"], target_course_id, str(lesson["id"]), completed=False
+                )
+        except Exception as exc:
+            logger.error("Access log update error: %s", exc)
 
 
 
@@ -1405,10 +1481,33 @@ async def handle_chat_join_request(client: httpx.AsyncClient, join_request: Dict
     if authorized:
         if invite_link:
             await revoke_join_request_link(client, int(chat_id), invite_link)
+
+        store = get_store()
+        first_lesson = None
+        target_course_id = (purchase or {}).get("course_id")
+        if target_course_id:
+            try:
+                all_lessons = await store.list_lessons(target_course_id)
+                if all_lessons:
+                    first_lesson = all_lessons[0]
+            except Exception:
+                first_lesson = None
+
+        keyboard_rows = [
+            [{"text": "🚀 Kursni Mini Appda ochish", "web_app": {"url": settings.WEBAPP_URL}}],
+        ]
+        if first_lesson:
+            l_title = str(first_lesson.get("title") or "1-Dars")[:24]
+            keyboard_rows.insert(0, [{"text": f"▶️ {l_title}ni ko'rish", "callback_data": f"lesson:{first_lesson['id']}"}])
+
         await send_tg_message(
             client,
             int(telegram_id),
-            f"🎉 <b>Xush kelibsiz!</b> Sizning <b>{title}</b> kanaliga zayavkangiz tasdiqlandi. Darslarni boshlashingiz mumkin.",
+            f"🎉 <b>Xush kelibsiz!</b> Sizning <b>{title}</b> guruhiga a'zoligingiz tasdiqlandi.\n\n"
+            "✅ <b>Darslarni tomosha qilish:</b>\n"
+            "1. Guruhdagi istalgan dars e'lonidagi <b>[▶️ Darsni ko'rish]</b> tugmasini bosing — video to'g'ridan-to'g'ri faqat sizning ekraningizda ochiladi!\n"
+            "2. Yoki to'g'ridan-to'g'ri Mini App orqali barcha darslarni tartib bilan o'rganishingiz mumkin.",
+            {"inline_keyboard": keyboard_rows}
         )
     else:
         await send_tg_message(
